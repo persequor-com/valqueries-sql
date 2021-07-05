@@ -1,7 +1,4 @@
 .gradle
 .idea
 target
-gradlew
-gradlew.bat
-gradle
 build
