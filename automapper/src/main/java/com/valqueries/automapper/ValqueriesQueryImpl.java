@@ -1,0 +1,442 @@
+package com.valqueries.automapper;
+
+import com.valqueries.IStatement;
+import com.valqueries.ITransactionContext;
+import com.valqueries.OrmResultSet;
+import com.valqueries.Setter;
+import com.valqueries.UpdateResult;
+import io.ran.Clazz;
+import io.ran.CompoundKey;
+import io.ran.CrudRepository;
+import io.ran.GenericFactory;
+import io.ran.KeySet;
+import io.ran.Mapping;
+import io.ran.Property;
+import io.ran.RelationDescriber;
+import io.ran.TypeDescriber;
+import io.ran.TypeDescriberImpl;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements ValqueriesQuery<T>, Setter, AutoCloseable {
+	private ITransactionContext transactionContext;
+	private Class<T> modelType;
+	private List<Element> elements = new ArrayList<>();
+	private List<SortElement> sortElements = new ArrayList<>();
+	private int fieldNum = 0;
+	private int subQueryNum = 0;
+	private Collection<RelationDescriber> eagers = new ArrayList<>();
+	private String tableAlias = "main";
+	private GenericFactory genericFactory;
+	private Integer limit = null;
+	private int offset = 0;
+
+	public ValqueriesQueryImpl(ITransactionContext transactionContext, Class<T> modelType, GenericFactory genericFactory) {
+		super(modelType, genericFactory);
+		this.transactionContext = transactionContext;
+		this.modelType = modelType;
+		this.genericFactory = genericFactory;
+	}
+
+	@Override
+	public ValqueriesQuery<T> eq(Property.PropertyValue<?> propertyValue) {
+		elements.add(new SimpleElement(this, propertyValue, "=", ++fieldNum));
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> in(Property.PropertyValueList propertyValues) {
+		elements.add(new ListElement(this, propertyValues, "IN", ++fieldNum));
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> like(Property.PropertyValue<?> propertyValue) {
+		elements.add(new SimpleElement(this, propertyValue, "like",++fieldNum));
+		return this;
+	}
+
+	@Override
+	ValqueriesQuery<T> freetext(Property.PropertyValue<?> propertyValue) {
+		elements.add(new FreeTextElement(this, propertyValue, ++fieldNum));
+		return this;
+	}
+
+
+	@Override
+	public ValqueriesQuery<T> gt(Property.PropertyValue<?> propertyValue) {
+		elements.add(new SimpleElement(this, propertyValue, ">", ++fieldNum));
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> lt(Property.PropertyValue<?> propertyValue) {
+		elements.add(new SimpleElement(this, propertyValue, "<", ++fieldNum));
+		return this;
+	}
+
+
+	@SuppressWarnings("rawtypes")
+	@Override
+	public <X, Z extends CrudRepository.InlineQuery<X, Z>> ValqueriesQuery<T> subQuery(RelationDescriber relation, Consumer<Z> consumer) {
+		if (!relation.getVia().isEmpty()) {
+			return subQuery(relation.getVia().get(0), q -> {
+				((ValqueriesQuery<X>)q).subQuery(relation.getVia().get(1), (Consumer) consumer);
+			});
+		}
+		ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory);
+		otherQuery.tableAlias = "sub"+(++subQueryNum);
+		consumer.accept((Z) otherQuery);
+		elements.add(new RelationSubQueryElement(tableAlias, otherQuery.tableAlias, ++subQueryNum, relation, otherQuery));
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> isNull(Property<?> property) {
+		elements.add(new SimpleElement(this, property.value(null),"IS NULL", ++fieldNum));
+		return this;
+	}
+
+	public ValqueriesQuery<T> isNotNull(Property<?> property) {
+		elements.add(new SimpleElement(this, property.value(null),"IS NOT NULL", ++fieldNum));
+		return this;
+	}
+
+
+	private String buildSelectSql(String tableAlias, String... columns) {
+		T t = genericFactory.get(modelType);
+		String columnsSql;
+		if (columns.length == 0) {
+			ValqueriesColumnBuilder columnBuilder = new ValqueriesColumnBuilder(tableAlias);
+			((Mapping)t).hydrate(columnBuilder);
+			columnsSql = columnBuilder.getSql();
+		} else {
+			columnsSql = Arrays.stream(columns).collect(Collectors.joining(", "));
+		}
+
+		StringBuilder eagerSelect = new StringBuilder();
+		StringBuilder eagerJoin = new StringBuilder();
+		int i = 0;
+		for (RelationDescriber relation : eagers) {
+			String eagerTable = ValqueriesCrudRepositoryBase.getTableName(relation.getToClass());
+			String eagerAlias = "eager"+(++i);
+			eagerJoin.append(" LEFT JOIN "+eagerTable+" "+eagerAlias+" ON ");
+			List<KeySet.Field> from = relation.getFromKeys().stream().collect(Collectors.toList());
+			List<KeySet.Field> to = relation.getToKeys().stream().collect(Collectors.toList());
+			for(int x=0;x<from.size();x++) {
+				eagerJoin.append(tableAlias+"."+from.get(x).getToken().snake_case()+" = "+eagerAlias+"."+to.get(x).getToken().snake_case());
+			}
+			TypeDescriber<?> eagerRelationTypeDescriber = TypeDescriberImpl.getTypeDescriber(relation.getToClass().clazz);
+
+			eagerSelect.append(", "+eagerRelationTypeDescriber.fields().stream().map(property -> eagerAlias+"."+property.getToken().snake_case()+" "+eagerAlias+"_"+property.getToken().snake_case()).collect(Collectors.joining(", ")));
+
+		}
+		String sql = "SELECT " + columnsSql + eagerSelect.toString() + " FROM " + ValqueriesCrudRepositoryBase.getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias+" "+eagerJoin.toString();
+		if (!elements.isEmpty()) {
+			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
+		}
+		if (!sortElements.isEmpty()) {
+			sql += " ORDER BY "+sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
+		}
+		if (limit !=  null) {
+			sql += " LIMIT "+offset+","+limit;
+		}
+//		System.out.println(sql);
+		return sql;
+	}
+
+	public ValqueriesQuery<T> withEager(RelationDescriber relation) {
+		eagers.add(relation);
+		return this;
+	}
+
+	@Override
+	public <X extends Comparable<X>> ValqueriesQuery<T> sortAscending(Property<X> property) {
+		sortElements.add(new SortElement(this, property, true));
+		return this;
+	}
+
+	@Override
+	public <X extends Comparable<X>> ValqueriesQuery<T> sortDescending(Property<X> property) {
+		sortElements.add(new SortElement(this, property, false));
+		return null;
+	}
+
+
+	@Override
+	public ValqueriesQuery<T> limit(int offset, int limit) {
+		this.limit = limit;
+		this.offset = offset;
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> limit(int limit) {
+		this.limit = limit;
+		return this;
+	}
+
+
+	@Override
+	public Stream<T> execute() {
+		try {
+			Map<CompoundKey, T> alreadyLoaded = new HashMap();
+			Map<Class, Map<CompoundKey, List>> eagerModels = new HashMap<>();
+			transactionContext.query(buildSelectSql("main"), this, row -> {
+				T t2 = genericFactory.get(modelType);
+				((Mapping)t2).hydrate(new ValqueriesHydrator("main_", row));
+				CompoundKey key = ((Mapping)t2)._getKey();
+				if (alreadyLoaded.containsKey(key)) {
+					t2 = alreadyLoaded.get(key);
+				} else {
+					alreadyLoaded.put(key, t2);
+				}
+				int i=0;
+				for (RelationDescriber relationDescriber : eagers) {
+					Object hydrated = hydrateEager(t2, relationDescriber, row, ++i);
+					if (hydrated != null) {
+						eagerModels
+								.computeIfAbsent(relationDescriber.getToClass().clazz, (k) -> new HashMap<>())
+								.computeIfAbsent(key, (k) -> new ArrayList())
+								.add(hydrated);
+					}
+				}
+				return t2;
+			});
+			for (RelationDescriber relationDescriber : eagers) {
+				Map<CompoundKey, List> eagerModel = eagerModels.get(relationDescriber.getToClass().clazz);
+				if (eagerModel != null) {
+					eagerModel.entrySet().forEach(entry -> {
+						if (relationDescriber.getCollectionType() != null) {
+							((Mapping)alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue());
+						} else {
+							mapping(alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue().get(0));
+						}
+					});
+				}
+			}
+			return alreadyLoaded.values().stream();
+		} finally {
+			try {
+				close();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	@Override
+	public long count() {
+		try {
+			String sql = buildCountSql();
+			return transactionContext.query(sql, this, row -> {
+				return row.getLong("the_count");
+			}).stream().findFirst().get();
+		} finally {
+			try {
+				close();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	@Override
+	public CrudRepository.CrudUpdateResult delete() {
+		try {
+			String sql = buildDeleteSql();
+			UpdateResult update = transactionContext.update(sql, this);
+			return () -> update.getAffectedRows();
+		} finally {
+			try {
+				close();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	private String buildDeleteSql() {
+		String sql = "DELETE "+tableAlias+" FROM " + ValqueriesCrudRepositoryBase.getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias;
+		if (!elements.isEmpty()) {
+			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
+		}
+		if (limit !=  null) {
+			sql += " LIMIT "+offset+","+limit;
+		}
+//		System.out.println(sql);
+		return sql;
+	}
+
+	private String buildCountSql() {
+		String sql = "SELECT COUNT(1) as the_count FROM " + ValqueriesCrudRepositoryBase.getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias;
+		if (!elements.isEmpty()) {
+			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
+		}
+//		System.out.println(sql);
+		return sql;
+	}
+
+	private <X> X hydrateEager(T rootObject, RelationDescriber relationDescriber, OrmResultSet row, int i) {
+		X otherModel = (X)genericFactory.get(relationDescriber.getToClass().clazz);
+		mapping(otherModel).hydrate(new ValqueriesHydrator("eager"+(i)+"_", row));
+		if (((Property.PropertyValueList<?>)mapping(otherModel)._getKey().getValues()).get(0).getValue() == null) {
+			return null;
+		}
+		return otherModel;
+	}
+
+	@Override
+	public void set(IStatement statement) {
+		elements.forEach(e -> e.set(statement));
+	}
+
+	@Override
+	public void close() throws Exception {
+		((AutoCloseable)transactionContext).close();
+	}
+
+	private Mapping mapping(Object obj) {
+		if (obj instanceof Mapping) {
+			return (Mapping) obj;
+		}
+		throw new RuntimeException("Tried mapping an unmapped object: "+obj.getClass().getName());
+	}
+
+
+	private interface Element extends Setter {
+		String queryString();
+	}
+
+	private static class RelationSubQueryElement implements Element {
+		private final ValqueriesQueryImpl<?> otherQuery;
+		private final RelationDescriber relation;
+		private final String tableAlias;
+		private String parentTableAlias;
+		private int subQueryNum;
+
+		public RelationSubQueryElement(String parentTableAlias, String tableAlias, int subQueryNum, RelationDescriber relation, ValqueriesQueryImpl<?> otherQuery) {
+			this.parentTableAlias = parentTableAlias;
+			this.tableAlias = tableAlias;
+			this.subQueryNum = subQueryNum;
+			this.relation = relation;
+			this.otherQuery = otherQuery;
+		}
+
+		public String queryString() {
+			return parentTableAlias + ".`" + relation.getFromKeys().get(0).getToken().snake_case() + "` IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + p.getToken().snake_case()).toArray(String[]::new)) + ")";
+
+		}
+
+		@Override
+		public void set(IStatement statement) {
+			otherQuery.set(statement);
+		}
+	}
+
+	private void setTableAlias(String tableAlias) {
+		this.tableAlias = tableAlias;
+	}
+
+	private static class SimpleElement implements Element {
+		private final ValqueriesQueryImpl<?> query;
+		private final Property.PropertyValue<?> propertyValue;
+		private final String operator;
+		private final String field;
+
+		public SimpleElement(ValqueriesQueryImpl<?> query, Property.PropertyValue<?> propertyValue, String operator, int fieldNum) {
+			this.query = query;
+			this.propertyValue = propertyValue;
+			this.operator = operator;
+			this.field = propertyValue.getProperty().getToken().snake_case()+fieldNum;
+		}
+
+		public String queryString() {
+			return query.tableAlias+".`"+propertyValue.getProperty().getToken().snake_case()+"` "+operator+" (:"+field+")";
+		}
+
+		@Override
+		public void set(IStatement statement) {
+			statement.set(field, propertyValue.getValue());
+		}
+	}
+
+	private static class FreeTextElement implements Element {
+
+		private final ValqueriesQueryImpl<?> query;
+		private final Property.PropertyValue<?> propertyValue;
+		private final String field;
+
+		public FreeTextElement(ValqueriesQueryImpl<?> query, Property.PropertyValue<?> propertyValue, int fieldNum) {
+			this.query = query;
+			this.propertyValue = propertyValue;
+			this.field = propertyValue.getProperty().getToken().snake_case()+fieldNum;
+		}
+
+		@Override
+		public String queryString() {
+			return "MATCH("+query.tableAlias+".`"+propertyValue.getProperty().getToken().snake_case()+"`) AGAINST(:"+field+")";
+		}
+
+		@Override
+		public void set(IStatement statement) {
+			statement.set(field, propertyValue.getValue());
+		}
+
+	}
+
+	private class ListElement implements Element {
+		private final ValqueriesQueryImpl<T> query;
+		private final List<Property.PropertyValue> values;
+		private final String operator;
+		private final int fieldNum;
+		private final String field;
+
+		public ListElement(ValqueriesQueryImpl<T> query, List<Property.PropertyValue> values, String operator, int fieldNum) {
+			this.query = query;
+			this.values = values;
+			this.operator = operator;
+			this.fieldNum = fieldNum;
+			this.field = values.get(0).getProperty().getToken().snake_case()+fieldNum;
+
+		}
+		public String queryString() {
+			return query.tableAlias+".`"+values.get(0).getProperty().getToken().snake_case()+"` "+operator+" (:"+field+")";
+		}
+
+		@Override
+		public void set(IStatement statement) {
+			statement.set(field, values.stream().map(Property.PropertyValue::getValue).collect(Collectors.toList()));
+		}
+	}
+
+	private class SortElement implements Element {
+		private final ValqueriesQueryImpl<T> query;
+		private final Property<?> property;
+		private boolean ascending;
+
+		public SortElement(ValqueriesQueryImpl<T> query, Property<?> property, boolean ascending) {
+			this.query = query;
+			this.property = property;
+			this.ascending = ascending;
+		}
+
+		@Override
+		public String queryString() {
+			return property.getToken().snake_case()+(ascending ? " ASC" : " DESC");
+		}
+
+		@Override
+		public void set(IStatement statement) {
+
+		}
+	}
+}

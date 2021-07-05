@@ -1,0 +1,36 @@
+version: '2.3'
+services:
+  sql:
+    image: mariadb:10.2.27
+    restart: 'no'
+    mem_limit: 1280M
+    memswap_limit: -1
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - mysql_config:/etc/mysql/conf.d
+      - mysql_logs:/var/logs/mysql/
+      - ./sqlinit/:/docker-entrypoint-initdb.d
+    environment:
+      - MYSQL_ROOT_PASSWORD=s3cr3t
+      - MYSQL_ROOT_HOST=%
+      - MYSQL_DATABASE=valqueries
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
+    healthcheck:
+      test: ["CMD", "echo", "'show databases'", "|", "mysql", "-uroot", "-ps3cr3t", "|", "grep", "-q", "information_schema"]
+
+
+volumes:
+  mysql_data:
+  mysql_config:
+  mysql_logs:
+
+networks:
+  default:
+    name: ${CI_NETWORK:-ci-network}
+
+

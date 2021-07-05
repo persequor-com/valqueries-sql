@@ -1,0 +1,4 @@
+rootProject.name = 'valqueries'
+include(':core')
+include(':automapper')
+include(':test')

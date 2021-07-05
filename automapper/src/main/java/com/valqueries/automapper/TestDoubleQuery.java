@@ -1,0 +1,246 @@
+package com.valqueries.automapper;
+
+import io.ran.CrudRepository;
+import io.ran.GenericFactory;
+import io.ran.MappingHelper;
+import io.ran.Property;
+import io.ran.RelationDescriber;
+import io.ran.TestDoubleDb;
+import io.ran.TypeDescriber;
+import io.ran.TypeDescriberImpl;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuery<T>> implements ValqueriesQuery<T> {
+	private MappingHelper mappingHelper;
+	private TestDoubleDb testDoubleDb;
+	private GenericFactory factory;
+
+	public TestDoubleQuery(Class<T> modelType, GenericFactory genericFactory, MappingHelper mappingHelper, TestDoubleDb testDoubleDb) {
+		super(modelType, genericFactory, mappingHelper, testDoubleDb);
+		this.mappingHelper = mappingHelper;
+		this.testDoubleDb = testDoubleDb;
+		this.factory = genericFactory;
+	}
+
+	public ValqueriesQuery<T> eq(Property.PropertyValue<?> propertyValue) {
+		filters.add(t -> {
+			Object actualValue = getValue(propertyValue.getProperty(), t);
+			return Objects.equals(actualValue, propertyValue.getValue());
+		});
+		return this;
+	}
+
+	public ValqueriesQuery<T> gt(Property.PropertyValue<?> propertyValue) {
+		filters.add(t -> {
+			Object actualValue = getValue(propertyValue.getProperty(), t);
+			if (actualValue instanceof Comparable) {
+				return ((Comparable) actualValue).compareTo(propertyValue.getValue()) > 0;
+			}
+			return false;
+		});
+		return this;
+	}
+
+	public ValqueriesQuery<T> lt(Property.PropertyValue<?> propertyValue) {
+		filters.add(t -> {
+			Object actualValue = getValue(propertyValue.getProperty(), t);
+			if (actualValue instanceof Comparable) {
+				return ((Comparable) actualValue).compareTo(propertyValue.getValue()) < 0;
+			}
+			return false;
+		});
+		return this;
+	}
+
+	public ValqueriesQuery<T> isNull(Property<?> property) {
+		filters.add(t -> {
+			Object actualValue = getValue(property, t);
+			return actualValue == null;
+		});
+		return this;
+	}
+
+
+	public ValqueriesQuery<T> in(Property.PropertyValueList propertyValues) {
+		filters.add(t -> {
+			Object actualValue = getValue(((Property.PropertyValueList<?>)propertyValues).get(0).getProperty(), t);
+			return ((Property.PropertyValueList<?>)propertyValues).stream().anyMatch(pv -> Objects.equals(actualValue, pv.getValue()));
+		});
+		return this;
+	}
+
+	public ValqueriesQuery<T> like(Property.PropertyValue<?> propertyValue) {
+		if (!(propertyValue.getValue() instanceof String)) {
+			throw new RuntimeException("LIKE operator only valid for Strings, "+propertyValue.getValue().getClass().getName()+" provided");
+		}
+		Pattern pattern = Pattern.compile(propertyValue.getValue().toString().replace("%",".*"));
+
+		filters.add(t -> {
+			Object actualValue = getValue(propertyValue.getProperty(), t);
+			return pattern.matcher(actualValue.toString()).find();
+		});
+		return this;
+	}
+
+	public ValqueriesQuery<T> freetext(Property.PropertyValue<?> propertyValue) {
+		if (!(propertyValue.getValue() instanceof String)) {
+			throw new RuntimeException("freetext operator only valid for Strings, "+propertyValue.getValue().getClass().getName()+" provided");
+		}
+
+		filters.add(t -> {
+			Object actualValue = getValue(propertyValue.getProperty(), t);
+			return actualValue.toString().contains(((String) propertyValue.getValue()).toString());
+		});
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> withEager(RelationDescriber relationDescriber) {
+		// Eager should not be needed to be implemented by test doubles, as they should already be setup on the model
+		return this;
+	}
+
+
+	@Override
+	public <X, Z extends CrudRepository.InlineQuery<X, Z>> ValqueriesQuery<T> subQuery(RelationDescriber relationDescriber, Consumer<Z> consumer) {
+		if (!relationDescriber.getVia().isEmpty()) {
+			return subQuery(relationDescriber.getVia().get(0), q -> {
+				((TestDoubleQuery<X>)q).subQuery(relationDescriber.getVia().get(1), (Consumer) consumer);
+			});
+		}
+		TestDoubleQuery<X> otherQuery = new TestDoubleQuery(relationDescriber.getToClass().clazz,  factory, mappingHelper, testDoubleDb);
+		consumer.accept((Z) otherQuery);
+
+//		return this;
+//
+//		TestDoubleQuery<X> subQuery = new TestDoubleQuery<X>((Class<X>)relationDescriber.getToClass().clazz, factory, mappingHelper, testDoubleDb);
+//		consumer.accept((Z)subQuery);
+
+		filters.add(t -> {
+			List<X> subResult = otherQuery.execute().collect(Collectors.toList());
+			for(int i=0;i<relationDescriber.getFromKeys().size();i++) {
+				Object tv = mappingHelper.getValue(t, relationDescriber.getFromKeys().get(i).getProperty());
+				int finalI = i;
+				subResult.removeIf(o -> {
+					Object ov = mappingHelper.getValue(o, relationDescriber.getToKeys().get(finalI).getProperty());
+					return !tv.equals(ov);
+				});
+			}
+			return !subResult.isEmpty();
+		});
+		return this;
+
+
+	}
+
+	@Override
+	protected ValqueriesQuery<T> getQuery(Class<?> aClass) {
+		return new TestDoubleQuery<T>((Class)aClass, factory, mappingHelper, testDoubleDb);
+	}
+
+
+	private Object getValue(Property<?> property, T t) {
+		return mappingHelper.getValue(t, property);
+	}
+
+
+	////
+
+
+	@Override
+	public <X> ValqueriesQuery<T> in(Function<T, X> field, Collection<X> value) {
+		field.apply(instance);
+		in(queryWrapper.getCurrentProperty().values(value));
+		return this;
+	}
+
+	@Override
+	public <X> ValqueriesQuery<T> in(BiConsumer<T, X> field, Collection<X> value) {
+		field.accept(instance, null);
+		in(queryWrapper.getCurrentProperty().values(value));
+		return this;
+	}
+
+	@Override
+	public <X> ValqueriesQuery<T> in(Function<T, X> field, X... value) {
+		field.apply(instance);
+		in(queryWrapper.getCurrentProperty().values(value));
+		return this;
+	}
+
+	@Override
+	public <X> ValqueriesQuery<T> in(BiConsumer<T, X> field, X... value) {
+		field.accept(instance, null);
+		in(queryWrapper.getCurrentProperty().values(value));
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> like(Function<T, String> field, String value) {
+		field.apply(instance);
+		like(queryWrapper.getCurrentProperty().value(value));
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> like(BiConsumer<T, String> field, String value) {
+		field.accept(instance, null);
+		like(queryWrapper.getCurrentProperty().value(value));
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> freetext(Function<T, String> field, String value) {
+		field.apply(instance);
+		like(queryWrapper.getCurrentProperty().value(value));
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> freetext(BiConsumer<T, String> field, String value) {
+		field.accept(instance, null);
+		like(queryWrapper.getCurrentProperty().value(value));
+		return this;	}
+
+	@Override
+	public <X> ValqueriesQuery<T> subQuery(Function<T, X> field, Consumer<ValqueriesQuery<X>> subQuery) {
+		field.apply(instance);
+		this.subQuery(typeDescriber.relations().get(queryWrapper.getCurrentProperty().getToken().snake_case()), subQuery);
+		return this;
+	}
+
+	@Override
+	public <X> ValqueriesQuery<T> subQuery(BiConsumer<T, X> field, Consumer<ValqueriesQuery<X>> subQuery) {
+		field.accept(instance, null);
+		this.subQuery(typeDescriber.relations().get(queryWrapper.getCurrentProperty().getToken().snake_case()), subQuery);
+		return this;
+	}
+
+	@Override
+	public <X> ValqueriesQuery<T> subQueryList(Function<T, List<X>> field, Consumer<ValqueriesQuery<X>> subQuery) {
+		field.apply(instance);
+		this.subQuery(typeDescriber.relations().get(queryWrapper.getCurrentProperty().getToken().snake_case()), subQuery);
+		return this;
+	}
+
+	@Override
+	public <X> ValqueriesQuery<T> subQueryList(BiConsumer<T, List<X>> field, Consumer<ValqueriesQuery<X>> subQuery) {
+		field.accept(instance, null);
+		this.subQuery(typeDescriber.relations().get(queryWrapper.getCurrentProperty().getToken().snake_case()), subQuery);
+		return this;
+	}
+
+}

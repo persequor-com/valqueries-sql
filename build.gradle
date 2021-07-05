@@ -1,0 +1,82 @@
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'java-library'
+    apply plugin: 'maven-publish'
+
+    group 'io.valqueries'
+
+    jar {
+        manifest {
+            attributes(
+                    'Implementation-Title': project.name,
+                    'Implementation-Version': project.version,
+                    'Implementation-Vendor-Id': project.group,
+                    'Implementation-Vendor': 'Persequor ApS',
+                    'Created-By': "Gradle $project.gradle.gradleVersion"
+            )
+        }
+    }
+
+    repositories {
+        mavenCentral()
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/persequor-com/ran")
+                credentials {
+                    username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_CI_ACTOR")
+                    password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_CI_TOKEN")
+                }
+            }
+        }
+    }
+
+    publishing {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/persequor-com/valqueries-sql")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR")
+                    password = System.getenv("GITHUB_TOKEN")
+                }
+            }
+        }
+        publications {
+            gpr(MavenPublication) {
+                from(components.java)
+            }
+        }
+    }
+
+    dependencies {
+        testCompile 'junit:junit:4.12'
+        testCompile group: 'org.mockito', name: 'mockito-core', version: '3.6.28'
+        testCompile group: 'com.google.inject', name: 'guice', version: '4.2.3'
+        compile 'com.zaxxer:HikariCP:3.3.1'
+        compile 'javax.inject:javax.inject:1'
+        compile 'mysql:mysql-connector-java:8.0.19'
+        compile 'org.slf4j:slf4j-api:1.7.30'
+    }
+
+    test {
+        filter {
+            excludeTestsMatching "*IT"
+        }
+    }
+
+    task integrationTest(type: Test) {
+        System.properties.each {
+            if (it.key.startsWith("XS")) {
+                systemProperties[it.key.substring(2)] = it.value
+            }
+        }
+        filter {
+            setFailOnNoMatchingTests(false)
+            includeTestsMatching "*IT"
+        }
+    }
+
+    sourceCompatibility = '1.8'
+
+}
