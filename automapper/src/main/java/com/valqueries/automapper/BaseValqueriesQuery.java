@@ -20,6 +20,7 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 	abstract ValqueriesQuery<T> in(Property.PropertyValueList propertyValues);
 	abstract ValqueriesQuery<T> like(Property.PropertyValue<?> propertyValue);
 	abstract ValqueriesQuery<T> freetext(Property.PropertyValue<?> propertyValue);
+	abstract ValqueriesQuery<T> isNotNull(Property<?> property);
 
 	@Override
 	public <X> ValqueriesQuery<T> in(Function<T, X> field, Collection<X> value) {
@@ -68,6 +69,20 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 	public ValqueriesQuery<T> freetext(Function<T, String> field, String value) {
 		field.apply(instance);
 		freetext(queryWrapper.getCurrentProperty().value(value));
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> isNotNull(BiConsumer<T, String> field) {
+		field.accept(instance, null);
+		isNotNull(queryWrapper.getCurrentProperty());
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> isNotNull(Function<T, String> field) {
+		field.apply(instance);
+		isNotNull(queryWrapper.getCurrentProperty());
 		return this;
 	}
 

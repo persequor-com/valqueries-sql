@@ -73,6 +73,13 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 		return this;
 	}
 
+	public ValqueriesQuery<T> isNotNull(Property<?> property) {
+		filters.add(t -> {
+			Object actualValue = getValue(property, t);
+			return actualValue != null;
+		});
+		return this;
+	}
 
 	public ValqueriesQuery<T> in(Property.PropertyValueList propertyValues) {
 		filters.add(t -> {
@@ -213,7 +220,22 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 	public ValqueriesQuery<T> freetext(BiConsumer<T, String> field, String value) {
 		field.accept(instance, null);
 		like(queryWrapper.getCurrentProperty().value(value));
-		return this;	}
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> isNotNull(Function<T, String> field) {
+		field.apply(instance);
+		isNotNull(queryWrapper.getCurrentProperty());
+		return this;
+	}
+
+	@Override
+	public ValqueriesQuery<T> isNotNull(BiConsumer<T, String> field) {
+		field.accept(instance, null);
+		isNotNull(queryWrapper.getCurrentProperty());
+		return this;
+	}
 
 	@Override
 	public <X> ValqueriesQuery<T> subQuery(Function<T, X> field, Consumer<ValqueriesQuery<X>> subQuery) {
