@@ -6,10 +6,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class JdbcHelper {
+	private static final Set<Integer> INTTYPES = new HashSet<>(Arrays.asList(Types.INTEGER, Types.BIGINT, Types.SMALLINT, Types.TINYINT));
 	private final Connection connection;
 
 	public JdbcHelper(Connection connection) {
@@ -33,7 +38,7 @@ public class JdbcHelper {
 			UpdateResult result = new UpdateResult();
 			result.setAffectedRows(nrOfRowsAffected);
 			try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
-				if (generatedKeys.next()) {
+				if (generatedKeys.next() && INTTYPES.contains(generatedKeys.getMetaData().getColumnType(1))) {
 					result.setLastInsertedId(generatedKeys.getLong(1));
 				}
 			}
