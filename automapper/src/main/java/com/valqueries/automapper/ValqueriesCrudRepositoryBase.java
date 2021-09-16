@@ -111,6 +111,9 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 
 	@Override
 	public CrudUpdateResult save(ITransactionContext tx, Collection<T> ts) {
+		if (ts.isEmpty()) {
+			return () -> 0;
+		}
 		CompoundColumnizer<T> columnizer = new CompoundColumnizer<T>(genericFactory, mappingHelper,ts);
 		String sql = "INSERT INTO "+getTableName()+" ("+columnizer.getColumns().stream().map(s -> "`"+s+"`").collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
 
