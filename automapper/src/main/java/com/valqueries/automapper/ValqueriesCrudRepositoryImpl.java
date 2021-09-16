@@ -10,6 +10,7 @@ import com.valqueries.ITransactionWithResult;
 import io.ran.CrudRepository;
 import io.ran.Resolver;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -42,6 +43,11 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 
 	@Override
 	public CrudUpdateResult save(ITransactionContext tx, T t) {
+		return baseRepo.save(tx, t);
+	}
+
+	@Override
+	public CrudUpdateResult save(ITransactionContext tx, Collection<T> t) {
 		return baseRepo.save(tx, t);
 	}
 

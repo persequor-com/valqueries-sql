@@ -43,7 +43,6 @@ public class AutoMapperIT extends AutoMapperBaseTests {
 	public void setup() {
 		try (IOrm orm = database.getOrm()) {
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(carDescriber)+";");
-			System.out.println(sqlGenerator.generate(carDescriber));
 			orm.update(sqlGenerator.generate(carDescriber));
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(doorDescriber)+";");
 			orm.update(sqlGenerator.generate(doorDescriber));

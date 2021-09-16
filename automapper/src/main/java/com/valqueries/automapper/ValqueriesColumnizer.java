@@ -8,14 +8,11 @@ package com.valqueries.automapper;
 import com.valqueries.IStatement;
 import com.valqueries.Setter;
 import io.ran.GenericFactory;
-import io.ran.Mapping;
 import io.ran.MappingHelper;
 import io.ran.ObjectMapColumnizer;
-import io.ran.TypeDescriber;
 import io.ran.token.Token;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +22,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
-
 	private final List<Consumer<IStatement>> statements = new ArrayList<>();
 	private final List<String> sqlStatements = new ArrayList<>();
 	private final List<String> sqlWithoutKey = new ArrayList<>();
@@ -34,11 +30,13 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 		mappingHelper.columnize(t, this);
 	}
 
-	private String transformKey(Token key) {
+	protected ValqueriesColumnizer() {}
+
+	protected String transformKey(Token key) {
 		return key.snake_case();
 	}
 
-	private void add(Token key, Consumer<IStatement> consumer) {
+	protected void add(Token key, Consumer<IStatement> consumer) {
 		String sql = "`"+key.snake_case()+"` = :"+key.snake_case();
 		sqlStatements.add(sql);
 		if (!key.equals(Token.of("id"))) {

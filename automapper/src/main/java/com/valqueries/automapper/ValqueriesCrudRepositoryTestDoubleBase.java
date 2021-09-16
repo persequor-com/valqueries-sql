@@ -106,6 +106,12 @@ public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesB
 	}
 
 	@Override
+	public CrudUpdateResult save(ITransactionContext tx, Collection<T> t) {
+		t.forEach(this::save);
+		return () -> t.size();
+	}
+
+	@Override
 	public ValqueriesQuery<T> query(ITransactionContext tx) {
 		return query();
 	}

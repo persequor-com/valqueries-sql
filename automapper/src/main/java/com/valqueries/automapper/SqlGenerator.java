@@ -4,6 +4,7 @@ import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.token.Token;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -340,6 +341,46 @@ public abstract class AutoMapperBaseTests {
 				.delete();
 
 		assertEquals(0, doorRepository.query().count());
+	}
+
+	@Test
+	public void saveMultiple() {
+		List<Car> models = new ArrayList<>();
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		models.add(model);
+		Car model2 = factory.get(Car.class);
+		model2.setId(UUID.randomUUID());
+		model2.setTitle("Muh");
+		model2.setBrand(Brand.Porsche);
+		model2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		models.add(model2);
+
+		carRepository.obtainInTransaction(tx -> {
+			carRepository.save(tx, models);
+			return null;
+		});
+
+		List<Car> actual = carRepository.query().eq(Car::getBrand, Brand.Porsche).execute().collect(Collectors.toList());
+		assertEquals(2, actual.size());
+		assertEquals("Muh", actual.get(0).getTitle());
+		assertEquals("Muh", actual.get(1).getTitle());
+
+		model.setTitle("Muh2");
+		model2.setTitle("Muh2");
+
+		carRepository.obtainInTransaction(tx -> {
+			carRepository.save(tx, models);
+			return null;
+		});
+
+		actual = carRepository.query().eq(Car::getBrand, Brand.Porsche).execute().collect(Collectors.toList());
+		assertEquals(2, actual.size());
+		assertEquals("Muh2", actual.get(0).getTitle());
+		assertEquals("Muh2", actual.get(1).getTitle());
 	}
 
 }

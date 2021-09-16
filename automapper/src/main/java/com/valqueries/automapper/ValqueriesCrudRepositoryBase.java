@@ -21,8 +21,10 @@ import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 import io.ran.token.Token;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRepository<T, K> {
@@ -103,6 +105,17 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		String sql = "INSERT INTO "+getTableName()+" SET "+columnizer.getSql();
 		if (!columnizer.getSqlWithoutKey().isEmpty()) {
 			sql += " on duplicate key update "+columnizer.getSqlWithoutKey();
+		}
+		return getUpdateResult(tx.update(sql, columnizer));
+	}
+
+	@Override
+	public CrudUpdateResult save(ITransactionContext tx, Collection<T> ts) {
+		CompoundColumnizer<T> columnizer = new CompoundColumnizer<T>(genericFactory, mappingHelper,ts);
+		String sql = "INSERT INTO "+getTableName()+" ("+columnizer.getColumns().stream().map(s -> "`"+s+"`").collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
+
+		if (!columnizer.getColumnsWithoutKey().isEmpty()) {
+			sql += " on duplicate key update "+columnizer.getColumnsWithoutKey().stream().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
 		}
 		return getUpdateResult(tx.update(sql, columnizer));
 	}
