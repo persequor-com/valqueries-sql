@@ -135,11 +135,11 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 
 	@Override
 	public ValqueriesQueryImpl<T> query() {
-		return new ValqueriesQueryImpl<T>(database.getOrm(), modelType, genericFactory);
+		return new ValqueriesQueryImpl<T>(database.getOrm(), modelType, genericFactory, sqlNameFormatter);
 	}
 
 	public ValqueriesQueryImpl<T> query(ITransactionContext tx) {
-		return new ValqueriesQueryImpl<T>(tx, modelType, genericFactory);
+		return new ValqueriesQueryImpl<T>(tx, modelType, genericFactory, sqlNameFormatter);
 	}
 
 	@Override

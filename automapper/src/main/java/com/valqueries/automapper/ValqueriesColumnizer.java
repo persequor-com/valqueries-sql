@@ -46,7 +46,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	}
 
 	protected String transformKey(Token key) {
-		return sqlNameFormatter.column(key);
+		return key.snake_case();
 	}
 
 	@Override

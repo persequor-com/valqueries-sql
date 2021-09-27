@@ -38,12 +38,14 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	private GenericFactory genericFactory;
 	private Integer limit = null;
 	private int offset = 0;
+	private SqlNameFormatter sqlNameFormatter;
 
-	public ValqueriesQueryImpl(ITransactionContext transactionContext, Class<T> modelType, GenericFactory genericFactory) {
+	public ValqueriesQueryImpl(ITransactionContext transactionContext, Class<T> modelType, GenericFactory genericFactory, SqlNameFormatter sqlNameFormatter) {
 		super(modelType, genericFactory);
 		this.transactionContext = transactionContext;
 		this.modelType = modelType;
 		this.genericFactory = genericFactory;
+		this.sqlNameFormatter = sqlNameFormatter;
 	}
 
 	@Override
@@ -92,7 +94,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				((ValqueriesQuery<X>)q).subQuery(relation.getVia().get(1), (Consumer) consumer);
 			});
 		}
-		ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory);
+		ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory, sqlNameFormatter);
 		otherQuery.tableAlias = "sub"+(++subQueryNum);
 		consumer.accept((Z) otherQuery);
 		elements.add(new RelationSubQueryElement(tableAlias, otherQuery.tableAlias, ++subQueryNum, relation, otherQuery));
@@ -160,13 +162,13 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public <X extends Comparable<X>> ValqueriesQuery<T> sortAscending(Property<X> property) {
-		sortElements.add(new SortElement(this, property, true));
+		sortElements.add(new SortElement(this, property, true, sqlNameFormatter));
 		return this;
 	}
 
 	@Override
 	public <X extends Comparable<X>> ValqueriesQuery<T> sortDescending(Property<X> property) {
-		sortElements.add(new SortElement(this, property, false));
+		sortElements.add(new SortElement(this, property, false, sqlNameFormatter));
 		return null;
 	}
 
@@ -422,16 +424,18 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		private final ValqueriesQueryImpl<T> query;
 		private final Property<?> property;
 		private boolean ascending;
+		private SqlNameFormatter sqlNameFormatter;
 
-		public SortElement(ValqueriesQueryImpl<T> query, Property<?> property, boolean ascending) {
+		public SortElement(ValqueriesQueryImpl<T> query, Property<?> property, boolean ascending, SqlNameFormatter sqlNameFormatter) {
 			this.query = query;
 			this.property = property;
 			this.ascending = ascending;
+			this.sqlNameFormatter = sqlNameFormatter;
 		}
 
 		@Override
 		public String queryString() {
-			return property.getToken().snake_case()+(ascending ? " ASC" : " DESC");
+			return sqlNameFormatter.column(property.getToken())+(ascending ? " ASC" : " DESC");
 		}
 
 		@Override
