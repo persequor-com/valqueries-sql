@@ -25,24 +25,28 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	private final List<Consumer<IStatement>> statements = new ArrayList<>();
 	private final List<String> sqlStatements = new ArrayList<>();
 	private final List<String> sqlWithoutKey = new ArrayList<>();
+	protected SqlNameFormatter sqlNameFormatter;
 
-	public ValqueriesColumnizer(GenericFactory factory, MappingHelper mappingHelper, T t) {
+	public ValqueriesColumnizer(GenericFactory factory, MappingHelper mappingHelper, T t, SqlNameFormatter columnFormatter) {
+		this.sqlNameFormatter = columnFormatter;
 		mappingHelper.columnize(t, this);
 	}
 
 	protected ValqueriesColumnizer() {}
 
-	protected String transformKey(Token key) {
-		return key.snake_case();
-	}
+
 
 	protected void add(Token key, Consumer<IStatement> consumer) {
-		String sql = "`"+key.snake_case()+"` = :"+key.snake_case();
+		String sql = "`"+transformKey(key)+"` = :"+key.snake_case();
 		sqlStatements.add(sql);
 		if (!key.equals(Token.of("id"))) {
 			sqlWithoutKey.add(sql);
 		}
 		statements.add(consumer);
+	}
+
+	protected String transformKey(Token key) {
+		return sqlNameFormatter.column(key);
 	}
 
 	@Override

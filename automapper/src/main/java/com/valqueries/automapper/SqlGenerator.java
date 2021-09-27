@@ -4,7 +4,7 @@ import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.token.Token;
 
-import java.math.BigDecimal;
+import javax.inject.Inject;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,15 +13,22 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class SqlGenerator {
+	private SqlNameFormatter sqlNameFormatter;
+
+	@Inject
+	public SqlGenerator(SqlNameFormatter sqlNameFormatter) {
+		this.sqlNameFormatter = sqlNameFormatter;
+	}
+
 	public String getTableName(TypeDescriber<?> typeDescriber) {
-		return Token.CamelCase(typeDescriber.clazz().getSimpleName()).snake_case();
+		return sqlNameFormatter.table(Token.CamelCase(typeDescriber.clazz().getSimpleName()));
 	}
 
 	public String generate(TypeDescriber<?> typeDescriber) {
 		return "CREATE TABLE IF NOT EXISTS "+ getTableName(typeDescriber)+" ("+typeDescriber.fields().stream().map(property -> {
-			return "`"+property.getToken().snake_case()+ "` "+getSqlType(property.getType().clazz, property);
+			return "`"+sqlNameFormatter.column(property.getToken())+ "` "+getSqlType(property.getType().clazz, property);
 		}).collect(Collectors.joining(", "))+", PRIMARY KEY("+typeDescriber.primaryKeys().stream().map(property -> {
-			return "`"+property.getToken().snake_case()+"`";
+			return "`"+sqlNameFormatter.column(property.getToken())+"`";
 		}).collect(Collectors.joining(", "))+")"+getIndexes(typeDescriber)+");";
 	}
 
@@ -30,7 +37,7 @@ public class SqlGenerator {
 		for (Property property : typeDescriber.fields()) {
 			Fulltext fullText = property.getAnnotations().get(Fulltext.class);
 			if (fullText != null) {
-				indexes.add("FULLTEXT(`"+property.getToken().snake_case()+"`)");
+				indexes.add("FULLTEXT(`"+sqlNameFormatter.column(property.getToken())+"`)");
 			}
 		}
 		if (indexes.isEmpty()) {

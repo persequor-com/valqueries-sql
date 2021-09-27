@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +50,7 @@ public abstract class AutoMapperBaseTests {
 	@Before
 	public void setupBase() {
 		setInjector();
-		sqlGenerator = new SqlGenerator();
+		sqlGenerator = new SqlGenerator(new SqlNameFormatter());
 		carDescriber = TypeDescriberImpl.getTypeDescriber(Car.class);
 		doorDescriber = TypeDescriberImpl.getTypeDescriber(Door.class);
 		engineDescriber = TypeDescriberImpl.getTypeDescriber(Engine.class);

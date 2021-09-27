@@ -16,7 +16,6 @@ import io.ran.CompoundKey;
 import io.ran.GenericFactory;
 import io.ran.Mapping;
 import io.ran.MappingHelper;
-import io.ran.Resolver;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 import io.ran.token.Token;
@@ -34,8 +33,9 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 	protected Class<K> keyType;
 	protected TypeDescriber<T> typeDescriber;
 	protected MappingHelper mappingHelper;
+	private SqlNameFormatter sqlNameFormatter;
 
-	public ValqueriesCrudRepositoryBase(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper) {
+	public ValqueriesCrudRepositoryBase(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
 		this.database = database;
 		this.genericFactory = genericFactory;
 		this.modelType = modelType;
@@ -43,6 +43,7 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		this.keyType = keyType;
 		this.typeDescriber = TypeDescriberImpl.getTypeDescriber(modelType);
 		this.mappingHelper = mappingHelper;
+		this.sqlNameFormatter = sqlNameFormatter;
 	}
 
 	private void setKey(IStatement b, K id) {
@@ -101,7 +102,7 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 	}
 
 	public CrudUpdateResult save(ITransactionContext tx, T t) {
-		ValqueriesColumnizer<T> columnizer = new ValqueriesColumnizer<T>(genericFactory, mappingHelper,t);
+		ValqueriesColumnizer<T> columnizer = new ValqueriesColumnizer<T>(genericFactory, mappingHelper,t, sqlNameFormatter);
 		String sql = "INSERT INTO "+getTableName()+" SET "+columnizer.getSql();
 		if (!columnizer.getSqlWithoutKey().isEmpty()) {
 			sql += " on duplicate key update "+columnizer.getSqlWithoutKey();
@@ -114,7 +115,7 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		if (ts.isEmpty()) {
 			return () -> 0;
 		}
-		CompoundColumnizer<T> columnizer = new CompoundColumnizer<T>(genericFactory, mappingHelper,ts);
+		CompoundColumnizer<T> columnizer = new CompoundColumnizer<T>(genericFactory, mappingHelper,ts, sqlNameFormatter);
 		String sql = "INSERT INTO "+getTableName()+" ("+columnizer.getColumns().stream().map(s -> "`"+s+"`").collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
 
 		if (!columnizer.getColumnsWithoutKey().isEmpty()) {
