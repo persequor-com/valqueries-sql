@@ -7,8 +7,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AutoMapperTestDoubleTest extends AutoMapperBaseTests {
-
-
 	@Override
 	protected void setInjector() {
 		GuiceModule module = new TestDoubleGuiceModule();

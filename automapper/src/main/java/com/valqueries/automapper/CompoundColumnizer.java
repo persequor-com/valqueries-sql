@@ -28,7 +28,8 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 	private Token.TokenList tokens;
 	private int index = 0;
 
-	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> ts) {
+	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> ts, SqlNameFormatter sqlNameFormatter) {
+		this.sqlNameFormatter = sqlNameFormatter;
 
 		for (T t : ts) {
 			if (tokens == null) {
@@ -44,15 +45,10 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 			valueTokensCurrent = new ArrayList<>();
 			statements.add(currentStatements);
 			currentStatements = new ArrayList<>();
+
 		}
 		index = 0;
 	}
-
-	@Override
-	protected String transformKey(Token key) {
-		return super.transformKey(key)+"_"+index;
-	}
-
 	@Override
 	public void set(IStatement statement) {
 		for (List<Consumer<IStatement>> ss : statements) {
@@ -63,13 +59,17 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		}
 	}
 
+	protected String transformFieldPlaceholder(Token key) {
+		return key.snake_case()+"_"+index;
+	}
+
 	protected void add(Token key, Consumer<IStatement> consumer) {
 		if (index == 0) {
-			columns.add(key.snake_case());
+			columns.add(transformKey(key));
 		}
-		valueTokensCurrent.add(transformKey(key));
+		valueTokensCurrent.add(transformFieldPlaceholder(key));
 		if (!tokens.contains(key)) {
-			columnsWithoutKey.add(key.snake_case());
+			columnsWithoutKey.add(transformKey(key));
 		}
 		currentStatements.add(consumer);
 	}

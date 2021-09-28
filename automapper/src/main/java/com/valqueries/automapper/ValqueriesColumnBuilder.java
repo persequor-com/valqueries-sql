@@ -15,9 +15,11 @@ import java.util.stream.Collectors;
 public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	private List<Token> columns = new ArrayList<>();
 	private String prefix;
+	private SqlNameFormatter sqlNameFormatter;
 
-	public ValqueriesColumnBuilder(String prefix) {
+	public ValqueriesColumnBuilder(String prefix, SqlNameFormatter sqlNameFormatter) {
 		this.prefix = prefix;
+		this.sqlNameFormatter = sqlNameFormatter;
 	}
 
 	@Override
@@ -111,6 +113,6 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	}
 
 	public String getSql() {
-		return columns.stream().map(t -> prefix+"."+t.snake_case()+" "+prefix+"_"+t.snake_case()).collect(Collectors.joining(", "));
+		return columns.stream().map(t -> prefix+"."+sqlNameFormatter.column(t)+" "+prefix+"_"+sqlNameFormatter.column(t)).collect(Collectors.joining(", "));
 	}
 }

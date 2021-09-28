@@ -9,6 +9,27 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
+import java.io.PrintWriter;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Executor;
+import java.util.logging.Logger;
 
 public class DataSourceProvider extends HikariDataSource {
 	private static DataSourceProvider INSTANCE;
@@ -21,7 +42,7 @@ public class DataSourceProvider extends HikariDataSource {
 		config.setUsername(System.getProperty("db.user", "root"));
 		config.setPassword(System.getProperty("db.password", "s3cr3t"));
 		config.setMinimumIdle(10);
-		config.setMaximumPoolSize(2);
+		config.setMaximumPoolSize(1);
 
 		dataSource = new HikariDataSource(config);
 	}
