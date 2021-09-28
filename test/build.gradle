@@ -1,4 +1,2 @@
 dependencies {
-    compile group: 'org.mockito', name: 'mockito-core', version: '3.6.28'
-
 }
