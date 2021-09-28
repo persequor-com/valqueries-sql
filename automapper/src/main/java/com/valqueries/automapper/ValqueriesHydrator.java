@@ -24,19 +24,22 @@ import java.util.stream.Collectors;
 public class ValqueriesHydrator implements ObjectMapHydrator {
 	private String prefix;
 	private OrmResultSet row;
+	private SqlNameFormatter sqlNameFormatter;
 
-	public ValqueriesHydrator(OrmResultSet row) {
+	public ValqueriesHydrator(OrmResultSet row, SqlNameFormatter sqlNameFormatter) {
+		this.sqlNameFormatter = sqlNameFormatter;
 		this.prefix = "";
 		this.row = row;
 	}
 
-	public ValqueriesHydrator(String prefix, OrmResultSet row) {
+	public ValqueriesHydrator(String prefix, OrmResultSet row, SqlNameFormatter sqlNameFormatter) {
 		this.prefix = prefix;
 		this.row = row;
+		this.sqlNameFormatter = sqlNameFormatter;
 	}
 
 	private String transformKey(Token key) {
-		return prefix+key.snake_case();
+		return prefix+sqlNameFormatter.column(key);
 	}
 
 	@Override

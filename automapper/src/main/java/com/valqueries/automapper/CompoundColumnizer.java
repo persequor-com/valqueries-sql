@@ -49,11 +49,6 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		}
 		index = 0;
 	}
-
-	protected String transformKey(Token key) {
-		return super.transformKey(key)+"_"+index;
-	}
-
 	@Override
 	public void set(IStatement statement) {
 		for (List<Consumer<IStatement>> ss : statements) {
@@ -64,13 +59,17 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		}
 	}
 
+	protected String transformFieldPlaceholder(Token key) {
+		return key.snake_case()+"_"+index;
+	}
+
 	protected void add(Token key, Consumer<IStatement> consumer) {
 		if (index == 0) {
-			columns.add(super.transformKey(key));
+			columns.add(transformKey(key));
 		}
-		valueTokensCurrent.add(transformKey(key));
+		valueTokensCurrent.add(transformFieldPlaceholder(key));
 		if (!tokens.contains(key)) {
-			columnsWithoutKey.add(super.transformKey(key));
+			columnsWithoutKey.add(transformKey(key));
 		}
 		currentStatements.add(consumer);
 	}

@@ -51,12 +51,12 @@ public class ValqueriesResolver implements DbResolver<Valqueries> {
 		return database.obtainInTransaction(t -> {
 			TypeDescriber<FROM> fromTypeDescriber = (TypeDescriber<FROM>)TypeDescriberImpl.getTypeDescriber(relationDescriber.getFromClass().clazz);
 
-			String where = relationDescriber.getToKeys().stream().map(k -> k.getToken().snake_case()+" = :"+k.getToken().snake_case()).collect(Collectors.joining(" AND "));
+			String where = relationDescriber.getToKeys().stream().map(k -> sqlNameFormatter.column(k.getToken())+" = :"+k.getToken().snake_case()).collect(Collectors.joining(" AND "));
 
-			return (Collection<TO>) t.query("select * from "+ Token.CamelCase(relationDescriber.getToClass().getSimpleName()).snake_case()+" WHERE "+where, new PropertyGetter<FROM>(relationDescriber.getFromKeys(), relationDescriber.getToKeys(),from, fromTypeDescriber, mappingHelper), row -> {
+			return (Collection<TO>) t.query("select * from "+ sqlNameFormatter.table(Token.CamelCase(relationDescriber.getToClass().getSimpleName()))+" WHERE "+where, new PropertyGetter<FROM>(relationDescriber.getFromKeys(), relationDescriber.getToKeys(),from, fromTypeDescriber, mappingHelper), row -> {
 				TO to = (TO) genericFactory.get(relationDescriber.getToClass().clazz);
 
-				((Mapping)to).hydrate(to,new ValqueriesHydrator(row));
+				((Mapping)to).hydrate(to,new ValqueriesHydrator(row, sqlNameFormatter));
 				return to;
 			});
 		});

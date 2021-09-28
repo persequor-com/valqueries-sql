@@ -1,12 +1,15 @@
 package com.valqueries.automapper;
 
+import com.google.inject.Binder;
 import com.google.inject.Guice;
+import com.google.inject.Module;
 import com.valqueries.DataSourceProvider;
 import com.valqueries.Database;
 import com.valqueries.IOrm;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.Resolver;
+import io.ran.token.Token;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,17 +26,27 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @RunWith(MockitoJUnitRunner.class)
-public class AutoMapperIT extends AutoMapperBaseTests {
+public class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
+
+
 	@Override
 	protected void setInjector() {
 		database = new Database(DataSourceProvider.get());
 		GuiceModule module = new GuiceModule(database, ValqueriesResolver.class);
-		injector = Guice.createInjector(module);
+		injector = Guice.createInjector(module, binder -> binder.bind(SqlNameFormatter.class).toProvider(() -> new SqlNameFormatter() {
+			@Override
+			public String table(Token key) {
+				return "alt_"+key.CamelBack();
+			}
+
+			@Override
+			public String column(Token key) {
+				return key.CamelBack();
+			}
+		}));
 		factory = injector.getInstance(GenericFactory.class);
 	}
 

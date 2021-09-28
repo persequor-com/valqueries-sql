@@ -65,7 +65,7 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 
 	protected T hydrate(OrmResultSet row) {
 		T t = genericFactory.get(modelType);
-		((Mapping)t).hydrate(new ValqueriesHydrator(row));
+		((Mapping)t).hydrate(new ValqueriesHydrator(row, sqlNameFormatter));
 		return t;
 	}
 
@@ -151,8 +151,8 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		return getTableName(Clazz.of(modelType));
 	}
 
-	static String getTableName(Clazz<?> modeltype) {
-		return Token.CamelCase(modeltype.clazz.getSimpleName()).snake_case();
+	String getTableName(Clazz<?> modeltype) {
+		return sqlNameFormatter.table(Token.CamelCase(modeltype.clazz.getSimpleName()));
 	}
 
 

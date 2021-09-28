@@ -1,10 +1,12 @@
 package com.valqueries.automapper;
 
 import com.google.inject.Injector;
+import com.valqueries.Database;
 import io.ran.GenericFactory;
 import io.ran.Resolver;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -27,6 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public abstract class AutoMapperBaseTests {
+	static Database database;
 	static Injector injector;
 	static GenericFactory factory;
 	static TypeDescriber<Car> carDescriber;
@@ -50,7 +53,7 @@ public abstract class AutoMapperBaseTests {
 	@Before
 	public void setupBase() {
 		setInjector();
-		sqlGenerator = new SqlGenerator(new SqlNameFormatter());
+		sqlGenerator = injector.getInstance(SqlGenerator.class);
 		carDescriber = TypeDescriberImpl.getTypeDescriber(Car.class);
 		doorDescriber = TypeDescriberImpl.getTypeDescriber(Door.class);
 		engineDescriber = TypeDescriberImpl.getTypeDescriber(Engine.class);
@@ -67,6 +70,11 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	protected abstract void setInjector();
+
+	@After
+	public void resetDb() {
+
+	}
 
 	@Test
 	public void happy() {
@@ -265,7 +273,7 @@ public abstract class AutoMapperBaseTests {
 				.limit(1,2)
 				.execute().collect(Collectors.toList());
 		assertEquals(2, cars.size());
-		assertEquals("Muh 3", cars.stream().findFirst().get().getTitle());
+		assertEquals("Muhs: "+cars.stream().map(c -> c.getTitle()).collect(Collectors.joining(", ")),"Muh 3", cars.stream().findFirst().get().getTitle());
 		assertEquals("Muh 2", cars.stream().skip(1).findFirst().get().getTitle());
 	}
 

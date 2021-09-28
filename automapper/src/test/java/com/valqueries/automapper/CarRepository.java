@@ -17,9 +17,6 @@ public class CarRepository extends ValqueriesCrudRepositoryImpl<Car, UUID> {
 	}
 
 	public Collection<Car> getAllEager() {
-		query().subQuery(Car::getExhaust, q -> {
-			q.eq(Exhaust::getBrand, Brand.Hyundai);
-		});
 		return query().withEager(Car::getDoors).execute().collect(Collectors.toList());
 	}
 }

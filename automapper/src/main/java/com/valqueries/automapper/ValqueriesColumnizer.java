@@ -46,27 +46,31 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	}
 
 	protected String transformKey(Token key) {
+		return sqlNameFormatter.column(key);
+	}
+
+	protected String transformFieldPlaceholder(Token key) {
 		return key.snake_case();
 	}
 
 	@Override
 	public void set(Token key, String value) {
-		add(key, s -> s.set(transformKey(key), value));
+		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
 	public void set(Token token, Character character) {
-		add(token, s -> s.set(transformKey(token), character.toString()));
+		add(token, s -> s.set(transformFieldPlaceholder(token), character.toString()));
 	}
 
 	@Override
 	public void set(Token key, ZonedDateTime value) {
-		add(key, s -> s.set(transformKey(key), value));
+		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
 	public void set(Token key, Integer value) {
-		add(key, s -> s.set(transformKey(key), value));
+		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
@@ -76,47 +80,47 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 
 	@Override
 	public void set(Token key, Long value) {
-		statements.add(s -> s.set(transformKey(key), value));
+		statements.add(s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
 	public void set(Token key, UUID value) {
-		add(key, s -> s.set(transformKey(key), value));
+		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
 	public void set(Token key, Double value) {
-		add(key, s -> s.set(transformKey(key), value));
+		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
 	public void set(Token key, BigDecimal value) {
-		add(key, s -> s.set(transformKey(key), value.toString()));
+		add(key, s -> s.set(transformFieldPlaceholder(key), value.toString()));
 	}
 
 	@Override
 	public void set(Token key, Float value) {
-		add(key, s -> s.set(transformKey(key), value));
+		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
 	public void set(Token token, Boolean value) {
-		add(token, s -> s.set(transformKey(token), value));
+		add(token, s -> s.set(transformFieldPlaceholder(token), value));
 	}
 
 	@Override
 	public void set(Token token, Byte aByte) {
-		add(token, s -> s.set(transformKey(token), aByte.intValue()));
+		add(token, s -> s.set(transformFieldPlaceholder(token), aByte.intValue()));
 	}
 
 	@Override
 	public void set(Token token, Enum<?> anEnum) {
-		add(token, s -> s.set(transformKey(token), anEnum));
+		add(token, s -> s.set(transformFieldPlaceholder(token), anEnum));
 	}
 
 	@Override
 	public void set(Token token, Collection<?> list) {
-		add(token, s -> s.set(transformKey(token), list == null ? null : list.stream().map(Object::toString).collect(Collectors.joining(","))));
+		add(token, s -> s.set(transformFieldPlaceholder(token), list == null ? null : list.stream().map(Object::toString).collect(Collectors.joining(","))));
 	}
 
 	@Override
