@@ -10,7 +10,7 @@ public class Door {
 	private UUID id;
 	private String title;
 	@Relation()
-	private transient Car car;
+	private Car car;
 	private UUID carId;
 
 	public UUID getId() {

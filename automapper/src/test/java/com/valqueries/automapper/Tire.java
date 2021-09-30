@@ -15,7 +15,7 @@ public class Tire {
 	@PrimaryKey
 	private UUID carId;
 	@Relation
-	private transient Car car;
+	private Car car;
 
 	public UUID getCarId() {
 		return carId;

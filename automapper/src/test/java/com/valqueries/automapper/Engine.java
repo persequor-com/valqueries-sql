@@ -10,7 +10,7 @@ import java.util.UUID;
 public class Engine {
 	private UUID id;
 	@Relation(collectionElementType = Car.class, via = EngineCar.class)
-	private transient List<Car> cars;
+	private List<Car> cars;
 
 	public UUID getId() {
 		return id;

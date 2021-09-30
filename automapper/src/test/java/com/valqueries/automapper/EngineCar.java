@@ -18,9 +18,9 @@ public class EngineCar {
 	@PrimaryKey
 	private UUID engineId;
 	@Relation
-	private transient Car car;
+	private Car car;
 	@Relation
-	private transient Engine engine;
+	private Engine engine;
 
 	public UUID getCarId() {
 		return carId;

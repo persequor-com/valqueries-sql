@@ -24,9 +24,9 @@ public class Car {
 	private UUID exhaustId;
 	private List<Integer> numbers = new ArrayList<>();
 	@Relation(collectionElementType = Door.class)
-	private transient List<Door> doors;
+	private List<Door> doors;
 	@Relation
-	private transient Exhaust exhaust;
+	private Exhaust exhaust;
 
 	public UUID getId() {
 		return id;
