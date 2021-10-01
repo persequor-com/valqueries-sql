@@ -9,7 +9,6 @@ import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import io.ran.Mapping;
 import io.ran.RelationDescriber;
-import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
 import java.util.Collection;
@@ -70,13 +69,13 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	@Override
 	public CrudUpdateResult saveIncludingRelations(T t) {
 		return obtainInTransaction(tx -> {
-			final Incrementer changed = new Incrementer();
+			final ChangeMonitor changed = new ChangeMonitor();
 			saveIncludingRelationInternal(changed, tx, t, modelType);
-			return changed::value;
+			return changed::getNumberOfChangedRows;
 		});
 	}
 
-	private <X> void saveIncludingRelationsInternal(Incrementer changed, ITransactionContext tx, Collection<X> ts, Class<X> xClass) {
+	private <X> void saveIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<X> ts, Class<X> xClass) {
 		Collection<X> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
 		changed.increment(notAlreadySaved, saveOther(tx, notAlreadySaved, xClass).affectedRows());
 		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
@@ -86,7 +85,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		});
 	}
 
-	private <X> void saveIncludingRelationInternal(Incrementer changed, ITransactionContext tx, X t, Class<X> xClass) {
+	private <X> void saveIncludingRelationInternal(ChangeMonitor changed, ITransactionContext tx, X t, Class<X> xClass) {
 		if (changed.isAlreadySaved(t)) {
 			return;
 		}
@@ -97,7 +96,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		});
 	}
 
-	private void internalSaveRelation(Incrementer changed, ITransactionContext tx, Object t, RelationDescriber relationDescriber) {
+	private void internalSaveRelation(ChangeMonitor changed, ITransactionContext tx, Object t, RelationDescriber relationDescriber) {
 		if (!relationDescriber.getRelationAnnotation().autoSave()) {
 			return;
 		}

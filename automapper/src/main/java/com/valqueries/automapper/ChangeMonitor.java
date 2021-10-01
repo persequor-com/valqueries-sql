@@ -1,21 +1,20 @@
 package com.valqueries.automapper;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Incrementer {
-	int i = 0;
+public class ChangeMonitor {
+	int changedRows = 0;
 	Set<Integer> alreadySaved = new HashSet<>();
 
-	public int increment(Object object, int by) {
+	public int increment(Object object, int changedRows) {
 		int identity = System.identityHashCode(object);
 		alreadySaved.add(identity);
-		return i += by;
+		return this.changedRows += changedRows;
 	}
 
-	public int  value() {
-		return i;
+	public int getNumberOfChangedRows() {
+		return changedRows;
 	}
 
 	public boolean isAlreadySaved(Object t) {
