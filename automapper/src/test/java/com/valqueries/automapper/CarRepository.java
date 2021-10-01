@@ -1,12 +1,14 @@
 package com.valqueries.automapper;
 
 import com.valqueries.Database;
+import com.valqueries.ITransactionContext;
 import io.ran.GenericFactory;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 

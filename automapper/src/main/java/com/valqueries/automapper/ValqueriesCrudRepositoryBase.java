@@ -101,27 +101,47 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		});
 	}
 
-	public CrudUpdateResult save(ITransactionContext tx, T t) {
-		ValqueriesColumnizer<T> columnizer = new ValqueriesColumnizer<T>(genericFactory, mappingHelper,t, sqlNameFormatter);
-		String sql = "INSERT INTO "+getTableName()+" SET "+columnizer.getSql();
+
+
+	private <O> CrudUpdateResult saveInternal(ITransactionContext tx, O t, Class<O> oClass) {
+		ValqueriesColumnizer<O> columnizer = new ValqueriesColumnizer<O>(genericFactory, mappingHelper,t, sqlNameFormatter);
+		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" SET "+columnizer.getSql();
 		if (!columnizer.getSqlWithoutKey().isEmpty()) {
 			sql += " on duplicate key update "+columnizer.getSqlWithoutKey();
 		}
 		return getUpdateResult(tx.update(sql, columnizer));
 	}
 
-	@Override
-	public CrudUpdateResult save(ITransactionContext tx, Collection<T> ts) {
+	private <O> CrudUpdateResult saveInternal(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
 		if (ts.isEmpty()) {
 			return () -> 0;
 		}
-		CompoundColumnizer<T> columnizer = new CompoundColumnizer<T>(genericFactory, mappingHelper,ts, sqlNameFormatter);
-		String sql = "INSERT INTO "+getTableName()+" ("+columnizer.getColumns().stream().map(s -> "`"+s+"`").collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
+		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper,ts, sqlNameFormatter);
+		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" ("+columnizer.getColumns().stream().map(s -> "`"+s+"`").collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
 
 		if (!columnizer.getColumnsWithoutKey().isEmpty()) {
 			sql += " on duplicate key update "+columnizer.getColumnsWithoutKey().stream().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
 		}
 		return getUpdateResult(tx.update(sql, columnizer));
+	}
+
+	public CrudUpdateResult save(ITransactionContext tx, T t) {
+		return saveInternal(tx, t, modelType);
+	}
+
+	@Override
+	public CrudUpdateResult save(ITransactionContext tx, Collection<T> ts) {
+		return saveInternal(tx, ts, modelType);
+	}
+
+	@Override
+	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
+		return saveInternal(tx, t, oClass);
+	}
+
+	@Override
+	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
+		return saveInternal(tx, ts, oClass);
 	}
 
 	private CrudUpdateResult getUpdateResult(UpdateResult update) {
@@ -151,7 +171,7 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		return getTableName(Clazz.of(modelType));
 	}
 
-	String getTableName(Clazz<?> modeltype) {
+	String getTableName(Clazz<? extends Object> modeltype) {
 		return sqlNameFormatter.table(Token.CamelCase(modeltype.clazz.getSimpleName()));
 	}
 

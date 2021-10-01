@@ -6,6 +6,7 @@ import io.ran.CompoundKey;
 import io.ran.DbResolver;
 import io.ran.GenericFactory;
 import io.ran.KeySet;
+import io.ran.Mapper;
 import io.ran.Mapping;
 import io.ran.MappingHelper;
 import io.ran.Property;
@@ -69,27 +70,35 @@ public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesB
 		};
 	}
 
-	@Override
-	public CrudUpdateResult save(T t) {
-		K key = getKey(t);
-		T existing = getStore(modelType).put((Object) key, t);
+	private <Z> CrudUpdateResult save(Z o, Class<Z> zClass) {
+		Object key = getGenericKey(o);
+		Z existing = store.getStore(zClass).put((Object) key, o);
 		return new CrudUpdateResult() {
 			@Override
 			public int affectedRows() {
-				return existing != null && !existing.equals(t) ? 1 : 0;
+				return existing != null && !existing.equals(o) ? 1 : 0;
 			}
 		};
 	}
 
-	private K getKey(T t) {
-		K key;
+	@Override
+	public CrudUpdateResult save(T t) {
+		return save(t, modelType);
+	}
+
+	private <T2, K2> K2 getGenericKey(T2 t) {
+		K2 key;
 		CompoundKey k = getCompoundKeyFor(t);
 		if (CompoundKey.class.isAssignableFrom(keyType)) {
-			key = (K)k;
+			key = (K2)k;
 		} else {
-			key = (K)((Property.PropertyValueList<?>)k.getValues()).get(0).getValue();
+			key = (K2)((Property.PropertyValueList<?>)k.getValues()).get(0).getValue();
 		}
 		return key;
+	}
+
+	private K getKey(T t) {
+		return getGenericKey(t);
 	}
 
 	private CompoundKey getCompoundKeyFor(Object t) {
@@ -108,13 +117,26 @@ public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesB
 	@Override
 	public CrudUpdateResult save(ITransactionContext tx, Collection<T> t) {
 		t.forEach(this::save);
-		return () -> t.size();
+		return t::size;
 	}
+
+	@Override
+	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
+		return this.save(t, oClass);
+	}
+
+	@Override
+	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
+		ts.forEach(t -> this.saveOther(tx, t, oClass));
+		return ts::size;
+	}
+
 
 	@Override
 	public ValqueriesQuery<T> query(ITransactionContext tx) {
 		return query();
 	}
+
 
 	@Override
 	public <X> X obtainInTransaction(ITransactionWithResult<X> tx) {

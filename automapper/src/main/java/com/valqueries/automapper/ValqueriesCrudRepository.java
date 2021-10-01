@@ -11,5 +11,10 @@ import java.util.function.Consumer;
 public interface ValqueriesCrudRepository<T, K> extends CrudRepository<T, K> {
 	CrudUpdateResult save(ITransactionContext tx, T t);
 	CrudUpdateResult save(ITransactionContext tx, Collection<T> t);
+	<O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass);
+	<O> CrudUpdateResult saveOther(ITransactionContext tx, Collection<O> t, Class<O> oClass);
+
+	CrudUpdateResult saveIncludingRelations(T t);
+
 	<X> X obtainInTransaction(ITransactionWithResult<X> tx);
 }

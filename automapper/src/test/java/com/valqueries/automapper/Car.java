@@ -23,7 +23,7 @@ public class Car {
 	private ZonedDateTime createdAt;
 	private UUID exhaustId;
 	private List<Integer> numbers = new ArrayList<>();
-	@Relation(collectionElementType = Door.class)
+	@Relation(collectionElementType = Door.class, autoSave = true)
 	private List<Door> doors;
 	@Relation
 	private Exhaust exhaust;

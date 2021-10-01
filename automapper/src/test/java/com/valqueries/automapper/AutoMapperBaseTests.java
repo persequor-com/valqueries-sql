@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -388,6 +389,40 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(2, actual.size());
 		assertEquals("Muh2", actual.get(0).getTitle());
 		assertEquals("Muh2", actual.get(1).getTitle());
+	}
+
+	@Test
+	public void saveIncludingRelations() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		Door door1 = factory.get(Door.class);
+		door1.setId(UUID.randomUUID());
+		door1.setTitle("Lazy as such");
+		door1.setCar(model);
+		model.getDoors().add(door1);
+
+		Door door2 = factory.get(Door.class);
+		door2.setId(UUID.randomUUID());
+		door2.setTitle("Lazy as well");
+		door2.setCar(model);
+		model.getDoors().add(door2);
+
+		Exhaust exhaust = factory.get(Exhaust.class);
+		exhaust.setBrand(Brand.Hyundai);
+		exhaust.setId(UUID.randomUUID());
+		model.setExhaust(exhaust);
+
+		carRepository.saveIncludingRelations(model);
+
+		Door actual1 = doorRepository.get(door1.getId()).orElseThrow(RuntimeException::new);
+		Door actual2 = doorRepository.get(door2.getId()).orElseThrow(RuntimeException::new);
+		assertEquals(door1.getId(), actual1.getId());
+		assertEquals(door2.getId(), actual2.getId());
+		// Since the exhaust relation is not marked as auto save, save including relations will not include it
+		Optional<Exhaust> actualExhaust = exhaustRepository.get(exhaust.getId());
+		assertFalse(actualExhaust.isPresent());
 	}
 
 }

@@ -7,18 +7,23 @@ package com.valqueries.automapper;
 
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
-import io.ran.CrudRepository;
-import io.ran.Resolver;
+import io.ran.Mapping;
+import io.ran.RelationDescriber;
+import io.ran.TypeDescriber;
+import io.ran.TypeDescriberImpl;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudRepository<T, K> {
 
 	private final ValqueriesBaseCrudRepository<T, K> baseRepo;
+	private Class<T> modelType;
 
 	public ValqueriesCrudRepositoryImpl(ValqueriesRepositoryFactory factory, Class<T> modelType, Class<K> keyType) {
+		this.modelType = modelType;
 		baseRepo = factory.get(modelType, keyType);
 	}
 	@Override
@@ -49,6 +54,63 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	@Override
 	public CrudUpdateResult save(ITransactionContext tx, Collection<T> t) {
 		return baseRepo.save(tx, t);
+	}
+
+	@Override
+	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
+		return baseRepo.saveOther(tx, t, oClass);
+	}
+
+	@Override
+	public <O> CrudUpdateResult saveOther(ITransactionContext tx, Collection<O> t, Class<O> oClass) {
+		return baseRepo.saveOthers(tx, t, oClass);
+	}
+
+
+	@Override
+	public CrudUpdateResult saveIncludingRelations(T t) {
+		return obtainInTransaction(tx -> {
+			final Incrementer changed = new Incrementer();
+			saveIncludingRelationInternal(changed, tx, t, modelType);
+			return changed::value;
+		});
+	}
+
+	private <X> void saveIncludingRelationsInternal(Incrementer changed, ITransactionContext tx, Collection<X> ts, Class<X> xClass) {
+		Collection<X> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
+		changed.increment(notAlreadySaved, saveOther(tx, notAlreadySaved, xClass).affectedRows());
+		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
+			for(X t : notAlreadySaved) {
+				internalSaveRelation(changed, tx, t, relationDescriber);
+			}
+		});
+	}
+
+	private <X> void saveIncludingRelationInternal(Incrementer changed, ITransactionContext tx, X t, Class<X> xClass) {
+		if (changed.isAlreadySaved(t)) {
+			return;
+		}
+		changed.increment(t, saveOther(tx, t, xClass).affectedRows());
+		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
+
+			internalSaveRelation(changed,tx, t, relationDescriber);
+		});
+	}
+
+	private void internalSaveRelation(Incrementer changed, ITransactionContext tx, Object t, RelationDescriber relationDescriber) {
+		if (!relationDescriber.getRelationAnnotation().autoSave()) {
+			return;
+		}
+		Mapping mapping = (Mapping)t;
+		Object relation = mapping._getRelation(relationDescriber);
+		if (relation != null) {
+			if (relationDescriber.getCollectionType() != null) {
+				Collection<Object> relations = (Collection<Object>) relation;
+				saveIncludingRelationsInternal(changed, tx, relations, (Class<Object>) relationDescriber.getToClass().clazz);
+			} else {
+				saveIncludingRelationInternal(changed, tx, relation, (Class<Object>) relationDescriber.getToClass().clazz);
+			}
+		}
 	}
 
 	protected ValqueriesQuery<T> query() {
