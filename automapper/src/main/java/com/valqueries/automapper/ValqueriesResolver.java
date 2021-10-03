@@ -31,19 +31,19 @@ public class ValqueriesResolver implements DbResolver<Valqueries> {
 
 	private <FROM, TO> ValqueriesQuery<TO> getQuery(ITransactionContext t, RelationDescriber relationDescriber, FROM from) {
 		if (relationDescriber.getVia() != null) {
-			ValqueriesQueryImpl query = new ValqueriesQueryImpl(t, relationDescriber.getToClass().clazz, genericFactory, sqlNameFormatter);
+			ValqueriesQueryImpl query = new ValqueriesQueryImpl(t, relationDescriber.getToClass().clazz, genericFactory, sqlNameFormatter,  mappingHelper);
 
 			PropertiesColumnizer columnizer = new PropertiesColumnizer(relationDescriber.getFromKeys().toProperties());
-			((Mapping) from).columnize(columnizer);
+			mappingHelper.columnize(from, columnizer);
 			Iterator<Property.PropertyValue> values = columnizer.getValues().iterator();
 			for (Property property : relationDescriber.getToKeys().toProperties()) {
 				query.eq(property.value(values.next().getValue()));
 			}
 			return query;
 		} else {
-			ValqueriesQueryImpl query = new ValqueriesQueryImpl(t, relationDescriber.getToClass().clazz, genericFactory, sqlNameFormatter);
+			ValqueriesQueryImpl query = new ValqueriesQueryImpl(t, relationDescriber.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper);
 			PropertiesColumnizer columnizer = new PropertiesColumnizer(relationDescriber.getFromKeys().toProperties());
-			((Mapping) from).columnize(columnizer);
+			mappingHelper.columnize(from, columnizer);
 			Iterator<Property.PropertyValue> values = columnizer.getValues().iterator();
 			for (Property property : relationDescriber.getToKeys().toProperties()) {
 				query.eq(property.value(values.next().getValue()));

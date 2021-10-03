@@ -108,7 +108,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		Mapping mapping = (Mapping)t;
 		Object relation = mapping._getRelation(relationDescriber);
 		if (relation != null) {
-			if (relationDescriber.getCollectionType() != null) {
+			if (relationDescriber.isCollectionRelation()) {
 				Collection<Object> relations = (Collection<Object>) relation;
 				saveIncludingRelationsInternal(changed, tx, relations, (Class<Object>) relationDescriber.getToClass().clazz);
 			} else {

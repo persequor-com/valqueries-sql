@@ -66,7 +66,7 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 
 	protected T hydrate(OrmResultSet row) {
 		T t = genericFactory.get(modelType);
-		((Mapping)t).hydrate(new ValqueriesHydrator(row, sqlNameFormatter));
+		mappingHelper.hydrate(t, new ValqueriesHydrator(row, sqlNameFormatter));
 		return t;
 	}
 
@@ -156,11 +156,11 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 
 	@Override
 	public ValqueriesQueryImpl<T> query() {
-		return new ValqueriesQueryImpl<T>(database.getOrm(), modelType, genericFactory, sqlNameFormatter);
+		return new ValqueriesQueryImpl<T>(database.getOrm(), modelType, genericFactory, sqlNameFormatter, mappingHelper);
 	}
 
 	public ValqueriesQueryImpl<T> query(ITransactionContext tx) {
-		return new ValqueriesQueryImpl<T>(tx, modelType, genericFactory, sqlNameFormatter);
+		return new ValqueriesQueryImpl<T>(tx, modelType, genericFactory, sqlNameFormatter, mappingHelper);
 	}
 
 	@Override

@@ -11,6 +11,7 @@ import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.KeySet;
 import io.ran.Mapping;
+import io.ran.MappingHelper;
 import io.ran.Property;
 import io.ran.RelationDescriber;
 import io.ran.TypeDescriber;
@@ -42,13 +43,15 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	private Integer limit = null;
 	private int offset = 0;
 	private SqlNameFormatter sqlNameFormatter;
+	private MappingHelper mappingHelper;
 
-	public ValqueriesQueryImpl(ITransactionContext transactionContext, Class<T> modelType, GenericFactory genericFactory, SqlNameFormatter sqlNameFormatter) {
+	public ValqueriesQueryImpl(ITransactionContext transactionContext, Class<T> modelType, GenericFactory genericFactory, SqlNameFormatter sqlNameFormatter, MappingHelper mappingHelper) {
 		super(modelType, genericFactory);
 		this.transactionContext = transactionContext;
 		this.modelType = modelType;
 		this.genericFactory = genericFactory;
 		this.sqlNameFormatter = sqlNameFormatter;
+		this.mappingHelper = mappingHelper;
 	}
 
 	@Override
@@ -100,7 +103,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				((ValqueriesQuery<X>)q).subQuery(relation.getVia().get(1), (Consumer) consumer);
 			});
 		}
-		ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory, sqlNameFormatter);
+		ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper);
 		otherQuery.tableAlias = "sub"+(++subQueryNum);
 		consumer.accept((Z) otherQuery);
 		elements.add(new RelationSubQueryElement(tableAlias, otherQuery.tableAlias, ++subQueryNum, relation, otherQuery, sqlNameFormatter));
@@ -113,7 +116,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				((ValqueriesQueryImpl<X>)q).join(relation.getVia().get(1), (Consumer) consumer);
 			});
 		}
-		ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory, sqlNameFormatter);
+		ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper);
 		otherQuery.tableAlias = "sub"+(++subQueryNum);
 		consumer.accept((Z) otherQuery);
 		elements.add(new RelationSubQueryElement(tableAlias, otherQuery.tableAlias, ++subQueryNum, relation, otherQuery, sqlNameFormatter));
@@ -137,7 +140,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		String columnsSql;
 		if (columns.length == 0) {
 			ValqueriesColumnBuilder columnBuilder = new ValqueriesColumnBuilder(tableAlias, sqlNameFormatter);
-			((Mapping)t).hydrate(columnBuilder);
+			mappingHelper.hydrate(t, columnBuilder);
 			columnsSql = columnBuilder.getSql();
 		} else {
 			columnsSql = Arrays.stream(columns).collect(Collectors.joining(", "));
@@ -217,8 +220,8 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			Map<Class, Map<CompoundKey, List>> eagerModels = new HashMap<>();
 			transactionContext.query(buildSelectSql("main"), this, row -> {
 				T t2 = genericFactory.get(modelType);
-				((Mapping)t2).hydrate(new ValqueriesHydrator("main_", row, sqlNameFormatter));
-				CompoundKey key = ((Mapping)t2)._getKey();
+				mappingHelper.hydrate(t2, new ValqueriesHydrator("main_", row, sqlNameFormatter));
+				CompoundKey key = mappingHelper.getKey(t2);
 				if (alreadyLoaded.containsKey(key)) {
 					t2 = alreadyLoaded.get(key);
 				} else {
@@ -240,7 +243,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				Map<CompoundKey, List> eagerModel = eagerModels.get(relationDescriber.getToClass().clazz);
 				if (eagerModel != null) {
 					eagerModel.entrySet().forEach(entry -> {
-						if (relationDescriber.getCollectionType() != null) {
+						if (relationDescriber.isCollectionRelation()) {
 							((Mapping)alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue());
 						} else {
 							mapping(alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue().get(0));
