@@ -49,19 +49,19 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	@Override
 	public Integer getInteger(Token token) {
 		columns.add(token);
-		return null;
+		return 0;
 	}
 
 	@Override
 	public Short getShort(Token token) {
 		columns.add(token);
-		return null;
+		return 0;
 	}
 
 	@Override
 	public Long getLong(Token token) {
 		columns.add(token);
-		return null;
+		return 0L;
 	}
 
 	@Override
@@ -73,7 +73,7 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	@Override
 	public Double getDouble(Token token) {
 		columns.add(token);
-		return null;
+		return 0.0;
 	}
 
 	@Override
@@ -85,13 +85,13 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	@Override
 	public Float getFloat(Token token) {
 		columns.add(token);
-		return null;
+		return 0.0f;
 	}
 
 	@Override
 	public Boolean getBoolean(Token token) {
 		columns.add(token);
-		return null;
+		return false;
 	}
 
 	@Override

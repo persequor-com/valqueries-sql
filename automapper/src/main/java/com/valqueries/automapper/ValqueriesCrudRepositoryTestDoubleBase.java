@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import io.ran.CompoundKey;
@@ -144,6 +145,15 @@ public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesB
 			return tx.execute(new TestDoubleTransactionContext());
 		} catch (Exception exception) {
 			throw new RuntimeException(exception);
+		}
+	}
+
+	@Override
+	public void doRetryableInTransaction(ITransaction tx) {
+		try {
+			tx.execute(new TestDoubleTransactionContext());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import io.ran.CrudRepository;
@@ -14,4 +15,5 @@ public interface ValqueriesBaseCrudRepository<T, K> extends CrudRepositoryBaseRe
 	<O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass);
 	<O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> t, Class<O> oClass);
 	<X> X obtainInTransaction(ITransactionWithResult<X> tx);
+	void doRetryableInTransaction(ITransaction tx);
 }

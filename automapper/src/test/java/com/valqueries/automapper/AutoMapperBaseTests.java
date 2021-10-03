@@ -39,6 +39,10 @@ public abstract class AutoMapperBaseTests {
 	static TypeDescriber<EngineCar> engineCarDescriber;
 	static TypeDescriber<Tire> tireDescriber;
 	static TypeDescriber<WithCollections> withCollectionsDescriber;
+	static TypeDescriber<Bike> bikeDescriber;
+	static TypeDescriber<BikeGear> bikeGearDescriber;
+	static TypeDescriber<BikeGearBike> bikeGearBikeDescriber;
+	static TypeDescriber<BikeWheel> bikeWheelDescriber;
 
 	@Mock
 	Resolver resolver;
@@ -50,6 +54,8 @@ public abstract class AutoMapperBaseTests {
 	ExhaustRepository exhaustRepository;
 	TireRepository tireRepository;
 	WithCollectionsRepository withCollectionsRepository;
+	private BikeRepository bikeRepository;
+
 
 	@Before
 	public void setupBase() {
@@ -62,12 +68,21 @@ public abstract class AutoMapperBaseTests {
 		exhaustDescriber = TypeDescriberImpl.getTypeDescriber(Exhaust.class);
 		tireDescriber = TypeDescriberImpl.getTypeDescriber(Tire.class);
 		withCollectionsDescriber = TypeDescriberImpl.getTypeDescriber(WithCollections.class);
+
+		bikeDescriber = TypeDescriberImpl.getTypeDescriber(Bike.class);
+		bikeGearDescriber = TypeDescriberImpl.getTypeDescriber(BikeGear.class);
+		bikeGearBikeDescriber = TypeDescriberImpl.getTypeDescriber(BikeGearBike.class);
+		bikeWheelDescriber = TypeDescriberImpl.getTypeDescriber(BikeWheel.class);
+		withCollectionsDescriber = TypeDescriberImpl.getTypeDescriber(WithCollections.class);
+
+
 		carRepository = injector.getInstance(CarRepository.class);
 		doorRepository = injector.getInstance(DoorRepository.class);
 		engineRepository = injector.getInstance(EngineRepository.class);
 		exhaustRepository = injector.getInstance(ExhaustRepository.class);
 		tireRepository = injector.getInstance(TireRepository.class);
 		withCollectionsRepository = injector.getInstance(WithCollectionsRepository.class);
+		bikeRepository = injector.getInstance(BikeRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -423,6 +438,47 @@ public abstract class AutoMapperBaseTests {
 		// Since the exhaust relation is not marked as auto save, save including relations will not include it
 		Optional<Exhaust> actualExhaust = exhaustRepository.get(exhaust.getId());
 		assertFalse(actualExhaust.isPresent());
+	}
+
+	@Test
+	public void saveIncludingRelations_withCompoundKey() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeWheel wheel = factory.get(BikeWheel.class);
+		wheel.setBikeType(BikeType.Mountain);
+		wheel.setSize(20);
+		bike.setFrontWheel(wheel);
+		bike.setBackWheel(wheel);
+
+		bikeRepository.saveIncludingRelations(bike);
+
+		Bike actual = bikeRepository.get(bike.getId()).orElseThrow(RuntimeException::new);
+		assertEquals(bike.getId(), actual.getId());
+		assertEquals(wheel.getBikeType(), actual.getFrontWheel().getBikeType());
+		assertEquals(wheel.getBikeType(), actual.getBackWheel().getBikeType());
+	}
+
+	@Test
+	public void saveIncludingRelations_viaRelation() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeGear gear = factory.get(BikeGear.class);
+		gear.setGearNum(8);
+		bike.getGears().add(gear);
+
+		bikeRepository.saveIncludingRelations(bike);
+
+		Bike actual = bikeRepository.get(bike.getId()).orElseThrow(RuntimeException::new);
+		assertEquals(bike.getId(), actual.getId());
+		assertEquals(1, actual.getGears().size());
+		assertEquals(8, actual.getGears().get(0).getGearNum());
+
 	}
 
 }

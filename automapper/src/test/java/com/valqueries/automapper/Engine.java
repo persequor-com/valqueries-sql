@@ -9,7 +9,7 @@ import java.util.UUID;
 @Mapper(dbType = Valqueries.class)
 public class Engine {
 	private UUID id;
-	@Relation(collectionElementType = Car.class, via = EngineCar.class)
+	@Relation(collectionElementType = Car.class, via = EngineCar.class, autoSave = true)
 	private List<Car> cars;
 
 	public UUID getId() {

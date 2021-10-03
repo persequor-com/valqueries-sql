@@ -5,9 +5,11 @@
  */
 package com.valqueries.automapper;
 
+import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import io.ran.Mapping;
+import io.ran.MappingHelper;
 import io.ran.RelationDescriber;
 import io.ran.TypeDescriberImpl;
 
@@ -61,23 +63,23 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
-	public <O> CrudUpdateResult saveOther(ITransactionContext tx, Collection<O> t, Class<O> oClass) {
+	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> t, Class<O> oClass) {
 		return baseRepo.saveOthers(tx, t, oClass);
 	}
 
 
 	@Override
 	public CrudUpdateResult saveIncludingRelations(T t) {
-		return obtainInTransaction(tx -> {
-			final ChangeMonitor changed = new ChangeMonitor();
+		final ChangeMonitor changed = new ChangeMonitor();
+		doRetryableInTransaction(tx -> {
 			saveIncludingRelationInternal(changed, tx, t, modelType);
-			return changed::getNumberOfChangedRows;
 		});
+		return changed::getNumberOfChangedRows;
 	}
 
 	private <X> void saveIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<X> ts, Class<X> xClass) {
 		Collection<X> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
-		changed.increment(notAlreadySaved, saveOther(tx, notAlreadySaved, xClass).affectedRows());
+		changed.increment(notAlreadySaved, saveOthers(tx, notAlreadySaved, xClass).affectedRows());
 		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
 			for(X t : notAlreadySaved) {
 				internalSaveRelation(changed, tx, t, relationDescriber);
@@ -99,6 +101,9 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	private void internalSaveRelation(ChangeMonitor changed, ITransactionContext tx, Object t, RelationDescriber relationDescriber) {
 		if (!relationDescriber.getRelationAnnotation().autoSave()) {
 			return;
+		}
+		if (!(t instanceof Mapping)) {
+			throw new RuntimeException("Valqueries models should have a @Mapper annotation");
 		}
 		Mapping mapping = (Mapping)t;
 		Object relation = mapping._getRelation(relationDescriber);
@@ -123,5 +128,10 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	@Override
 	public <X> X obtainInTransaction(ITransactionWithResult<X> tx) {
 		return baseRepo.obtainInTransaction(tx);
+	}
+
+	@Override
+	public void doRetryableInTransaction(ITransaction tx) {
+		baseRepo.doRetryableInTransaction(tx);
 	}
 }

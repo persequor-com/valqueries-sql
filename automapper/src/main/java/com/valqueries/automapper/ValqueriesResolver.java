@@ -1,19 +1,18 @@
 package com.valqueries.automapper;
 
 import com.valqueries.Database;
+import com.valqueries.ITransactionContext;
 import io.ran.DbResolver;
 import io.ran.GenericFactory;
 import io.ran.Mapping;
 import io.ran.MappingHelper;
 import io.ran.PropertiesColumnizer;
+import io.ran.Property;
 import io.ran.RelationDescriber;
-import io.ran.TypeDescriber;
-import io.ran.TypeDescriberImpl;
-import io.ran.token.Token;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.function.Consumer;
+import java.util.Iterator;
 import java.util.stream.Collectors;
 
 public class ValqueriesResolver implements DbResolver<Valqueries> {
@@ -30,35 +29,43 @@ public class ValqueriesResolver implements DbResolver<Valqueries> {
 		this.sqlNameFormatter = sqlNameFormatter;
 	}
 
+	private <FROM, TO> ValqueriesQuery<TO> getQuery(ITransactionContext t, RelationDescriber relationDescriber, FROM from) {
+		if (relationDescriber.getVia() != null) {
+			ValqueriesQueryImpl query = new ValqueriesQueryImpl(t, relationDescriber.getToClass().clazz, genericFactory, sqlNameFormatter);
+
+			PropertiesColumnizer columnizer = new PropertiesColumnizer(relationDescriber.getFromKeys().toProperties());
+			((Mapping) from).columnize(columnizer);
+			Iterator<Property.PropertyValue> values = columnizer.getValues().iterator();
+			for (Property property : relationDescriber.getToKeys().toProperties()) {
+				query.eq(property.value(values.next().getValue()));
+			}
+			return query;
+		} else {
+			ValqueriesQueryImpl query = new ValqueriesQueryImpl(t, relationDescriber.getToClass().clazz, genericFactory, sqlNameFormatter);
+			PropertiesColumnizer columnizer = new PropertiesColumnizer(relationDescriber.getFromKeys().toProperties());
+			((Mapping) from).columnize(columnizer);
+			Iterator<Property.PropertyValue> values = columnizer.getValues().iterator();
+			for (Property property : relationDescriber.getToKeys().toProperties()) {
+				query.eq(property.value(values.next().getValue()));
+			}
+			return query;
+		}
+	}
 
 	@Override
 	public <FROM, TO> TO get(RelationDescriber relationDescriber, FROM from) {
-		return (TO)database.obtainInTransaction(t -> {
-			return new ValqueriesQueryImpl(t, relationDescriber.getToClass().clazz, genericFactory, sqlNameFormatter)
-					.subQuery(relationDescriber.inverse(), (Consumer<ValqueriesQuery>)  q -> {
-						PropertiesColumnizer columnizer = new PropertiesColumnizer(relationDescriber.getToKeys().toProperties());
-						((Mapping)from).columnize(columnizer);
-
-						columnizer.getValues().forEach(q::eq);
-
-
-					}).execute().findFirst().orElse(null);
+		return database.obtainInTransaction(t -> {
+			ValqueriesQuery res = getQuery(t, relationDescriber, from);
+			return (TO)res.execute().findFirst().orElse(null);
 		});
+
 	}
 
 	@Override
 	public <FROM, TO> Collection<TO> getCollection(RelationDescriber relationDescriber, FROM from) {
 		return database.obtainInTransaction(t -> {
-			TypeDescriber<FROM> fromTypeDescriber = (TypeDescriber<FROM>)TypeDescriberImpl.getTypeDescriber(relationDescriber.getFromClass().clazz);
-
-			String where = relationDescriber.getToKeys().stream().map(k -> sqlNameFormatter.column(k.getToken())+" = :"+k.getToken().snake_case()).collect(Collectors.joining(" AND "));
-
-			return (Collection<TO>) t.query("select * from "+ sqlNameFormatter.table(Token.CamelCase(relationDescriber.getToClass().getSimpleName()))+" WHERE "+where, new PropertyGetter<FROM>(relationDescriber.getFromKeys(), relationDescriber.getToKeys(),from, fromTypeDescriber, mappingHelper), row -> {
-				TO to = (TO) genericFactory.get(relationDescriber.getToClass().clazz);
-
-				((Mapping)to).hydrate(to,new ValqueriesHydrator(row, sqlNameFormatter));
-				return to;
-			});
+			ValqueriesQuery res = getQuery(t, relationDescriber, from);
+			return (Collection<TO>)res.execute().collect(Collectors.toList());
 		});
 	}
 }

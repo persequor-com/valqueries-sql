@@ -7,6 +7,7 @@ package com.valqueries.automapper;
 
 import com.valqueries.Database;
 import com.valqueries.IStatement;
+import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import com.valqueries.OrmResultSet;
@@ -167,12 +168,17 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		return database.obtainInTransaction(tx);
 	}
 
+	@Override
+	public void doRetryableInTransaction(ITransaction tx) {
+		database.doRetryableInTransaction(tx);
+	}
+
 	protected String getTableName() {
 		return getTableName(Clazz.of(modelType));
 	}
 
 	String getTableName(Clazz<? extends Object> modeltype) {
-		return sqlNameFormatter.table(Token.CamelCase(modeltype.clazz.getSimpleName()));
+		return sqlNameFormatter.table(modeltype.clazz);
 	}
 
 
