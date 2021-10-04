@@ -43,6 +43,7 @@ public abstract class AutoMapperBaseTests {
 	static TypeDescriber<BikeGear> bikeGearDescriber;
 	static TypeDescriber<BikeGearBike> bikeGearBikeDescriber;
 	static TypeDescriber<BikeWheel> bikeWheelDescriber;
+	static TypeDescriber<PrimaryKeyModel> primaryKeyDescriber;
 
 	@Mock
 	Resolver resolver;
@@ -54,7 +55,8 @@ public abstract class AutoMapperBaseTests {
 	ExhaustRepository exhaustRepository;
 	TireRepository tireRepository;
 	WithCollectionsRepository withCollectionsRepository;
-	private BikeRepository bikeRepository;
+	BikeRepository bikeRepository;
+	PrimaryKeyModelRepository primayKeyModelRepository;
 
 
 	@Before
@@ -68,6 +70,7 @@ public abstract class AutoMapperBaseTests {
 		exhaustDescriber = TypeDescriberImpl.getTypeDescriber(Exhaust.class);
 		tireDescriber = TypeDescriberImpl.getTypeDescriber(Tire.class);
 		withCollectionsDescriber = TypeDescriberImpl.getTypeDescriber(WithCollections.class);
+		primaryKeyDescriber = TypeDescriberImpl.getTypeDescriber(PrimaryKeyModel.class);
 
 		bikeDescriber = TypeDescriberImpl.getTypeDescriber(Bike.class);
 		bikeGearDescriber = TypeDescriberImpl.getTypeDescriber(BikeGear.class);
@@ -83,6 +86,7 @@ public abstract class AutoMapperBaseTests {
 		tireRepository = injector.getInstance(TireRepository.class);
 		withCollectionsRepository = injector.getInstance(WithCollectionsRepository.class);
 		bikeRepository = injector.getInstance(BikeRepository.class);
+		primayKeyModelRepository = injector.getInstance(PrimaryKeyModelRepository.class);
 	}
 
 	protected abstract void setInjector();

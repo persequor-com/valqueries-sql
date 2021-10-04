@@ -109,6 +109,8 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" SET "+columnizer.getSql();
 		if (!columnizer.getSqlWithoutKey().isEmpty()) {
 			sql += " on duplicate key update "+columnizer.getSqlWithoutKey();
+		} else {
+			sql += " on duplicate key update "+columnizer.getSql();
 		}
 		return getUpdateResult(tx.update(sql, columnizer));
 	}
@@ -122,6 +124,8 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 
 		if (!columnizer.getColumnsWithoutKey().isEmpty()) {
 			sql += " on duplicate key update "+columnizer.getColumnsWithoutKey().stream().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
+		} else {
+			sql += " on duplicate key update "+columnizer.getColumns().stream().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
 		}
 		return getUpdateResult(tx.update(sql, columnizer));
 	}
