@@ -32,7 +32,7 @@ jobs:
           format: "${major}.${minor}.${patch}-${increment}"
           bump_each_commit: false
         id: versioning
-        if: github.event_name != 'pull_request'
+#        if: github.event_name != 'pull_request'
       - name: Setup java
         uses: actions/setup-java@v2
         with:
