@@ -1,7 +1,6 @@
 
 package com.valqueries;
 
-import jdk.vm.ci.meta.Local;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
