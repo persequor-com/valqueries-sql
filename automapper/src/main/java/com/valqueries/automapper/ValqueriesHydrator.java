@@ -73,7 +73,12 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	@Override
 	public Instant getInstant(Token key) {
 		try {
-			return row.getDateTime(transformKey(key)).toInstant();
+			ZonedDateTime date = row.getDateTime(transformKey(key));
+			if (date != null) {
+				return date.toInstant();
+			} else {
+				return null;
+			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -82,7 +87,12 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	@Override
 	public LocalDateTime getLocalDateTime(Token token) {
 		try {
-			return row.getDateTime(transformKey(token)).toLocalDateTime();
+			ZonedDateTime date = row.getDateTime(transformKey(token));
+			if (date != null) {
+				return date.toLocalDateTime();
+			} else {
+				return null;
+			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
