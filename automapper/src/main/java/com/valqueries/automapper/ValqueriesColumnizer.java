@@ -16,6 +16,7 @@ import io.ran.token.Token;
 
 import java.awt.image.ImageProducer;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -75,6 +76,11 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	@Override
 	public void set(Token key, ZonedDateTime value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
+	}
+
+	@Override
+	public void set(Token token, LocalDateTime localDateTime) {
+		add(token, s -> s.set(transformFieldPlaceholder(token),localDateTime));
 	}
 
 	@Override

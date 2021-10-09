@@ -5,6 +5,7 @@ import io.ran.token.Token;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,6 +43,12 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 
 	@Override
 	public Instant getInstant(Token token) {
+		columns.add(token);
+		return null;
+	}
+
+	@Override
+	public LocalDateTime getLocalDateTime(Token token) {
 		columns.add(token);
 		return null;
 	}

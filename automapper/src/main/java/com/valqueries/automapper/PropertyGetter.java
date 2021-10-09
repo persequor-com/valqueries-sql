@@ -10,6 +10,7 @@ import io.ran.TypeDescriber;
 import io.ran.token.Token;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,6 +61,11 @@ public class PropertyGetter<FROM> implements ObjectMapColumnizer, Setter {
 	@Override
 	public void set(Token token, ZonedDateTime zonedDateTime) {
 		put(token.snake_case(), zonedDateTime);
+	}
+
+	@Override
+	public void set(Token token, LocalDateTime localDateTime) {
+
 	}
 
 	@Override

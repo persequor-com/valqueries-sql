@@ -12,6 +12,7 @@ import io.ran.token.Token;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -73,6 +74,15 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	public Instant getInstant(Token key) {
 		try {
 			return row.getDateTime(transformKey(key)).toInstant();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public LocalDateTime getLocalDateTime(Token token) {
+		try {
+			return row.getDateTime(transformKey(token)).toLocalDateTime();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

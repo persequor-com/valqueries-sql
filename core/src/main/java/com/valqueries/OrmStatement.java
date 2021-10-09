@@ -1,9 +1,12 @@
 
 package com.valqueries;
 
+import jdk.vm.ci.meta.Local;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -60,6 +63,11 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 	@Override
 	public void set(String column, ZonedDateTime value) {
 		values.put(column, value == null ? null : new Timestamp(value.toInstant().toEpochMilli()));
+	}
+
+	@Override
+	public void set(String column, LocalDateTime value) {
+		values.put(column, value);
 	}
 
 	@Override
@@ -130,6 +138,8 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 		} else if (value instanceof ZonedDateTime) {
 			preparedStatement.setTimestamp(index.getAndIncrement(), ((Timestamp) Timestamp.from(((ZonedDateTime)value).toInstant()
 			)));
+		} else if (value instanceof LocalDateTime) {
+			preparedStatement.setTimestamp(index.getAndIncrement(), (Timestamp.valueOf((LocalDateTime)value)));
 		} else if (value instanceof byte[]) {
 			preparedStatement.setBytes(index.getAndIncrement(), (byte[]) value);
 		} else if (value instanceof Collection) {
