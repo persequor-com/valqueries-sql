@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -89,7 +90,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 		try {
 			ZonedDateTime date = row.getDateTime(transformKey(token));
 			if (date != null) {
-				return date.toLocalDateTime();
+				return date.withZoneSameInstant(ZoneOffset.systemDefault()).toLocalDateTime();
 			} else {
 				return null;
 			}
