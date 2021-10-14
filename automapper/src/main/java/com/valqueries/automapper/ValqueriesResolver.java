@@ -22,7 +22,7 @@ public class ValqueriesResolver implements DbResolver<Valqueries> {
 	private SqlNameFormatter sqlNameFormatter;
 
 	@Inject
-	ValqueriesResolver(Database database, GenericFactory genericFactory, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
+	public ValqueriesResolver(Database database, GenericFactory genericFactory, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
 		this.database = database;
 		this.genericFactory = genericFactory;
 		this.mappingHelper = mappingHelper;
