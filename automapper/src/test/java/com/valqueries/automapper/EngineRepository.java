@@ -17,15 +17,15 @@ public class EngineRepository extends ValqueriesCrudRepositoryImpl<Engine, UUID>
 	}
 
 	@Override
-	public CrudUpdateResult save(Engine entity) {
+	public CrudUpdateResult save(Engine engine) {
 		return obtainInTransaction(tx -> {
-			entity.getCars().forEach(car -> {
+			engine.getCars().forEach(car -> {
 				EngineCar engineCar = genericFactory.get(EngineCar.class);
 				engineCar.setCarId(car.getId());
-				engineCar.setEngineId(entity.getId());
+				engineCar.setEngineId(engine.getId());
 				engineCarRepository.save(tx, engineCar);
 			});
-			return super.save(tx, entity);
+			return super.save(tx, engine);
 		});
 	}
 }
