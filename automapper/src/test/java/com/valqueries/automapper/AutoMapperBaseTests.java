@@ -6,11 +6,6 @@ import io.ran.GenericFactory;
 import io.ran.Resolver;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -22,10 +17,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
+import org.junit.After;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import org.junit.Before;
+import org.junit.Test;
 import static org.mockito.ArgumentMatchers.any;
+import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -411,7 +410,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	public void saveIncludingRelations() {
+	public void save_autoSaveRelations() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle("Muh");
@@ -445,7 +444,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	public void saveIncludingRelations_withCompoundKey() {
+	public void save_autoSaveRelations_withCompoundKey() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
 		bike.setBikeType(BikeType.Mountain);
@@ -454,19 +453,41 @@ public abstract class AutoMapperBaseTests {
 		BikeWheel wheel = factory.get(BikeWheel.class);
 		wheel.setBikeType(BikeType.Mountain);
 		wheel.setSize(20);
+		wheel.setColor("red");
+
 		bike.setFrontWheel(wheel);
 		bike.setBackWheel(wheel);
 
 		bikeRepository.save(bike);
 
-		Bike actual = bikeRepository.get(bike.getId()).orElseThrow(RuntimeException::new);
-		assertEquals(bike.getId(), actual.getId());
-		assertEquals(wheel.getBikeType(), actual.getFrontWheel().getBikeType());
-		assertEquals(wheel.getBikeType(), actual.getBackWheel().getBikeType());
+		Bike actualMountain = bikeRepository.get(bike.getId()).orElseThrow(RuntimeException::new);
+		assertEquals(bike.getId(), actualMountain.getId());
+		assertEquals(wheel.getBikeType(), actualMountain.getFrontWheel().getBikeType());
+		assertEquals(wheel.getBikeType(), actualMountain.getBackWheel().getBikeType());
 	}
 
 	@Test
-	public void saveIncludingRelations_viaRelation() {
+	public void save_noAutoSaveRelation() {
+		Bike raceBike = factory.get(Bike.class);
+		raceBike.setId(UUID.randomUUID().toString());
+		raceBike.setBikeType(BikeType.Racer);
+		raceBike.setWheelSize(16);
+
+		BikeWheel auxWheel = factory.get(BikeWheel.class);
+		auxWheel.setBikeType(BikeType.Racer);
+		auxWheel.setSize(16);
+		auxWheel.setColor("blue");
+
+		raceBike.setAuxiliaryWheel(auxWheel);
+
+		bikeRepository.save(raceBike);
+
+		Bike actualRace = bikeRepository.get(raceBike.getId()).orElseThrow(RuntimeException::new);
+		assertNull(actualRace.getAuxiliaryWheel());
+	}
+
+	@Test
+	public void save_autoSaveRelation_viaRelation() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
 		bike.setBikeType(BikeType.Mountain);
@@ -482,7 +503,6 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(bike.getId(), actual.getId());
 		assertEquals(1, actual.getGears().size());
 		assertEquals(8, actual.getGears().get(0).getGearNum());
-
 	}
 
 }
