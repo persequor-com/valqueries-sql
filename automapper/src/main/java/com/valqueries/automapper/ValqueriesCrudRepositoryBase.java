@@ -136,13 +136,13 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 	}
 
 	@Override
-	public <RELATION> CrudUpdateResult saveRelation(ITransactionContext tx, RELATION entity, Class<RELATION> relationClass) {
+	public <R> CrudUpdateResult saveRelation(ITransactionContext tx, R entity, Class<R> relationClass) {
 		return saveInternal(tx, entity, relationClass);
 	}
 
 	@Override
-	public <RELATION> CrudUpdateResult saveRelations(ITransactionContext tx, Collection<RELATION> ts, Class<RELATION> oClass) {
-		return saveInternal(tx, ts, oClass);
+	public <R> CrudUpdateResult saveRelations(ITransactionContext tx, Collection<R> entities, Class<R> relationClass) {
+		return saveInternal(tx, entities, relationClass);
 	}
 
 	private CrudUpdateResult getUpdateResult(UpdateResult update) {
