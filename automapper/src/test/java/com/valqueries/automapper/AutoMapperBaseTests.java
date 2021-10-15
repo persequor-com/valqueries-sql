@@ -433,7 +433,7 @@ public abstract class AutoMapperBaseTests {
 		exhaust.setId(UUID.randomUUID());
 		model.setExhaust(exhaust);
 
-		carRepository.saveIncludingRelations(model);
+		carRepository.save(model);
 
 		Door actual1 = doorRepository.get(door1.getId()).orElseThrow(RuntimeException::new);
 		Door actual2 = doorRepository.get(door2.getId()).orElseThrow(RuntimeException::new);
@@ -457,7 +457,7 @@ public abstract class AutoMapperBaseTests {
 		bike.setFrontWheel(wheel);
 		bike.setBackWheel(wheel);
 
-		bikeRepository.saveIncludingRelations(bike);
+		bikeRepository.save(bike);
 
 		Bike actual = bikeRepository.get(bike.getId()).orElseThrow(RuntimeException::new);
 		assertEquals(bike.getId(), actual.getId());
@@ -476,7 +476,7 @@ public abstract class AutoMapperBaseTests {
 		gear.setGearNum(8);
 		bike.getGears().add(gear);
 
-		bikeRepository.saveIncludingRelations(bike);
+		bikeRepository.save(bike);
 
 		Bike actual = bikeRepository.get(bike.getId()).orElseThrow(RuntimeException::new);
 		assertEquals(bike.getId(), actual.getId());

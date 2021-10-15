@@ -15,11 +15,9 @@ import com.valqueries.UpdateResult;
 import io.ran.Clazz;
 import io.ran.CompoundKey;
 import io.ran.GenericFactory;
-import io.ran.Mapping;
 import io.ran.MappingHelper;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
-import io.ran.token.Token;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -34,7 +32,7 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 	protected Class<K> keyType;
 	protected TypeDescriber<T> typeDescriber;
 	protected MappingHelper mappingHelper;
-	private SqlNameFormatter sqlNameFormatter;
+	private final SqlNameFormatter sqlNameFormatter;
 
 	public ValqueriesCrudRepositoryBase(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
 		this.database = database;
@@ -102,8 +100,6 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		});
 	}
 
-
-
 	private <O> CrudUpdateResult saveInternal(ITransactionContext tx, O t, Class<O> oClass) {
 		ValqueriesColumnizer<O> columnizer = new ValqueriesColumnizer<O>(genericFactory, mappingHelper,t, sqlNameFormatter);
 		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" SET "+columnizer.getSql();
@@ -140,12 +136,12 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 	}
 
 	@Override
-	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
-		return saveInternal(tx, t, oClass);
+	public <RELATION> CrudUpdateResult saveRelation(ITransactionContext tx, RELATION entity, Class<RELATION> relationClass) {
+		return saveInternal(tx, entity, relationClass);
 	}
 
 	@Override
-	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
+	public <RELATION> CrudUpdateResult saveRelations(ITransactionContext tx, Collection<RELATION> ts, Class<RELATION> oClass) {
 		return saveInternal(tx, ts, oClass);
 	}
 

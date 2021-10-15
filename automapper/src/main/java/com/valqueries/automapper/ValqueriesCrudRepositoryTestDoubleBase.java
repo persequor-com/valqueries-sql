@@ -4,26 +4,16 @@ import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import io.ran.CompoundKey;
-import io.ran.DbResolver;
 import io.ran.GenericFactory;
-import io.ran.KeySet;
-import io.ran.Mapper;
-import io.ran.Mapping;
 import io.ran.MappingHelper;
 import io.ran.Property;
-import io.ran.RelationDescriber;
-import io.ran.Resolver;
 import io.ran.TestDoubleDb;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesBaseCrudRepository<T, K> {
@@ -122,13 +112,13 @@ public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesB
 	}
 
 	@Override
-	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
+	public <O> CrudUpdateResult saveRelation(ITransactionContext tx, O t, Class<O> oClass) {
 		return this.save(t, oClass);
 	}
 
 	@Override
-	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
-		ts.forEach(t -> this.saveOther(tx, t, oClass));
+	public <O> CrudUpdateResult saveRelations(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
+		ts.forEach(t -> this.saveRelation(tx, t, oClass));
 		return ts::size;
 	}
 
