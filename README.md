@@ -1,3 +1,3 @@
 ## Valqueries repositories structure
 
-![Alt text](doc/repositories-diagram.png)
+![Repositories diagram](doc/repositories-diagram.png)
