@@ -15,11 +15,9 @@ import com.valqueries.UpdateResult;
 import io.ran.Clazz;
 import io.ran.CompoundKey;
 import io.ran.GenericFactory;
-import io.ran.Mapping;
 import io.ran.MappingHelper;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
-import io.ran.token.Token;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -27,16 +25,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRepository<T, K> {
+public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessDataLayer<T, K> {
 	protected Database database;
 	protected GenericFactory genericFactory;
 	protected Class<T> modelType;
 	protected Class<K> keyType;
 	protected TypeDescriber<T> typeDescriber;
 	protected MappingHelper mappingHelper;
-	private SqlNameFormatter sqlNameFormatter;
+	private final SqlNameFormatter sqlNameFormatter;
 
-	public ValqueriesCrudRepositoryBase(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
+	public ValqueriesAccessDataLayerImpl(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
 		this.database = database;
 		this.genericFactory = genericFactory;
 		this.modelType = modelType;
@@ -102,8 +100,6 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		});
 	}
 
-
-
 	private <O> CrudUpdateResult saveInternal(ITransactionContext tx, O t, Class<O> oClass) {
 		ValqueriesColumnizer<O> columnizer = new ValqueriesColumnizer<O>(genericFactory, mappingHelper,t, sqlNameFormatter);
 		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" SET "+columnizer.getSql();
@@ -140,13 +136,13 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 	}
 
 	@Override
-	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
-		return saveInternal(tx, t, oClass);
+	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O entity, Class<O> relationClass) {
+		return saveInternal(tx, entity, relationClass);
 	}
 
 	@Override
-	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
-		return saveInternal(tx, ts, oClass);
+	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> entities, Class<O> relationClass) {
+		return saveInternal(tx, entities, relationClass);
 	}
 
 	private CrudUpdateResult getUpdateResult(UpdateResult update) {

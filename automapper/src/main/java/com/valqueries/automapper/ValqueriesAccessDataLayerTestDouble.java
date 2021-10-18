@@ -4,29 +4,19 @@ import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import io.ran.CompoundKey;
-import io.ran.DbResolver;
 import io.ran.GenericFactory;
-import io.ran.KeySet;
-import io.ran.Mapper;
-import io.ran.Mapping;
 import io.ran.MappingHelper;
 import io.ran.Property;
-import io.ran.RelationDescriber;
-import io.ran.Resolver;
 import io.ran.TestDoubleDb;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesBaseCrudRepository<T, K> {
+public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAccessDataLayer<T, K> {
 	private final TestDoubleDb store;
 	protected GenericFactory genericFactory;
 	protected Class<T> modelType;
@@ -34,7 +24,7 @@ public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesB
 	protected TypeDescriber<T> typeDescriber;
 	protected MappingHelper mappingHelper;
 
-	public ValqueriesCrudRepositoryTestDoubleBase(GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, TestDoubleDb store) {
+	public ValqueriesAccessDataLayerTestDouble(GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, TestDoubleDb store) {
 		this.store = store;
 		this.genericFactory = genericFactory;
 		this.modelType = modelType;

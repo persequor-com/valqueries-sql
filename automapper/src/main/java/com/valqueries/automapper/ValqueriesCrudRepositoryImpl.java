@@ -9,7 +9,6 @@ import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import io.ran.Mapping;
-import io.ran.MappingHelper;
 import io.ran.RelationDescriber;
 import io.ran.TypeDescriberImpl;
 
@@ -20,12 +19,12 @@ import java.util.stream.Stream;
 
 public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudRepository<T, K> {
 
-	private final ValqueriesBaseCrudRepository<T, K> baseRepo;
-	private Class<T> modelType;
+	private final ValqueriesAccessDataLayer<T, K> baseRepo;
+	private final Class<T> modelType;
 
 	public ValqueriesCrudRepositoryImpl(ValqueriesRepositoryFactory factory, Class<T> modelType, Class<K> keyType) {
 		this.modelType = modelType;
-		baseRepo = factory.get(modelType, keyType);
+		this.baseRepo = factory.get(modelType, keyType);
 	}
 	@Override
 	public Optional<T> get(K id) {
@@ -43,45 +42,39 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
-	public CrudUpdateResult save(T t) {
-		return baseRepo.save(t);
+	public CrudUpdateResult save(T entity) {
+		final ChangeMonitor changed = new ChangeMonitor();
+		doRetryableInTransaction(tx -> saveIncludingRelationInternal(changed, tx, entity, modelType));
+		return changed::getNumberOfChangedRows;
 	}
 
 	@Override
-	public CrudUpdateResult save(ITransactionContext tx, T t) {
-		return baseRepo.save(tx, t);
+	public CrudUpdateResult save(ITransactionContext tx, T entity) {
+		final ChangeMonitor changed = new ChangeMonitor();
+		saveIncludingRelationInternal(changed, tx, entity, modelType);
+		return changed::getNumberOfChangedRows;
 	}
 
 	@Override
-	public CrudUpdateResult save(ITransactionContext tx, Collection<T> t) {
-		return baseRepo.save(tx, t);
+	public CrudUpdateResult save(ITransactionContext tx, Collection<T> entities) {
+		final ChangeMonitor changed = new ChangeMonitor();
+		saveIncludingRelationsInternal(changed, tx, entities, modelType);
+		return changed::getNumberOfChangedRows;
 	}
 
-	@Override
 	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
 		return baseRepo.saveOther(tx, t, oClass);
 	}
 
-	@Override
 	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> t, Class<O> oClass) {
 		return baseRepo.saveOthers(tx, t, oClass);
 	}
 
-
-	@Override
-	public CrudUpdateResult saveIncludingRelations(T t) {
-		final ChangeMonitor changed = new ChangeMonitor();
-		doRetryableInTransaction(tx -> {
-			saveIncludingRelationInternal(changed, tx, t, modelType);
-		});
-		return changed::getNumberOfChangedRows;
-	}
-
-	private <X> void saveIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<X> ts, Class<X> xClass) {
-		Collection<X> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
+	private <O> void saveIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<O> ts, Class<O> xClass) {
+		Collection<O> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
 		changed.increment(notAlreadySaved, saveOthers(tx, notAlreadySaved, xClass).affectedRows());
 		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
-			for(X t : notAlreadySaved) {
+			for(O t : notAlreadySaved) {
 				internalSaveRelation(changed, tx, t, relationDescriber);
 			}
 		});

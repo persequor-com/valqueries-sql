@@ -9,6 +9,7 @@ public class BikeWheel {
 	private BikeType bikeType;
 	@PrimaryKey
 	private int size;
+	private String color;
 
 	public BikeType getBikeType() {
 		return bikeType;
@@ -24,5 +25,13 @@ public class BikeWheel {
 
 	public void setSize(int size) {
 		this.size = size;
+	}
+
+	public String getColor() {
+		return color;
+	}
+
+	public void setColor(String color) {
+		this.color = color;
 	}
 }
