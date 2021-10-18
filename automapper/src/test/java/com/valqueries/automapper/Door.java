@@ -34,8 +34,10 @@ public class Door {
 	}
 
 	public void setCar(Car car) {
-		this.carId = car.getId();
 		this.car = car;
+		if (car != null) {
+			this.carId = car.getId();
+		}
 	}
 
 	public UUID getCarId() {

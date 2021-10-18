@@ -68,6 +68,17 @@ public class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(withCollectionsDescriber)+";");
 			orm.update(sqlGenerator.generate(withCollectionsDescriber));
+
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeDescriber)+";");
+			orm.update(sqlGenerator.generate(bikeDescriber));
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearDescriber)+";");
+			orm.update(sqlGenerator.generate(bikeGearDescriber));
+
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearBikeDescriber)+";");
+			orm.update(sqlGenerator.generate(bikeGearBikeDescriber));
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeWheelDescriber)+";");
+			orm.update(sqlGenerator.generate(bikeWheelDescriber));
+
 		}
 	}
 

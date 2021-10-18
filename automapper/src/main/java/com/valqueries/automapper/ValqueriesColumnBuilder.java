@@ -5,6 +5,7 @@ import io.ran.token.Token;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,21 +48,27 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Integer getInteger(Token token) {
+	public LocalDateTime getLocalDateTime(Token token) {
 		columns.add(token);
 		return null;
+	}
+
+	@Override
+	public Integer getInteger(Token token) {
+		columns.add(token);
+		return 0;
 	}
 
 	@Override
 	public Short getShort(Token token) {
 		columns.add(token);
-		return null;
+		return 0;
 	}
 
 	@Override
 	public Long getLong(Token token) {
 		columns.add(token);
-		return null;
+		return 0L;
 	}
 
 	@Override
@@ -73,7 +80,7 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	@Override
 	public Double getDouble(Token token) {
 		columns.add(token);
-		return null;
+		return 0.0;
 	}
 
 	@Override
@@ -85,13 +92,13 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	@Override
 	public Float getFloat(Token token) {
 		columns.add(token);
-		return null;
+		return 0.0f;
 	}
 
 	@Override
 	public Boolean getBoolean(Token token) {
 		columns.add(token);
-		return null;
+		return false;
 	}
 
 	@Override

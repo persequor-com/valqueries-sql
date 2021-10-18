@@ -7,12 +7,16 @@ package com.valqueries.automapper;
 
 import com.valqueries.IStatement;
 import com.valqueries.Setter;
+import io.ran.CompoundKey;
 import io.ran.GenericFactory;
 import io.ran.MappingHelper;
 import io.ran.ObjectMapColumnizer;
+import io.ran.Property;
 import io.ran.token.Token;
 
+import java.awt.image.ImageProducer;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,10 +29,12 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	private final List<Consumer<IStatement>> statements = new ArrayList<>();
 	private final List<String> sqlStatements = new ArrayList<>();
 	private final List<String> sqlWithoutKey = new ArrayList<>();
+	private CompoundKey key;
 	protected SqlNameFormatter sqlNameFormatter;
 
 	public ValqueriesColumnizer(GenericFactory factory, MappingHelper mappingHelper, T t, SqlNameFormatter columnFormatter) {
 		this.sqlNameFormatter = columnFormatter;
+		key = mappingHelper.getKey(t);
 		mappingHelper.columnize(t, this);
 	}
 
@@ -39,7 +45,11 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	protected void add(Token key, Consumer<IStatement> consumer) {
 		String sql = "`"+transformKey(key)+"` = :"+key.snake_case();
 		sqlStatements.add(sql);
-		if (!key.equals(Token.of("id"))) {
+
+
+		if (!((Property.PropertyValueList<?>)this.key.getValues()).stream().noneMatch(pv -> {
+			return pv.getProperty().getType().equals(key);
+		})) {
 			sqlWithoutKey.add(sql);
 		}
 		statements.add(consumer);
@@ -66,6 +76,11 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	@Override
 	public void set(Token key, ZonedDateTime value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
+	}
+
+	@Override
+	public void set(Token token, LocalDateTime localDateTime) {
+		add(token, s -> s.set(transformFieldPlaceholder(token),localDateTime));
 	}
 
 	@Override

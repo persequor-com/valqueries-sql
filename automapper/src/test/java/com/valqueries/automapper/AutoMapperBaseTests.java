@@ -6,11 +6,6 @@ import io.ran.GenericFactory;
 import io.ran.Resolver;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -22,9 +17,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
+import org.junit.After;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import org.junit.Before;
+import org.junit.Test;
 import static org.mockito.ArgumentMatchers.any;
+import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -38,6 +38,11 @@ public abstract class AutoMapperBaseTests {
 	static TypeDescriber<EngineCar> engineCarDescriber;
 	static TypeDescriber<Tire> tireDescriber;
 	static TypeDescriber<WithCollections> withCollectionsDescriber;
+	static TypeDescriber<Bike> bikeDescriber;
+	static TypeDescriber<BikeGear> bikeGearDescriber;
+	static TypeDescriber<BikeGearBike> bikeGearBikeDescriber;
+	static TypeDescriber<BikeWheel> bikeWheelDescriber;
+	static TypeDescriber<PrimaryKeyModel> primaryKeyDescriber;
 
 	@Mock
 	Resolver resolver;
@@ -49,6 +54,9 @@ public abstract class AutoMapperBaseTests {
 	ExhaustRepository exhaustRepository;
 	TireRepository tireRepository;
 	WithCollectionsRepository withCollectionsRepository;
+	BikeRepository bikeRepository;
+	PrimaryKeyModelRepository primayKeyModelRepository;
+
 
 	@Before
 	public void setupBase() {
@@ -61,12 +69,23 @@ public abstract class AutoMapperBaseTests {
 		exhaustDescriber = TypeDescriberImpl.getTypeDescriber(Exhaust.class);
 		tireDescriber = TypeDescriberImpl.getTypeDescriber(Tire.class);
 		withCollectionsDescriber = TypeDescriberImpl.getTypeDescriber(WithCollections.class);
+		primaryKeyDescriber = TypeDescriberImpl.getTypeDescriber(PrimaryKeyModel.class);
+
+		bikeDescriber = TypeDescriberImpl.getTypeDescriber(Bike.class);
+		bikeGearDescriber = TypeDescriberImpl.getTypeDescriber(BikeGear.class);
+		bikeGearBikeDescriber = TypeDescriberImpl.getTypeDescriber(BikeGearBike.class);
+		bikeWheelDescriber = TypeDescriberImpl.getTypeDescriber(BikeWheel.class);
+		withCollectionsDescriber = TypeDescriberImpl.getTypeDescriber(WithCollections.class);
+
+
 		carRepository = injector.getInstance(CarRepository.class);
 		doorRepository = injector.getInstance(DoorRepository.class);
 		engineRepository = injector.getInstance(EngineRepository.class);
 		exhaustRepository = injector.getInstance(ExhaustRepository.class);
 		tireRepository = injector.getInstance(TireRepository.class);
 		withCollectionsRepository = injector.getInstance(WithCollectionsRepository.class);
+		bikeRepository = injector.getInstance(BikeRepository.class);
+		primayKeyModelRepository = injector.getInstance(PrimaryKeyModelRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -388,6 +407,102 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(2, actual.size());
 		assertEquals("Muh2", actual.get(0).getTitle());
 		assertEquals("Muh2", actual.get(1).getTitle());
+	}
+
+	@Test
+	public void save_autoSaveRelations() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		Door door1 = factory.get(Door.class);
+		door1.setId(UUID.randomUUID());
+		door1.setTitle("Lazy as such");
+		door1.setCar(model);
+		model.getDoors().add(door1);
+
+		Door door2 = factory.get(Door.class);
+		door2.setId(UUID.randomUUID());
+		door2.setTitle("Lazy as well");
+		door2.setCar(model);
+		model.getDoors().add(door2);
+
+		Exhaust exhaust = factory.get(Exhaust.class);
+		exhaust.setBrand(Brand.Hyundai);
+		exhaust.setId(UUID.randomUUID());
+		model.setExhaust(exhaust);
+
+		carRepository.save(model);
+
+		Door actual1 = doorRepository.get(door1.getId()).orElseThrow(RuntimeException::new);
+		Door actual2 = doorRepository.get(door2.getId()).orElseThrow(RuntimeException::new);
+		assertEquals(door1.getId(), actual1.getId());
+		assertEquals(door2.getId(), actual2.getId());
+		// Since the exhaust relation is not marked as auto save, save including relations will not include it
+		Optional<Exhaust> actualExhaust = exhaustRepository.get(exhaust.getId());
+		assertFalse(actualExhaust.isPresent());
+	}
+
+	@Test
+	public void save_autoSaveRelations_withCompoundKey() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeWheel wheel = factory.get(BikeWheel.class);
+		wheel.setBikeType(BikeType.Mountain);
+		wheel.setSize(20);
+		wheel.setColor("red");
+
+		bike.setFrontWheel(wheel);
+		bike.setBackWheel(wheel);
+
+		bikeRepository.save(bike);
+
+		Bike actualMountain = bikeRepository.get(bike.getId()).orElseThrow(RuntimeException::new);
+		assertEquals(bike.getId(), actualMountain.getId());
+		assertEquals(wheel.getBikeType(), actualMountain.getFrontWheel().getBikeType());
+		assertEquals(wheel.getBikeType(), actualMountain.getBackWheel().getBikeType());
+	}
+
+	@Test
+	public void save_noAutoSaveRelation() {
+		Bike raceBike = factory.get(Bike.class);
+		raceBike.setId(UUID.randomUUID().toString());
+		raceBike.setBikeType(BikeType.Racer);
+		raceBike.setWheelSize(16);
+
+		BikeWheel auxWheel = factory.get(BikeWheel.class);
+		auxWheel.setBikeType(BikeType.Racer);
+		auxWheel.setSize(16);
+		auxWheel.setColor("blue");
+
+		raceBike.setAuxiliaryWheel(auxWheel);
+
+		bikeRepository.save(raceBike);
+
+		Bike actualRace = bikeRepository.get(raceBike.getId()).orElseThrow(RuntimeException::new);
+		assertNull(actualRace.getAuxiliaryWheel());
+	}
+
+	@Test
+	public void save_autoSaveRelation_viaRelation() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeGear gear = factory.get(BikeGear.class);
+		gear.setGearNum(8);
+		bike.getGears().add(gear);
+
+		bikeRepository.save(bike);
+
+		Bike actual = bikeRepository.get(bike.getId()).orElseThrow(RuntimeException::new);
+		assertEquals(bike.getId(), actual.getId());
+		assertEquals(1, actual.getGears().size());
+		assertEquals(8, actual.getGears().get(0).getGearNum());
 	}
 
 }

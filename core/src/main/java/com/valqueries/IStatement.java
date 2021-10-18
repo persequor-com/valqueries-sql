@@ -1,6 +1,7 @@
 
 package com.valqueries;
 
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.UUID;
@@ -12,6 +13,7 @@ public interface IStatement {
 	void set(String column, Float value);
 	void set(String column, Double value);
 	void set(String column, ZonedDateTime value);
+	void set(String column, LocalDateTime value);
 	void set(String column, String value);
 	void set(String column, UUID value);
 	void set(String column, Enum<?> value);

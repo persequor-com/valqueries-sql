@@ -7,6 +7,7 @@ package com.valqueries.automapper;
 
 import com.valqueries.Database;
 import com.valqueries.IStatement;
+import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import com.valqueries.OrmResultSet;
@@ -14,11 +15,9 @@ import com.valqueries.UpdateResult;
 import io.ran.Clazz;
 import io.ran.CompoundKey;
 import io.ran.GenericFactory;
-import io.ran.Mapping;
 import io.ran.MappingHelper;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
-import io.ran.token.Token;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -26,16 +25,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRepository<T, K> {
+public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessDataLayer<T, K> {
 	protected Database database;
 	protected GenericFactory genericFactory;
 	protected Class<T> modelType;
 	protected Class<K> keyType;
 	protected TypeDescriber<T> typeDescriber;
 	protected MappingHelper mappingHelper;
-	private SqlNameFormatter sqlNameFormatter;
+	private final SqlNameFormatter sqlNameFormatter;
 
-	public ValqueriesCrudRepositoryBase(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
+	public ValqueriesAccessDataLayerImpl(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
 		this.database = database;
 		this.genericFactory = genericFactory;
 		this.modelType = modelType;
@@ -65,7 +64,7 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 
 	protected T hydrate(OrmResultSet row) {
 		T t = genericFactory.get(modelType);
-		((Mapping)t).hydrate(new ValqueriesHydrator(row, sqlNameFormatter));
+		mappingHelper.hydrate(t, new ValqueriesHydrator(row, sqlNameFormatter));
 		return t;
 	}
 
@@ -101,27 +100,49 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		});
 	}
 
-	public CrudUpdateResult save(ITransactionContext tx, T t) {
-		ValqueriesColumnizer<T> columnizer = new ValqueriesColumnizer<T>(genericFactory, mappingHelper,t, sqlNameFormatter);
-		String sql = "INSERT INTO "+getTableName()+" SET "+columnizer.getSql();
+	private <O> CrudUpdateResult saveInternal(ITransactionContext tx, O t, Class<O> oClass) {
+		ValqueriesColumnizer<O> columnizer = new ValqueriesColumnizer<O>(genericFactory, mappingHelper,t, sqlNameFormatter);
+		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" SET "+columnizer.getSql();
 		if (!columnizer.getSqlWithoutKey().isEmpty()) {
 			sql += " on duplicate key update "+columnizer.getSqlWithoutKey();
+		} else {
+			sql += " on duplicate key update "+columnizer.getSql();
 		}
 		return getUpdateResult(tx.update(sql, columnizer));
 	}
 
-	@Override
-	public CrudUpdateResult save(ITransactionContext tx, Collection<T> ts) {
+	private <O> CrudUpdateResult saveInternal(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
 		if (ts.isEmpty()) {
 			return () -> 0;
 		}
-		CompoundColumnizer<T> columnizer = new CompoundColumnizer<T>(genericFactory, mappingHelper,ts, sqlNameFormatter);
-		String sql = "INSERT INTO "+getTableName()+" ("+columnizer.getColumns().stream().map(s -> "`"+s+"`").collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
+		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper,ts, sqlNameFormatter);
+		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" ("+columnizer.getColumns().stream().map(s -> "`"+s+"`").collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
 
 		if (!columnizer.getColumnsWithoutKey().isEmpty()) {
 			sql += " on duplicate key update "+columnizer.getColumnsWithoutKey().stream().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
+		} else {
+			sql += " on duplicate key update "+columnizer.getColumns().stream().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
 		}
 		return getUpdateResult(tx.update(sql, columnizer));
+	}
+
+	public CrudUpdateResult save(ITransactionContext tx, T t) {
+		return saveInternal(tx, t, modelType);
+	}
+
+	@Override
+	public CrudUpdateResult save(ITransactionContext tx, Collection<T> ts) {
+		return saveInternal(tx, ts, modelType);
+	}
+
+	@Override
+	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O entity, Class<O> relationClass) {
+		return saveInternal(tx, entity, relationClass);
+	}
+
+	@Override
+	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> entities, Class<O> relationClass) {
+		return saveInternal(tx, entities, relationClass);
 	}
 
 	private CrudUpdateResult getUpdateResult(UpdateResult update) {
@@ -135,11 +156,11 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 
 	@Override
 	public ValqueriesQueryImpl<T> query() {
-		return new ValqueriesQueryImpl<T>(database.getOrm(), modelType, genericFactory, sqlNameFormatter);
+		return new ValqueriesQueryImpl<T>(database.getOrm(), modelType, genericFactory, sqlNameFormatter, mappingHelper);
 	}
 
 	public ValqueriesQueryImpl<T> query(ITransactionContext tx) {
-		return new ValqueriesQueryImpl<T>(tx, modelType, genericFactory, sqlNameFormatter);
+		return new ValqueriesQueryImpl<T>(tx, modelType, genericFactory, sqlNameFormatter, mappingHelper);
 	}
 
 	@Override
@@ -147,12 +168,17 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 		return database.obtainInTransaction(tx);
 	}
 
+	@Override
+	public void doRetryableInTransaction(ITransaction tx) {
+		database.doRetryableInTransaction(tx);
+	}
+
 	protected String getTableName() {
 		return getTableName(Clazz.of(modelType));
 	}
 
-	String getTableName(Clazz<?> modeltype) {
-		return sqlNameFormatter.table(Token.CamelCase(modeltype.clazz.getSimpleName()));
+	String getTableName(Clazz<? extends Object> modeltype) {
+		return sqlNameFormatter.table(modeltype.clazz);
 	}
 
 

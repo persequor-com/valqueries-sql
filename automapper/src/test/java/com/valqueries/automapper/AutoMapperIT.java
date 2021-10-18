@@ -16,6 +16,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +25,6 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -55,6 +55,19 @@ public class AutoMapperIT extends AutoMapperBaseTests {
 
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(withCollectionsDescriber)+";");
 			orm.update(sqlGenerator.generate(withCollectionsDescriber));
+
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeDescriber)+";");
+			orm.update(sqlGenerator.generate(bikeDescriber));
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearDescriber)+";");
+			orm.update(sqlGenerator.generate(bikeGearDescriber));
+
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearBikeDescriber)+";");
+			orm.update(sqlGenerator.generate(bikeGearBikeDescriber));
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeWheelDescriber)+";");
+			orm.update(sqlGenerator.generate(bikeWheelDescriber));
+
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(primaryKeyDescriber)+";");
+			orm.update(sqlGenerator.generate(primaryKeyDescriber));
 		}
 	}
 
@@ -159,5 +172,30 @@ public class AutoMapperIT extends AutoMapperBaseTests {
 		assertNotNull(actual);
 
 		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void primaryKeyOnlyModel_savedMultipleTimes() throws Throwable {
+		PrimaryKeyModel model = factory.get(PrimaryKeyModel.class);
+		model.setFirst("1");
+		model.setSecond("2");
+		primayKeyModelRepository.save(model);
+		primayKeyModelRepository.save(model);
+	}
+
+	@Test
+	public void primaryKeyOnlyModelList_savedMultipleTimes() throws Throwable {
+		PrimaryKeyModel model = factory.get(PrimaryKeyModel.class);
+		model.setFirst("1");
+		model.setSecond("2");
+		PrimaryKeyModel model2 = factory.get(PrimaryKeyModel.class);
+		model2.setFirst("2");
+		model2.setSecond("3");
+		primayKeyModelRepository.doRetryableInTransaction(tx -> {
+			primayKeyModelRepository.save(tx, Arrays.asList(model, model2));
+		});
+		primayKeyModelRepository.doRetryableInTransaction(tx -> {
+			primayKeyModelRepository.save(tx, Arrays.asList(model, model2));
+		});
 	}
 }

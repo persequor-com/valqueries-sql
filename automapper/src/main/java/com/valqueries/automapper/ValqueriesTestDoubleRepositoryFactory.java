@@ -17,7 +17,7 @@ public class ValqueriesTestDoubleRepositoryFactory extends ValqueriesRepositoryF
 		this.store = store;
 	}
 
-	public <T, K> ValqueriesBaseCrudRepository<T, K> get(Class<T> modelType, Class<K> keyType) {
-		return new ValqueriesCrudRepositoryTestDoubleBase<T, K>(genericFactory, modelType, keyType, mappingHelper, store);
+	public <T, K> ValqueriesAccessDataLayer<T, K> get(Class<T> modelType, Class<K> keyType) {
+		return new ValqueriesAccessDataLayerTestDouble<T, K>(genericFactory, modelType, keyType, mappingHelper, store);
 	}
 }

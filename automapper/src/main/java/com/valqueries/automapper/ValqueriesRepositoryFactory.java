@@ -22,7 +22,7 @@ public class ValqueriesRepositoryFactory {
 		this.columnFormatter = columnFormatter;
 	}
 
-	public <T, K> ValqueriesBaseCrudRepository<T, K> get(Class<T> modelType, Class<K> keyType) {
-		return new ValqueriesCrudRepositoryBase<T, K>(database, genericFactory, modelType, keyType, mappingHelper, columnFormatter);
+	public <T, K> ValqueriesAccessDataLayer<T, K> get(Class<T> modelType, Class<K> keyType) {
+		return new ValqueriesAccessDataLayerImpl<T, K>(database, genericFactory, modelType, keyType, mappingHelper, columnFormatter);
 	}
 }
