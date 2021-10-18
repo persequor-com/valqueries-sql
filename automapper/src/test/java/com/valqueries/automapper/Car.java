@@ -82,7 +82,9 @@ public class Car {
 
 	public void setExhaust(Exhaust exhaust) {
 		this.exhaust = exhaust;
-		this.exhaustId = exhaust.getId();
+		if (exhaust != null) {
+			this.exhaustId = exhaust.getId();
+		}
 	}
 
 	public UUID getExhaustId() {
