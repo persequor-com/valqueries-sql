@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRepository<T, K> {
+public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessDataLayer<T, K> {
 	protected Database database;
 	protected GenericFactory genericFactory;
 	protected Class<T> modelType;
@@ -34,7 +34,7 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 	protected MappingHelper mappingHelper;
 	private final SqlNameFormatter sqlNameFormatter;
 
-	public ValqueriesCrudRepositoryBase(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
+	public ValqueriesAccessDataLayerImpl(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
 		this.database = database;
 		this.genericFactory = genericFactory;
 		this.modelType = modelType;
@@ -136,12 +136,12 @@ public class ValqueriesCrudRepositoryBase<T, K> implements ValqueriesBaseCrudRep
 	}
 
 	@Override
-	public <R> CrudUpdateResult saveRelation(ITransactionContext tx, R entity, Class<R> relationClass) {
+	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O entity, Class<O> relationClass) {
 		return saveInternal(tx, entity, relationClass);
 	}
 
 	@Override
-	public <R> CrudUpdateResult saveRelations(ITransactionContext tx, Collection<R> entities, Class<R> relationClass) {
+	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> entities, Class<O> relationClass) {
 		return saveInternal(tx, entities, relationClass);
 	}
 

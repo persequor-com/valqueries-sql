@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudRepository<T, K> {
 
-	private final ValqueriesBaseCrudRepository<T, K> baseRepo;
+	private final ValqueriesAccessDataLayer<T, K> baseRepo;
 	private final Class<T> modelType;
 
 	public ValqueriesCrudRepositoryImpl(ValqueriesRepositoryFactory factory, Class<T> modelType, Class<K> keyType) {
@@ -62,19 +62,19 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		return changed::getNumberOfChangedRows;
 	}
 
-	private <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
-		return baseRepo.saveRelation(tx, t, oClass);
+	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
+		return baseRepo.saveOther(tx, t, oClass);
 	}
 
-	private <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> t, Class<O> oClass) {
-		return baseRepo.saveRelations(tx, t, oClass);
+	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> t, Class<O> oClass) {
+		return baseRepo.saveOthers(tx, t, oClass);
 	}
 
-	private <X> void saveIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<X> ts, Class<X> xClass) {
-		Collection<X> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
+	private <O> void saveIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<O> ts, Class<O> xClass) {
+		Collection<O> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
 		changed.increment(notAlreadySaved, saveOthers(tx, notAlreadySaved, xClass).affectedRows());
 		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
-			for(X t : notAlreadySaved) {
+			for(O t : notAlreadySaved) {
 				internalSaveRelation(changed, tx, t, relationDescriber);
 			}
 		});

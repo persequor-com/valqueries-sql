@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesBaseCrudRepository<T, K> {
+public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAccessDataLayer<T, K> {
 	private final TestDoubleDb store;
 	protected GenericFactory genericFactory;
 	protected Class<T> modelType;
@@ -24,7 +24,7 @@ public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesB
 	protected TypeDescriber<T> typeDescriber;
 	protected MappingHelper mappingHelper;
 
-	public ValqueriesCrudRepositoryTestDoubleBase(GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, TestDoubleDb store) {
+	public ValqueriesAccessDataLayerTestDouble(GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, TestDoubleDb store) {
 		this.store = store;
 		this.genericFactory = genericFactory;
 		this.modelType = modelType;
@@ -112,13 +112,13 @@ public class ValqueriesCrudRepositoryTestDoubleBase<T, K> implements ValqueriesB
 	}
 
 	@Override
-	public <O> CrudUpdateResult saveRelation(ITransactionContext tx, O t, Class<O> oClass) {
+	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
 		return this.save(t, oClass);
 	}
 
 	@Override
-	public <O> CrudUpdateResult saveRelations(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
-		ts.forEach(t -> this.saveRelation(tx, t, oClass));
+	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
+		ts.forEach(t -> this.saveOther(tx, t, oClass));
 		return ts::size;
 	}
 

@@ -37,7 +37,7 @@ public class DataSourceProvider extends HikariDataSource {
 
 	private DataSourceProvider() {
 		HikariConfig config = new HikariConfig();
-		config.setJdbcUrl(System.getProperty("db.url", "jdbc:mysql://localhost/valqueries"));
+		config.setJdbcUrl(System.getProperty("db.url", "jdbc:mysql://localhost/saga"));
 		config.setDriverClassName("com.mysql.cj.jdbc.Driver");
 		config.setUsername(System.getProperty("db.user", "root"));
 		config.setPassword(System.getProperty("db.password", "s3cr3t"));
