@@ -2,6 +2,7 @@ package com.valqueries.automapper;
 
 import io.ran.Property;
 import io.ran.TypeDescriber;
+import io.ran.TypeDescriberImpl;
 import io.ran.token.Token;
 
 import javax.inject.Inject;
@@ -24,12 +25,16 @@ public class SqlGenerator {
 		return sqlNameFormatter.table(Token.CamelCase(typeDescriber.clazz().getSimpleName()));
 	}
 
-	public String generate(TypeDescriber<?> typeDescriber) {
+	public String generateCreateTable(TypeDescriber<?> typeDescriber) {
 		return "CREATE TABLE IF NOT EXISTS "+ getTableName(typeDescriber)+" ("+typeDescriber.fields().stream().map(property -> {
 			return "`"+sqlNameFormatter.column(property.getToken())+ "` "+getSqlType(property.getType().clazz, property);
 		}).collect(Collectors.joining(", "))+", PRIMARY KEY("+typeDescriber.primaryKeys().stream().map(property -> {
 			return "`"+sqlNameFormatter.column(property.getToken())+"`";
 		}).collect(Collectors.joining(", "))+")"+getIndexes(typeDescriber)+");";
+	}
+
+	public String generateCreateTable(Class<?> clazz) {
+		return generateCreateTable(TypeDescriberImpl.getTypeDescriber(clazz));
 	}
 
 	private String getIndexes(TypeDescriber<?> typeDescriber) {

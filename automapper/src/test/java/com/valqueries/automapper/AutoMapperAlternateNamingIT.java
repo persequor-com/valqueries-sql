@@ -1,8 +1,6 @@
 package com.valqueries.automapper;
 
-import com.google.inject.Binder;
 import com.google.inject.Guice;
-import com.google.inject.Module;
 import com.valqueries.DataSourceProvider;
 import com.valqueries.Database;
 import com.valqueries.IOrm;
@@ -54,30 +52,30 @@ public class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 	public void setup() {
 		try (IOrm orm = database.getOrm()) {
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(carDescriber)+";");
-			orm.update(sqlGenerator.generate(carDescriber));
+			orm.update(sqlGenerator.generateCreateTable(carDescriber));
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(doorDescriber)+";");
-			orm.update(sqlGenerator.generate(doorDescriber));
+			orm.update(sqlGenerator.generateCreateTable(doorDescriber));
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(engineDescriber)+";");
-			orm.update(sqlGenerator.generate(engineDescriber));
+			orm.update(sqlGenerator.generateCreateTable(engineDescriber));
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(engineCarDescriber)+";");
-			orm.update(sqlGenerator.generate(engineCarDescriber));
+			orm.update(sqlGenerator.generateCreateTable(engineCarDescriber));
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(exhaustDescriber)+";");
-			orm.update(sqlGenerator.generate(exhaustDescriber));
+			orm.update(sqlGenerator.generateCreateTable(exhaustDescriber));
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(tireDescriber)+";");
-			orm.update(sqlGenerator.generate(tireDescriber));
+			orm.update(sqlGenerator.generateCreateTable(tireDescriber));
 
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(withCollectionsDescriber)+";");
-			orm.update(sqlGenerator.generate(withCollectionsDescriber));
+			orm.update(sqlGenerator.generateCreateTable(withCollectionsDescriber));
 
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeDescriber)+";");
-			orm.update(sqlGenerator.generate(bikeDescriber));
+			orm.update(sqlGenerator.generateCreateTable(bikeDescriber));
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearDescriber)+";");
-			orm.update(sqlGenerator.generate(bikeGearDescriber));
+			orm.update(sqlGenerator.generateCreateTable(bikeGearDescriber));
 
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearBikeDescriber)+";");
-			orm.update(sqlGenerator.generate(bikeGearBikeDescriber));
+			orm.update(sqlGenerator.generateCreateTable(bikeGearBikeDescriber));
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeWheelDescriber)+";");
-			orm.update(sqlGenerator.generate(bikeWheelDescriber));
+			orm.update(sqlGenerator.generateCreateTable(bikeWheelDescriber));
 
 		}
 	}
