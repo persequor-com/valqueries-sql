@@ -152,7 +152,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		for (RelationDescriber relation : eagers) {
 			String eagerTable = getTableName(relation.getToClass());
 			String eagerAlias = "eager"+(++i);
-			eagerJoin.append(" LEFT JOIN "+eagerTable+" "+eagerAlias+" ON ");
+			eagerJoin.append(" LEFT JOIN `"+eagerTable+"` "+eagerAlias+" ON ");
 			List<KeySet.Field> from = relation.getFromKeys().stream().collect(Collectors.toList());
 			List<KeySet.Field> to = relation.getToKeys().stream().collect(Collectors.toList());
 			for(int x=0;x<from.size();x++) {
@@ -163,7 +163,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			eagerSelect.append(", "+eagerRelationTypeDescriber.fields().stream().map(property -> eagerAlias+"."+sqlNameFormatter.column(property.getToken())+" "+eagerAlias+"_"+sqlNameFormatter.column(property.getToken())).collect(Collectors.joining(", ")));
 
 		}
-		String sql = "SELECT " + columnsSql + eagerSelect.toString() + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias+" "+eagerJoin.toString()+" "+elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
+		String sql = "SELECT " + columnsSql + eagerSelect.toString() + " FROM `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` "+tableAlias+" "+eagerJoin.toString()+" "+elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
@@ -293,7 +293,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildDeleteSql() {
-		String sql = "DELETE "+tableAlias+" FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias;
+		String sql = "DELETE "+tableAlias+" FROM `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` "+tableAlias;
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
@@ -305,7 +305,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildCountSql() {
-		String sql = "SELECT COUNT(1) as the_count FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias;
+		String sql = "SELECT COUNT(1) as the_count FROM `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` "+tableAlias;
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
