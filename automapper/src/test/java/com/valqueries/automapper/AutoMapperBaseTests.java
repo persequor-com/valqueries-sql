@@ -324,6 +324,19 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(w.getField2(), actual.getField2());
 	}
 
+	@Test
+	public void withNullCollections() {
+		WithCollections w = factory.get(WithCollections.class);
+		w.setId("id");
+		w.setField1(null);
+		w.setField2(null);
+		withCollectionsRepository.save(w);
+
+		Optional<WithCollections> actualOptional = withCollectionsRepository.query().eq(WithCollections::getId, "id").execute().findFirst();
+		WithCollections actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertNull(actual.getField1());
+		assertNull(actual.getField2());
+	}
 
 
 	@Test

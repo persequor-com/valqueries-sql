@@ -189,7 +189,11 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 
 	@Override
 	public <T> Collection<T> getCollection(Token token, Class<T> aClass, Class<? extends Collection<T>> collectionClass) {
-		List<T> collection = Arrays.asList(getString(token).split(",")).stream().map(s -> convert(aClass, s)).collect(Collectors.toList());
+		String collectionString = getString(token);
+		if (collectionString == null) {
+			return null;
+		}
+		List<T> collection = Arrays.asList(collectionString.split(",")).stream().map(s -> convert(aClass, s)).collect(Collectors.toList());
 		if (List.class.isAssignableFrom(collectionClass)) {
 			return collection;
 		} else if (Set.class.isAssignableFrom(collectionClass)) {
