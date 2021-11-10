@@ -56,6 +56,7 @@ public abstract class AutoMapperBaseTests {
 	WithCollectionsRepository withCollectionsRepository;
 	BikeRepository bikeRepository;
 	PrimaryKeyModelRepository primayKeyModelRepository;
+	BipodRepository podRepository;
 
 
 	@Before
@@ -86,6 +87,7 @@ public abstract class AutoMapperBaseTests {
 		withCollectionsRepository = injector.getInstance(WithCollectionsRepository.class);
 		bikeRepository = injector.getInstance(BikeRepository.class);
 		primayKeyModelRepository = injector.getInstance(PrimaryKeyModelRepository.class);
+		podRepository = injector.getInstance(BipodRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -517,6 +519,8 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1, actual.getGears().size());
 		assertEquals(8, actual.getGears().get(0).getGearNum());
 	}
+
+
 
 }
 

@@ -7,6 +7,7 @@ import com.valqueries.IOrm;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.Resolver;
+import io.ran.TypeDescriberImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,6 +69,12 @@ public class AutoMapperIT extends AutoMapperBaseTests {
 
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(primaryKeyDescriber)+";");
 			orm.update(sqlGenerator.generateCreateTable(primaryKeyDescriber));
+
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(TypeDescriberImpl.getTypeDescriber(Bipod.class))+";");
+			orm.update(sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(Bipod.class)));
+
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(TypeDescriberImpl.getTypeDescriber(Pod.class))+";");
+			orm.update(sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(Pod.class)));
 		}
 	}
 
@@ -197,5 +204,33 @@ public class AutoMapperIT extends AutoMapperBaseTests {
 		primayKeyModelRepository.doRetryableInTransaction(tx -> {
 			primayKeyModelRepository.save(tx, Arrays.asList(model, model2));
 		});
+	}
+
+	@Test
+	public void twoRelationsToSameClassOnOneObject() throws Throwable {
+		Pod pod1 = factory.get(Pod.class);
+		pod1.setId("pod1");
+		pod1.setName("Pod number 1");
+
+		Pod pod2 = factory.get(Pod.class);
+		pod2.setId("pod2");
+		pod2.setName("Pod number 2");
+
+		Bipod bipod = factory.get(Bipod.class);
+		bipod.setId(UUID.randomUUID().toString());
+		bipod.setPod1(pod1);
+		bipod.setPod2(pod2);
+
+		podRepository.save(bipod);
+
+
+		Bipod actual = podRepository.getEagerBipod(bipod.getId());
+		actual.getClass().getMethod("_resolverInject", Resolver.class).invoke(actual, resolver);
+
+		assertEquals(bipod.getId(), actual.getId());
+		assertEquals("Pod number 1", actual.getPod1().getName());
+		assertEquals("Pod number 2", actual.getPod2().getName());
+
+		verifyNoInteractions(resolver);
 	}
 }

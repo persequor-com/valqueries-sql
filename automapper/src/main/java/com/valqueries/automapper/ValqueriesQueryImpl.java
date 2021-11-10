@@ -217,7 +217,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	public Stream<T> execute() {
 		try {
 			Map<CompoundKey, T> alreadyLoaded = new LinkedHashMap<>();
-			Map<Class, Map<CompoundKey, List>> eagerModels = new HashMap<>();
+			Map<Token, Map<CompoundKey, List>> eagerModels = new HashMap<>();
 			transactionContext.query(buildSelectSql("main"), this, row -> {
 				T t2 = genericFactory.get(modelType);
 				mappingHelper.hydrate(t2, new ValqueriesHydrator("main_", row, sqlNameFormatter));
@@ -232,7 +232,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 					Object hydrated = hydrateEager(t2, relationDescriber, row, ++i);
 					if (hydrated != null) {
 						eagerModels
-								.computeIfAbsent(relationDescriber.getToClass().clazz, (k) -> new HashMap<>())
+								.computeIfAbsent(relationDescriber.getField(), (k) -> new HashMap<>())
 								.computeIfAbsent(key, (k) -> new ArrayList())
 								.add(hydrated);
 					}
@@ -240,7 +240,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				return t2;
 			});
 			for (RelationDescriber relationDescriber : eagers) {
-				Map<CompoundKey, List> eagerModel = eagerModels.get(relationDescriber.getToClass().clazz);
+				Map<CompoundKey, List> eagerModel = eagerModels.get(relationDescriber.getField());
 				if (eagerModel != null) {
 					eagerModel.entrySet().forEach(entry -> {
 						if (relationDescriber.isCollectionRelation()) {
