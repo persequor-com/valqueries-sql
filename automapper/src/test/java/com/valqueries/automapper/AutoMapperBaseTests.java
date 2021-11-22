@@ -18,11 +18,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.After;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.Mock;
 import static org.mockito.Mockito.never;
@@ -520,6 +519,48 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(8, actual.getGears().get(0).getGearNum());
 	}
 
+	@Test
+	public void queryOtherClass() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeGear gear = factory.get(BikeGear.class);
+		gear.setGearNum(8);
+		bike.getGears().add(gear);
+
+		bikeRepository.save(bike);
+
+		BikeGear actual = bikeRepository.getGear(8);
+		assertEquals(8, actual.getGearNum());
+	}
+
+	@Test
+	public void deleteOtherClass() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeGear gear = factory.get(BikeGear.class);
+		gear.setGearNum(8);
+		bike.getGears().add(gear);
+
+		bikeRepository.save(bike);
+
+		BikeGear actual = bikeRepository.getGear(8);
+		assertEquals(8, actual.getGearNum());
+
+		bikeRepository.deleteGear(8);
+
+		try {
+			bikeRepository.getGear(8);
+			fail();
+		} catch (RuntimeException e) {
+
+		}
+	}
 
 
 }

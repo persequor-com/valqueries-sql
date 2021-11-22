@@ -110,6 +110,12 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 	}
 
 	@Override
+	public <O> ValqueriesQuery<O> query(Class<O> oClass) {
+		return new TestDoubleQuery<O>(oClass, genericFactory, mappingHelper, store);
+	}
+
+
+	@Override
 	public CrudUpdateResult save(ITransactionContext tx, T t) {
 		return save(t);
 	}
@@ -135,6 +141,11 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 	@Override
 	public ValqueriesQuery<T> query(ITransactionContext tx) {
 		return query();
+	}
+
+	@Override
+	public <O> ValqueriesQuery<O> query(ITransactionContext tx, Class<O> oClass) {
+		return query(oClass);
 	}
 
 

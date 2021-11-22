@@ -159,8 +159,18 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		return new ValqueriesQueryImpl<T>(database.getOrm(), modelType, genericFactory, sqlNameFormatter, mappingHelper);
 	}
 
+	@Override
+	public <O> ValqueriesQueryImpl<O> query(Class<O> oClass) {
+		return new ValqueriesQueryImpl<O>(database.getOrm(), oClass, genericFactory, sqlNameFormatter, mappingHelper);
+	}
+
 	public ValqueriesQueryImpl<T> query(ITransactionContext tx) {
 		return new ValqueriesQueryImpl<T>(tx, modelType, genericFactory, sqlNameFormatter, mappingHelper);
+	}
+
+	@Override
+	public <O> ValqueriesQuery<O> query(ITransactionContext tx, Class<O> oClass) {
+		return new ValqueriesQueryImpl<O>(tx, oClass, genericFactory, sqlNameFormatter, mappingHelper);
 	}
 
 	@Override
