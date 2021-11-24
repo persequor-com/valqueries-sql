@@ -75,6 +75,9 @@ public class AutoMapperIT extends AutoMapperBaseTests {
 
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(TypeDescriberImpl.getTypeDescriber(Pod.class))+";");
 			orm.update(sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(Pod.class)));
+
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(TypeDescriberImpl.getTypeDescriber(AllFieldTypes.class))+";");
+			orm.update(sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(AllFieldTypes.class)));
 		}
 	}
 

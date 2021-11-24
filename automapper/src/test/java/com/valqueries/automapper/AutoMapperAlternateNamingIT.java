@@ -7,6 +7,7 @@ import com.valqueries.IOrm;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.Resolver;
+import io.ran.TypeDescriberImpl;
 import io.ran.token.Token;
 import org.junit.After;
 import org.junit.Before;
@@ -77,6 +78,8 @@ public class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeWheelDescriber)+";");
 			orm.update(sqlGenerator.generateCreateTable(bikeWheelDescriber));
 
+			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(TypeDescriberImpl.getTypeDescriber(AllFieldTypes.class))+";");
+			orm.update(sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(AllFieldTypes.class)));
 		}
 	}
 

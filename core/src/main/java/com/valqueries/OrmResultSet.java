@@ -1,9 +1,11 @@
 
 package com.valqueries;
 
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -100,5 +102,13 @@ public class OrmResultSet {
 
 	public Orm getOrm() {
 		return orm;
+	}
+
+	public LocalDate getDate(String column) throws SQLException {
+		Date date = resultSet.getDate(column);
+		if (date == null)  {
+			return null;
+		}
+		return date.toLocalDate();
 	}
 }

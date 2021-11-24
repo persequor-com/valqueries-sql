@@ -6,6 +6,11 @@ import io.ran.GenericFactory;
 import io.ran.Resolver;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -54,6 +59,7 @@ public abstract class AutoMapperBaseTests {
 	TireRepository tireRepository;
 	WithCollectionsRepository withCollectionsRepository;
 	BikeRepository bikeRepository;
+	AllFieldTypesRepository allFieldTypesRepository;
 	PrimaryKeyModelRepository primayKeyModelRepository;
 	BipodRepository podRepository;
 
@@ -87,6 +93,7 @@ public abstract class AutoMapperBaseTests {
 		bikeRepository = injector.getInstance(BikeRepository.class);
 		primayKeyModelRepository = injector.getInstance(PrimaryKeyModelRepository.class);
 		podRepository = injector.getInstance(BipodRepository.class);
+		allFieldTypesRepository = injector.getInstance(AllFieldTypesRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -560,6 +567,65 @@ public abstract class AutoMapperBaseTests {
 		} catch (RuntimeException e) {
 
 		}
+	}
+
+	@Test
+	public void allFieldTypes() {
+		AllFieldTypes obj = factory.get(AllFieldTypes.class);
+		obj.setUuid(UUID.randomUUID());
+		obj.setString("string");
+		obj.setCharacter('c');
+		obj.setZonedDateTime(ZonedDateTime.parse("2021-01-01T00:00:00.000Z"));
+		obj.setInstant(Instant.parse("2021-01-01T00:00:00.000Z"));
+		obj.setLocalDateTime(LocalDateTime.parse("2021-01-01T00:00:00"));
+		obj.setLocalDate(LocalDate.parse("2021-01-01"));
+		obj.setBigDecimal(BigDecimal.valueOf(3.1415));
+		obj.setAnEnum(Brand.Hyundai);
+
+		obj.setInteger(24);
+		obj.setaShort((short) 44);
+		obj.setaLong(42L);
+		obj.setaDouble(3.14);
+		obj.setaFloat(3.15f);
+		obj.setaBoolean(false);
+		obj.setaByte((byte) 3);
+
+		obj.setPrimitiveInteger(666);
+		obj.setPrimitiveShort((short) 115);
+		obj.setPrimitiveLong(444L);
+		obj.setPrimitiveDouble(99.99);
+		obj.setPrimitiveFloat(88.88f);
+		obj.setPrimitiveBoolean(true);
+		obj.setPrimitiveByte((byte) 9);
+
+		allFieldTypesRepository.save(obj);
+
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
+
+		assertEquals(obj.getUuid(), actual.getUuid());
+		assertEquals(obj.getString(), actual.getString());
+		assertEquals(obj.getCharacter(), actual.getCharacter());
+		assertEquals(obj.getZonedDateTime(), actual.getZonedDateTime());
+		assertEquals(obj.getInstant(), actual.getInstant());
+		assertEquals(obj.getLocalDateTime(), actual.getLocalDateTime());
+		assertEquals(obj.getLocalDate(), actual.getLocalDate());
+		assertEquals(obj.getBigDecimal().stripTrailingZeros(), actual.getBigDecimal().stripTrailingZeros());
+
+		assertEquals(obj.getInteger(), actual.getInteger());
+		assertEquals(obj.getaShort(), actual.getaShort());
+		assertEquals(obj.getaLong(), actual.getaLong());
+		assertEquals(obj.getaDouble(), actual.getaDouble());
+		assertEquals(obj.getaFloat(), actual.getaFloat());
+		assertEquals(obj.getaBoolean(), actual.getaBoolean());
+		assertEquals(obj.getaByte(), actual.getaByte());
+
+		assertEquals(obj.getPrimitiveInteger(), actual.getPrimitiveInteger());
+		assertEquals(obj.getPrimitiveShort(), actual.getPrimitiveShort());
+		assertEquals(obj.getPrimitiveLong(), actual.getPrimitiveLong());
+		assertEquals(obj.getPrimitiveDouble(), actual.getPrimitiveDouble(),0.001);
+		assertEquals(obj.getPrimitiveFloat(), actual.getPrimitiveFloat(), 0.001);
+		assertEquals(obj.isPrimitiveBoolean(), actual.isPrimitiveBoolean());
+		assertEquals(obj.getPrimitiveByte(), actual.getPrimitiveByte());
 	}
 
 

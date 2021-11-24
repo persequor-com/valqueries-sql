@@ -6,6 +6,10 @@ import io.ran.TypeDescriberImpl;
 import io.ran.token.Token;
 
 import javax.inject.Inject;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -62,8 +66,17 @@ public class SqlGenerator {
 		if (type == UUID.class) {
 			return "CHAR(36) CHARACTER SET latin1";
 		}
-		if (type == ZonedDateTime.class) {
+		if (type == Character.class) {
+			return "CHAR(1)";
+		}
+		if (type == ZonedDateTime.class || type == Instant.class) {
 			return "DATETIME";
+		}
+		if (type == LocalDateTime.class) {
+			return "DATETIME";
+		}
+		if (type == LocalDate.class) {
+			return "DATE";
 		}
 		if (Collection.class.isAssignableFrom(type)) {
 			return "TEXT";
@@ -71,11 +84,20 @@ public class SqlGenerator {
 		if (type.isEnum()) {
 			return "VARCHAR(255) CHARACTER SET latin1";
 		}
-		if (type == int.class || type == Integer.class) {
+		if (type == int.class || type == Integer.class || type == Short.class || type == short.class) {
 			return "INT";
+		}
+		if (type == boolean.class || type == Boolean.class) {
+			return "TINYINT(1)";
+		}
+		if (type == byte.class || type == Byte.class) {
+			return "TINYINT";
 		}
 		if (type == long.class || type == Long.class) {
 			return "BIGINT";
+		}
+		if (type == BigDecimal.class || type == Double.class || type == double.class || type == Float.class || type == float.class) {
+			return "DECIMAL(18,9)";
 		}
 		throw new RuntimeException("So far unsupported column type: "+type.getName());
 	}

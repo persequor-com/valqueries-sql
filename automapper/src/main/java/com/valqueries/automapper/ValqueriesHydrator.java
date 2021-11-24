@@ -12,6 +12,7 @@ import io.ran.token.Token;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -88,9 +89,23 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	@Override
 	public LocalDateTime getLocalDateTime(Token token) {
 		try {
-			ZonedDateTime date = row.getDateTime(transformKey(token));
+			String date = row.getString(transformKey(token));
 			if (date != null) {
-				return date.withZoneSameInstant(ZoneOffset.systemDefault()).toLocalDateTime();
+				return LocalDateTime.parse(date.replace(' ','T'));
+			} else {
+				return null;
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public LocalDate getLocalDate(Token token) {
+		try {
+			String date = row.getString(transformKey(token));
+			if (date != null) {
+				return LocalDate.parse(date);
 			} else {
 				return null;
 			}
@@ -111,10 +126,15 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	@Override
 	public Short getShort(Token token) {
 		try {
-			return row.getInt(transformKey(token)).shortValue();
+			Integer i = row.getInt(transformKey(token));
+			if (i == null) {
+				return null;
+			}
+			return i.shortValue();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
-		}	}
+		}
+	}
 
 	@Override
 	public Long getLong(Token key) {

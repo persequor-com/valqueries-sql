@@ -16,6 +16,8 @@ import io.ran.token.Token;
 
 import java.awt.image.ImageProducer;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -84,18 +86,28 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	}
 
 	@Override
+	public void set(Token token, Instant instant) {
+		add(token, s -> s.set(transformFieldPlaceholder(token), instant));
+	}
+
+	@Override
+	public void set(Token token, LocalDate localDate) {
+		add(token, s -> s.set(transformFieldPlaceholder(token), localDate));
+	}
+
+	@Override
 	public void set(Token key, Integer value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
 	public void set(Token token, Short aShort) {
-		add(token, s -> s.set(transformKey(token), aShort.intValue()));
+		add(token, s -> s.set(transformFieldPlaceholder(token), aShort.intValue()));
 	}
 
 	@Override
 	public void set(Token key, Long value) {
-		statements.add(s -> s.set(transformFieldPlaceholder(key), value));
+		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override

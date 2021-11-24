@@ -2,11 +2,15 @@
 package com.valqueries;
 
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -17,6 +21,7 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 
 	//There is no UNKNOWN type in java.sql.Types class. The min integer value hack is copied from spring's jdbcTemplate
 	private static final int UNKNOWN = Integer.MIN_VALUE;
+	private static final DateTimeFormatter DATETIME_PATTERN = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 	private final Map<String, Object> values = new LinkedHashMap<>();
 
@@ -70,6 +75,11 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 	}
 
 	@Override
+	public void set(String column, LocalDate value) {
+		values.put(column, value);
+	}
+
+	@Override
 	public void set(String column, Integer value) {
 		values.put(column, value);
 	}
@@ -118,10 +128,10 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 			preparedStatement.setNull(index.getAndIncrement(), UNKNOWN);
 		} else if (value instanceof Boolean) {
 			preparedStatement.setBoolean(index.getAndIncrement(), (Boolean) value);
-		} else if (value instanceof Integer) {
-			preparedStatement.setInt(index.getAndIncrement(), (Integer) value);
 		} else if (value instanceof Long) {
 			preparedStatement.setLong(index.getAndIncrement(), (Long) value);
+		} else if (value instanceof Integer) {
+			preparedStatement.setInt(index.getAndIncrement(), (Integer) value);
 		} else if (value instanceof Float) {
 			preparedStatement.setDouble(index.getAndIncrement(), (Float) value);
 		} else if (value instanceof Double) {
@@ -135,10 +145,13 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 		} else if (value instanceof Timestamp) {
 			preparedStatement.setTimestamp(index.getAndIncrement(), ((Timestamp) value));
 		} else if (value instanceof ZonedDateTime) {
-			preparedStatement.setTimestamp(index.getAndIncrement(), ((Timestamp) Timestamp.from(((ZonedDateTime)value).toInstant()
-			)));
+			preparedStatement.setTimestamp(index.getAndIncrement(), ((Timestamp) Timestamp.from(((ZonedDateTime)value).toInstant())));
+		} else if (value instanceof Instant) {
+			preparedStatement.setTimestamp(index.getAndIncrement(), Timestamp.from((Instant) value));
 		} else if (value instanceof LocalDateTime) {
-			preparedStatement.setTimestamp(index.getAndIncrement(), (Timestamp.valueOf((LocalDateTime)value)));
+			preparedStatement.setString(index.getAndIncrement(), ((LocalDateTime) value).format(DATETIME_PATTERN));
+		} else if (value instanceof LocalDate) {
+			preparedStatement.setString(index.getAndIncrement(), ((LocalDate)value).toString());
 		} else if (value instanceof byte[]) {
 			preparedStatement.setBytes(index.getAndIncrement(), (byte[]) value);
 		} else if (value instanceof Collection) {
