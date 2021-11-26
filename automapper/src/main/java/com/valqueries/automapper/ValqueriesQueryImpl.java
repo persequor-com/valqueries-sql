@@ -339,6 +339,26 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		throw new RuntimeException("Tried mapping an unmapped object: "+obj.getClass().getName());
 	}
 
+	@Override
+	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
+		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
+		updater.accept(updImpl);
+		Property.PropertyValueList<?> values = updImpl.getPropertyValues();
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("UPDATE `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` main SET ");
+		sb.append(values.stream().map(pv -> "main."+sqlNameFormatter.column(pv.getProperty().getToken())+" = :"+pv.getProperty().getToken().snake_case()).collect(Collectors.joining(", ")));
+		if (!elements.isEmpty()) {
+			sb.append(" WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
+		}
+
+		int res = transactionContext.update(sb.toString(), u -> {
+			values.forEach(v -> u.set(v.getProperty().getToken().snake_case(), v.getValue()));
+			set(u);
+		}).getAffectedRows();
+		return () -> res;
+	}
+
 
 	private interface Element extends Setter {
 		String queryString();

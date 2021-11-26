@@ -3,6 +3,7 @@ package com.valqueries.automapper;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.MappingHelper;
+import io.ran.PropertiesColumnizer;
 import io.ran.Property;
 import io.ran.RelationDescriber;
 import io.ran.TestDoubleDb;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -263,6 +265,32 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 		field.accept(instance, null);
 		this.subQuery(typeDescriber.relations().get(queryWrapper.getCurrentProperty().getToken().snake_case()), subQuery);
 		return this;
+	}
+
+	@Override
+	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
+		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
+		updater.accept(updImpl);
+		Property.PropertyValueList<?> values = updImpl.getPropertyValues();
+		List<T> result = execute().collect(Collectors.toList());
+		result.forEach(t -> {
+
+			Property.PropertyList fields = TypeDescriberImpl.getTypeDescriber(clazz).fields();
+			PropertiesColumnizer columnizer = new PropertiesColumnizer(fields);
+			mappingHelper.columnize(t, columnizer);
+			List<Property.PropertyValue> bla = columnizer.getValues();
+			Property.PropertyValueList newValues = new Property.PropertyValueList();
+			bla.forEach((v) -> {
+				Optional<? extends Property.PropertyValue<?>> proper = values.stream().filter(pv -> pv.getProperty().getToken().equals(v.getProperty().getToken())).findFirst();
+				if (proper.isPresent()) {
+					newValues.add(proper.get());
+				} else {
+					newValues.add(v);
+				}
+			});
+			mappingHelper.hydrate(t, new PropertyValueHydrator(newValues));
+		});
+		return result::size;
 	}
 
 }
