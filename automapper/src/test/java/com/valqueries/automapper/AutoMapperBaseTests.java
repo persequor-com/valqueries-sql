@@ -748,15 +748,23 @@ public abstract class AutoMapperBaseTests {
 
 	@Test
 	public void update_withoutPreviousRecord() {
-		Car model = factory.get(Car.class);
-		model.setId(UUID.randomUUID());
-		model.setTitle("Muh");
-		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		Car car1 = factory.get(Car.class);
+		car1.setId(UUID.randomUUID());
+		car1.setTitle("car1");
+		car1.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 
-		carRepository.updateTitle(model, "new title");
+		Car car2 = factory.get(Car.class);
+		car2.setId(UUID.randomUUID());
+		car2.setTitle("car2");
+		car2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(car2);
 
-		Optional<Car> actual = carRepository.get(model.getId());
-		assertFalse(actual.isPresent());
+		int affectedRows = carRepository.query()
+				.eq(Car::getId, car1.getId())
+				.update(u -> u.set(Car::getTitle, "new_car1_title"))
+				.affectedRows();
+
+		assertEquals(0, affectedRows);
 	}
 }
 
