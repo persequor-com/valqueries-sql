@@ -46,7 +46,6 @@ public class PropertyValueHydrator implements ObjectMapHydrator {
 	@Override
 	public LocalDateTime getLocalDateTime(Token token) {
 		return (LocalDateTime) getValue(token);
-
 	}
 
 	@Override
@@ -67,7 +66,6 @@ public class PropertyValueHydrator implements ObjectMapHydrator {
 	@Override
 	public Long getLong(Token token) {
 		return (Long) getValue(token);
-
 	}
 
 	@Override
@@ -78,7 +76,6 @@ public class PropertyValueHydrator implements ObjectMapHydrator {
 	@Override
 	public Double getDouble(Token token) {
 		return (Double) getValue(token);
-
 	}
 
 	@Override
@@ -89,19 +86,16 @@ public class PropertyValueHydrator implements ObjectMapHydrator {
 	@Override
 	public Float getFloat(Token token) {
 		return (Float) getValue(token);
-
 	}
 
 	@Override
 	public Boolean getBoolean(Token token) {
 		return (Boolean) getValue(token);
-
 	}
 
 	@Override
 	public Byte getByte(Token token) {
 		return (Byte) getValue(token);
-
 	}
 
 	@Override
@@ -112,6 +106,5 @@ public class PropertyValueHydrator implements ObjectMapHydrator {
 	@Override
 	public <T> Collection<T> getCollection(Token token, Class<T> aClass, Class<? extends Collection<T>> aClass1) {
 		return (Collection<T>) getValue(token);
-
 	}
 }

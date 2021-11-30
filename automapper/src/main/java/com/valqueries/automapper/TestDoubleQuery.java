@@ -7,12 +7,8 @@ import io.ran.PropertiesColumnizer;
 import io.ran.Property;
 import io.ran.RelationDescriber;
 import io.ran.TestDoubleDb;
-import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -20,10 +16,8 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuery<T>> implements ValqueriesQuery<T> {
 	private MappingHelper mappingHelper;
@@ -269,28 +263,40 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 
 	@Override
 	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
-		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
-		updater.accept(updImpl);
-		Property.PropertyValueList<?> values = updImpl.getPropertyValues();
-		List<T> result = execute().collect(Collectors.toList());
-		result.forEach(t -> {
-
-			Property.PropertyList fields = TypeDescriberImpl.getTypeDescriber(clazz).fields();
-			PropertiesColumnizer columnizer = new PropertiesColumnizer(fields);
-			mappingHelper.columnize(t, columnizer);
-			List<Property.PropertyValue> bla = columnizer.getValues();
-			Property.PropertyValueList newValues = new Property.PropertyValueList();
-			bla.forEach((v) -> {
-				Optional<? extends Property.PropertyValue<?>> proper = values.stream().filter(pv -> pv.getProperty().getToken().equals(v.getProperty().getToken())).findFirst();
-				if (proper.isPresent()) {
-					newValues.add(proper.get());
+		Property.PropertyValueList<?> newPropertyValues = this.getPropertyValuesFromUpdater(updater);
+		List<T> records = execute().collect(Collectors.toList());
+		records.forEach(t -> {
+			List<Property.PropertyValue> storedValues = this.getStoredValues(t);
+			Property.PropertyValueList updatedPropertyValues = new Property.PropertyValueList();
+			storedValues.forEach((storedPropertyValue) -> {
+				Optional<? extends Property.PropertyValue<?>> propertyValue = this.getNewPropertyValue(storedPropertyValue, newPropertyValues);
+				if (propertyValue.isPresent()) {
+					updatedPropertyValues.add(propertyValue.get());
 				} else {
-					newValues.add(v);
+					updatedPropertyValues.add(storedPropertyValue);
 				}
 			});
-			mappingHelper.hydrate(t, new PropertyValueHydrator(newValues));
+			mappingHelper.hydrate(t, new PropertyValueHydrator(updatedPropertyValues));
 		});
-		return result::size;
+		return records::size;
 	}
 
+	private Property.PropertyValueList<?> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
+		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
+		updater.accept(updImpl);
+		return updImpl.getPropertyValues();
+	}
+
+	private List<Property.PropertyValue> getStoredValues(T t) {
+		Property.PropertyList fields = TypeDescriberImpl.getTypeDescriber(clazz).fields();
+		PropertiesColumnizer columnizer = new PropertiesColumnizer(fields);
+		mappingHelper.columnize(t, columnizer);
+		return columnizer.getValues();
+	}
+
+	private Optional<? extends Property.PropertyValue<?>> getNewPropertyValue(Property.PropertyValue propertyValue, Property.PropertyValueList<?> newPropertyValues) {
+		return newPropertyValues.stream()
+				.filter(pv -> pv.getProperty().getToken().equals(propertyValue.getProperty().getToken()))
+				.findFirst();
+	}
 }
