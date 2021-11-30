@@ -659,8 +659,6 @@ public abstract class AutoMapperBaseTests {
 
 		allFieldTypesRepository.save(obj);
 
-
-
 		allFieldTypesRepository.query()
 				.eq(AllFieldTypes::getUuid, obj.getUuid())
 				.update(u -> {
@@ -695,7 +693,13 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(obj.getUuid(), actual.getUuid());
 		assertEquals("string2", actual.getString());
 		assertEquals(Character.valueOf('a'), actual.getCharacter());
-		assertEquals(obj.getZonedDateTime().plusMonths(12), actual.getZonedDateTime());
+		//Why do we still have this assertion?
+		//Currently, the obj is getting update when we use the update() method because we use the obj reference.
+		//And so, the line bellow would be incrementing 12 months to the already updated date, making it 2023 instead of
+		//the expected 2022.
+		//This reference problem should be tackled in the near future by using a clone/copy version of the obj.
+		//assertEquals(obj.getZonedDateTime().plusMonths(12), actual.getZonedDateTime());
+		assertEquals(ZonedDateTime.parse("2022-01-01T00:00:00Z"), actual.getZonedDateTime());
 		assertEquals(Instant.parse("2022-01-01T00:00:00Z"), actual.getInstant());
 		assertEquals(LocalDateTime.parse("2022-01-01T00:00:00"), actual.getLocalDateTime());
 		assertEquals(LocalDate.parse("2022-01-01"), actual.getLocalDate());
@@ -719,7 +723,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	public void update_car() {
+	public void update_objectsThatMatchConditions() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle("Muh");
@@ -742,6 +746,33 @@ public abstract class AutoMapperBaseTests {
 	}
 
 
+	@Test
+	public void update_withoutPreviousRecord() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		carRepository.updateTitle(model, "new title");
+
+		Optional<Car> actual = carRepository.get(model.getId());
+		assertFalse(actual.isPresent());
+	}
+
+	@Test
+	public void update_car() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		carRepository.save(model);
+
+		carRepository.updateTitle(model, "new title");
+
+		Car actual = carRepository.get(model.getId()).get();
+		assertEquals("new title", actual.getTitle());
+	}
 }
 
 
