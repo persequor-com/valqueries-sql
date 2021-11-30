@@ -758,21 +758,6 @@ public abstract class AutoMapperBaseTests {
 		Optional<Car> actual = carRepository.get(model.getId());
 		assertFalse(actual.isPresent());
 	}
-
-	@Test
-	public void update_car() {
-		Car model = factory.get(Car.class);
-		model.setId(UUID.randomUUID());
-		model.setTitle("Muh");
-		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
-
-		carRepository.save(model);
-
-		carRepository.updateTitle(model, "new title");
-
-		Car actual = carRepository.get(model.getId()).get();
-		assertEquals("new title", actual.getTitle());
-	}
 }
 
 
