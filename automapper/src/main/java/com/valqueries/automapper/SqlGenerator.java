@@ -1,5 +1,7 @@
 package com.valqueries.automapper;
 
+import io.ran.Key;
+import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
@@ -49,10 +51,18 @@ public class SqlGenerator {
 				indexes.add("FULLTEXT(`"+sqlNameFormatter.column(property.getToken())+"`)");
 			}
 		}
+		typeDescriber.indexes().forEach(keySet -> {
+			indexes.add(getIndex(keySet));
+		});
 		if (indexes.isEmpty()) {
 			return "";
 		}
 		return ", "+String.join(", ",indexes);
+	}
+
+	private String getIndex(KeySet keySet) {
+		String name = keySet.get(0).getProperty().getAnnotations().get(Key.class).name();
+		return "INDEX "+name+" ("+keySet.stream().map(f -> "`"+sqlNameFormatter.column(f.getToken())+"`").collect(Collectors.joining(", "))+")";
 	}
 
 	private String getSqlType(Class<?> type, Property property) {
