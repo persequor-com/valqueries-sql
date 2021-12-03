@@ -62,9 +62,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> in(Property.PropertyValueList propertyValues) {
-		if (!propertyValues.isEmpty()) {
-			elements.add(new ListElement(this, propertyValues, "IN", ++fieldNum, sqlNameFormatter));
-		}
+		elements.add(new ListElement(this, propertyValues, "IN", ++fieldNum, sqlNameFormatter));
 		return this;
 	}
 
@@ -467,23 +465,23 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	private class ListElement implements Element {
 		private final ValqueriesQueryImpl<T> query;
-		private final List<Property.PropertyValue> values;
+		private final Property.PropertyValueList<?> values;
 		private final String operator;
 		private final int fieldNum;
 		private SqlNameFormatter sqlNameFormatter;
 		private final String field;
 
-		public ListElement(ValqueriesQueryImpl<T> query, List<Property.PropertyValue> values, String operator, int fieldNum, SqlNameFormatter sqlNameFormatter) {
+		public ListElement(ValqueriesQueryImpl<T> query, Property.PropertyValueList<?> values, String operator, int fieldNum, SqlNameFormatter sqlNameFormatter) {
 			this.query = query;
 			this.values = values;
 			this.operator = operator;
 			this.fieldNum = fieldNum;
 			this.sqlNameFormatter = sqlNameFormatter;
-			this.field = values.get(0).getProperty().getToken().snake_case()+fieldNum;
+			this.field = values.getProperty().getToken().snake_case()+fieldNum;
 
 		}
 		public String queryString() {
-			return query.tableAlias+".`"+sqlNameFormatter.column(values.get(0).getProperty().getToken())+"` "+operator+" (:"+field+")";
+			return query.tableAlias+".`"+sqlNameFormatter.column(values.getProperty().getToken())+"` "+operator+" (:"+field+")";
 		}
 
 		@Override
