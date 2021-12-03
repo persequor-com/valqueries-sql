@@ -341,7 +341,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
-		Property.PropertyValueList<?> newPropertyValues = this.getPropertyValuesFromUpdater(updater);
+		List<Property.PropertyValue>  newPropertyValues = this.getPropertyValuesFromUpdater(updater);
 		String updateStatement = this.buildUpdateSql(newPropertyValues);
 
 		int affectedRows = transactionContext.update(updateStatement, uStmt -> {
@@ -351,13 +351,13 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		return () -> affectedRows;
 	}
 
-	private Property.PropertyValueList<?> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
+	private List<Property.PropertyValue> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
 		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
 		updater.accept(updImpl);
 		return updImpl.getPropertyValues();
 	}
 
-	private String buildUpdateSql(Property.PropertyValueList<?> newPropertyValues) {
+	private String buildUpdateSql(List<Property.PropertyValue> newPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 		updateStatement.append("UPDATE `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` main SET ");
 

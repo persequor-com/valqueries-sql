@@ -263,13 +263,13 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 
 	@Override
 	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
-		Property.PropertyValueList<?> newPropertyValues = this.getPropertyValuesFromUpdater(updater);
+		List<Property.PropertyValue> newPropertyValues = this.getPropertyValuesFromUpdater(updater);
 		List<T> records = execute().collect(Collectors.toList());
 		records.forEach(t -> {
 			List<Property.PropertyValue> storedValues = this.getStoredValues(t);
 			Property.PropertyValueList updatedPropertyValues = new Property.PropertyValueList();
 			storedValues.forEach((storedPropertyValue) -> {
-				Optional<? extends Property.PropertyValue<?>> propertyValue = this.getNewPropertyValue(storedPropertyValue, newPropertyValues);
+				Optional<? extends Property.PropertyValue> propertyValue = this.getNewPropertyValue(storedPropertyValue, newPropertyValues);
 				if (propertyValue.isPresent()) {
 					updatedPropertyValues.add(propertyValue.get());
 				} else {
@@ -281,7 +281,7 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 		return records::size;
 	}
 
-	private Property.PropertyValueList<?> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
+	private List<Property.PropertyValue> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
 		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
 		updater.accept(updImpl);
 		return updImpl.getPropertyValues();
@@ -294,7 +294,7 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 		return columnizer.getValues();
 	}
 
-	private Optional<? extends Property.PropertyValue<?>> getNewPropertyValue(Property.PropertyValue propertyValue, Property.PropertyValueList<?> newPropertyValues) {
+	private Optional<? extends Property.PropertyValue> getNewPropertyValue(Property.PropertyValue propertyValue, List<Property.PropertyValue> newPropertyValues) {
 		return newPropertyValues.stream()
 				.filter(pv -> pv.getProperty().getToken().equals(propertyValue.getProperty().getToken()))
 				.findFirst();

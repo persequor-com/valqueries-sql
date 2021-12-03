@@ -3,12 +3,14 @@ package com.valqueries.automapper;
 import io.ran.Property;
 import io.ran.QueryWrapper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 public class ValqueriesUpdateImpl<T> implements ValqueriesUpdate<T> {
 	private final T instance;
 	private final QueryWrapper queryWrapper;
-	Property.PropertyValueList propertyValues = new Property.PropertyValueList();
+	List<Property.PropertyValue> propertyValues = new ArrayList<>();
 
 	public ValqueriesUpdateImpl(T instance, QueryWrapper queryWrapper) {
 		this.instance = instance;
@@ -22,7 +24,7 @@ public class ValqueriesUpdateImpl<T> implements ValqueriesUpdate<T> {
 		this.propertyValues.add(p.value(value));
 	}
 
-	public Property.PropertyValueList getPropertyValues() {
+	public List<Property.PropertyValue> getPropertyValues() {
 		return propertyValues;
 	}
 }
