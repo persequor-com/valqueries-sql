@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.mysql.cj.protocol.x.StatementExecuteOk;
 import com.valqueries.IStatement;
 import com.valqueries.ITransactionContext;
 import com.valqueries.OrmResultSet;
@@ -133,6 +134,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		elements.add(new SimpleElement(this, property.value(null),"IS NOT NULL", ++fieldNum, sqlNameFormatter));
 		return this;
 	}
+
 
 
 	private String buildSelectSql(String tableAlias, String... columns) {
@@ -277,6 +279,45 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		}
 	}
 
+	protected GroupNumericResult aggregateMethod(Property resultProperty, String aggregateMethod) {
+		try {
+			String sql = buildGroupAggregateSql(resultProperty, aggregateMethod);
+			Map<GroupNumericResultImpl.Grouping, Long> res = transactionContext.query(sql, this, row -> {
+				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter));
+				T t = genericFactory.get(modelType);
+				mappingHelper.hydrate(t, hydrator);
+				return new GroupNumericResultImpl.Grouping(hydrator.getValues(), row.getLong("the_count"));
+			}).stream().collect(Collectors.toMap(g -> g, g -> (long)g.getValue()));
+			return new GroupNumericResultImpl(res);
+		} finally {
+			try {
+				close();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	@Override
+	protected GroupNumericResult count(Property resultProperty) {
+		return aggregateMethod(resultProperty, "COUNT");
+	}
+
+	@Override
+	protected GroupNumericResult sum(Property resultProperty) {
+		return aggregateMethod(resultProperty, "SUM");
+	}
+
+	@Override
+	protected GroupNumericResult max(Property resultProperty) {
+		return aggregateMethod(resultProperty, "MAX");
+	}
+
+	@Override
+	protected GroupNumericResult min(Property resultProperty) {
+		return aggregateMethod(resultProperty, "MIN");
+	}
+
 	@Override
 	public CrudRepository.CrudUpdateResult delete() {
 		try {
@@ -313,6 +354,17 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		return sql;
 	}
 
+
+	private String buildGroupAggregateSql(Property resultProperty, String aggregateMethod) {
+		String sql = "SELECT "+aggregateMethod+"("+this.sqlNameFormatter.column(resultProperty.getToken())+") as the_count , "+groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", "))+" FROM `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` "+tableAlias;
+		if (!elements.isEmpty()) {
+			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
+		}
+		sql += " GROUP BY "+groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", "))+"";
+//		System.out.println(sql);
+		return sql;
+	}
+
 	private <X> X hydrateEager(T rootObject, RelationDescriber relationDescriber, OrmResultSet row, int i) {
 		X otherModel = (X)genericFactory.get(relationDescriber.getToClass().clazz);
 		mapping(otherModel).hydrate(new ValqueriesHydrator("eager"+(i)+"_", row, sqlNameFormatter));
@@ -338,7 +390,6 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		}
 		throw new RuntimeException("Tried mapping an unmapped object: "+obj.getClass().getName());
 	}
-
 
 	private interface Element extends Setter {
 		String queryString();
