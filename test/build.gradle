@@ -1,2 +1,6 @@
 dependencies {
+    api project(':core')
+    api project(':automapper')
+    api project(':valqueries-mariadb')
+    api project(':valqueries-sqlserver')
 }

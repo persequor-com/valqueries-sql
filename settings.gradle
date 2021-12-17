@@ -2,3 +2,6 @@ rootProject.name = 'valqueries'
 include(':core')
 include(':automapper')
 include(':test')
+include 'valqueries-mariadb'
+include 'valqueries-sqlserver'
+

@@ -1,5 +1,7 @@
 package com.valqueries.automapper;
 
+import com.valqueries.Database;
+import io.ran.Clazz;
 import io.ran.Key;
 import io.ran.KeySet;
 import io.ran.Property;
@@ -21,94 +23,29 @@ import java.util.stream.Collectors;
 
 public class SqlGenerator {
 	private SqlNameFormatter sqlNameFormatter;
+	private SqlDialect dialect;
 
 	@Inject
-	public SqlGenerator(SqlNameFormatter sqlNameFormatter) {
+	public SqlGenerator(SqlNameFormatter sqlNameFormatter, DialectFactory dialectFactory, Database database) {
 		this.sqlNameFormatter = sqlNameFormatter;
+		this.dialect = dialectFactory.get(database);
 	}
 
 	public String getTableName(TypeDescriber<?> typeDescriber) {
-		return sqlNameFormatter.table(Token.CamelCase(typeDescriber.clazz().getSimpleName()));
+		return dialect.getTableName(Clazz.of(typeDescriber.clazz()));
 	}
 
 	public String generateCreateTable(TypeDescriber<?> typeDescriber) {
-		return "CREATE TABLE IF NOT EXISTS "+ getTableName(typeDescriber)+" ("+typeDescriber.fields().stream().map(property -> {
-			return "`"+sqlNameFormatter.column(property.getToken())+ "` "+getSqlType(property.getType().clazz, property);
-		}).collect(Collectors.joining(", "))+", PRIMARY KEY("+typeDescriber.primaryKeys().stream().map(property -> {
-			return "`"+sqlNameFormatter.column(property.getToken())+"`";
-		}).collect(Collectors.joining(", "))+")"+getIndexes(typeDescriber)+");";
+		return dialect.generateCreateTable(typeDescriber);
 	}
 
 	public String generateCreateTable(Class<?> clazz) {
 		return generateCreateTable(TypeDescriberImpl.getTypeDescriber(clazz));
 	}
 
-	private String getIndexes(TypeDescriber<?> typeDescriber) {
-		List<String> indexes = new ArrayList<>();
-		for (Property property : typeDescriber.fields()) {
-			Fulltext fullText = property.getAnnotations().get(Fulltext.class);
-			if (fullText != null) {
-				indexes.add("FULLTEXT(`"+sqlNameFormatter.column(property.getToken())+"`)");
-			}
-		}
-		typeDescriber.indexes().forEach(keySet -> {
-			indexes.add(getIndex(keySet));
-		});
-		if (indexes.isEmpty()) {
-			return "";
-		}
-		return ", "+String.join(", ",indexes);
-	}
 
-	private String getIndex(KeySet keySet) {
-		String name = keySet.get(0).getProperty().getAnnotations().get(Key.class).name();
-		return "INDEX "+name+" ("+keySet.stream().map(f -> "`"+sqlNameFormatter.column(f.getToken())+"`").collect(Collectors.joining(", "))+")";
-	}
 
-	private String getSqlType(Class<?> type, Property property) {
-		MappedType mappedType = property.getAnnotations().get(MappedType.class);
-		if (mappedType != null) {
-			return mappedType.value();
-		}
-		if (type == String.class) {
-			return "VARCHAR(255)";
-		}
-		if (type == UUID.class) {
-			return "CHAR(36) CHARACTER SET latin1";
-		}
-		if (type == Character.class) {
-			return "CHAR(1)";
-		}
-		if (type == ZonedDateTime.class || type == Instant.class) {
-			return "DATETIME";
-		}
-		if (type == LocalDateTime.class) {
-			return "DATETIME";
-		}
-		if (type == LocalDate.class) {
-			return "DATE";
-		}
-		if (Collection.class.isAssignableFrom(type)) {
-			return "TEXT";
-		}
-		if (type.isEnum()) {
-			return "VARCHAR(255) CHARACTER SET latin1";
-		}
-		if (type == int.class || type == Integer.class || type == Short.class || type == short.class) {
-			return "INT";
-		}
-		if (type == boolean.class || type == Boolean.class) {
-			return "TINYINT(1)";
-		}
-		if (type == byte.class || type == Byte.class) {
-			return "TINYINT";
-		}
-		if (type == long.class || type == Long.class) {
-			return "BIGINT";
-		}
-		if (type == BigDecimal.class || type == Double.class || type == double.class || type == Float.class || type == float.class) {
-			return "DECIMAL(18,9)";
-		}
-		throw new RuntimeException("So far unsupported column type: "+type.getName());
-	}
+
+
+
 }
