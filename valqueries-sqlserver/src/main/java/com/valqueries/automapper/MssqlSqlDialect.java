@@ -32,7 +32,7 @@ public class MssqlSqlDialect implements SqlDialect {
 				") incoming ("+columnizer.getFields().entrySet().stream().map((e) -> "["+e.getValue()+"]").collect(Collectors.joining(", "))+") on "+columnizer.getKeys().stream().map(k -> "target.["+k+"] = incoming.["+k+"]").collect(Collectors.joining(" AND "))+
 				(columnizer.getFieldsWithoutKeys().size() > 0 ? " WHEN MATCHED THEN UPDATE SET "+columnizer.getFieldsWithoutKeys().entrySet().stream().map(e -> "["+e.getValue()+"] = incoming.["+e.getValue()+"]").collect(Collectors.joining(", ")):"")+
 				" WHEN NOT MATCHED THEN INSERT ("+columnizer.getFields().entrySet().stream().map(e -> "["+e.getValue()+"]").collect(Collectors.joining(", "))+") " +
-				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming.["+e.getKey()+"]").collect(Collectors.joining(", "))+");";
+				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming.["+e.getValue()+"]").collect(Collectors.joining(", "))+");";
 	}
 
 	public String getSqlType(Class type, Property property) {

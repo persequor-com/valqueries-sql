@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
 import io.ran.Key;
 import io.ran.KeySet;
@@ -105,4 +106,16 @@ public interface SqlDialect {
 	String column(Token token);
 
 	String limit(int offset, Integer limit);
+
+	default String delete(String tableAlias, TypeDescriber<?> typeDescriber, List<Element> elements, int offset, Integer limit) {
+		String sql = "DELETE "+tableAlias+" FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " AS "+tableAlias;
+		if (!elements.isEmpty()) {
+			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
+		}
+		if (limit !=  null) {
+			sql += limit(offset, limit);
+		}
+//		System.out.println(sql);
+		return sql;
+	}
 }

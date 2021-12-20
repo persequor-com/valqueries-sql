@@ -10,18 +10,18 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
 
-public class SqlServerDataSourceProvider extends HikariDataSource {
-	private static SqlServerDataSourceProvider INSTANCE;
+public class H2DataSourceProvider extends HikariDataSource {
+	private static H2DataSourceProvider INSTANCE;
 	private final HikariDataSource dataSource;
 
-	private SqlServerDataSourceProvider() {
+	private H2DataSourceProvider() {
 		HikariConfig config = new HikariConfig();
 
 
-		config.setJdbcUrl(System.getProperty("db.url", "jdbc:sqlserver://localhost"));
-		config.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+		config.setJdbcUrl(System.getProperty("db.url", "jdbc:h2:file:/tmp/test"));
+		config.setDriverClassName("org.h2.Driver");
 		config.setUsername(System.getProperty("db.user", "sa"));
-		config.setPassword(System.getProperty("db.password", "7h3_s3cr3t!1s?0u7"));
+		config.setPassword(System.getProperty("db.password", "sa"));
 		config.setMinimumIdle(10);
 		config.setMaximumPoolSize(1);
 
@@ -36,9 +36,9 @@ public class SqlServerDataSourceProvider extends HikariDataSource {
 	public static DataSource get() {
 		if (INSTANCE == null) {
 			try {
-				INSTANCE = new SqlServerDataSourceProvider();
+				INSTANCE = new H2DataSourceProvider();
 			} catch (RuntimeException ex) {
-				throw new RuntimeException("You should probably provide correct VM parameters. E.g.: \n -Ddb.url=jdbc:sqlserver://localhost:3306/valqueries -Ddb.user=root -Ddb.password=s3cr3t", ex);
+				throw new RuntimeException("You should probably provide correct VM parameters. E.g.: \n -Ddb.url=jdbc:h2:file:test.h2.db -Ddb.user=root -Ddb.password=s3cr3t", ex);
 			}
 		}
 		return INSTANCE.getDataSource();

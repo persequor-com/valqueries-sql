@@ -4,4 +4,5 @@ include(':automapper')
 include(':test')
 include 'valqueries-mariadb'
 include 'valqueries-sqlserver'
+include 'valqueries-h2'
 

@@ -55,7 +55,6 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 				}
 				orm.update(sqlGenerator.generateCreateTable(desc));
 			});
-
 		}
 	}
 

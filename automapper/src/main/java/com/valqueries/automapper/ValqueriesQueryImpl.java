@@ -5,6 +5,12 @@ import com.valqueries.ITransactionContext;
 import com.valqueries.OrmResultSet;
 import com.valqueries.Setter;
 import com.valqueries.UpdateResult;
+import com.valqueries.automapper.elements.Element;
+import com.valqueries.automapper.elements.FreeTextElement;
+import com.valqueries.automapper.elements.ListElement;
+import com.valqueries.automapper.elements.RelationSubQueryElement;
+import com.valqueries.automapper.elements.SimpleElement;
+import com.valqueries.automapper.elements.SortElement;
 import io.ran.Clazz;
 import io.ran.CompoundKey;
 import io.ran.CrudRepository;
@@ -137,7 +143,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 
-	private String buildSelectSql(String tableAlias, String... columns) {
+	public String buildSelectSql(String tableAlias, String... columns) {
 		T t = genericFactory.get(modelType);
 		String columnsSql;
 		if (columns.length == 0) {
@@ -179,7 +185,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		return sql;
 	}
 
-	private String getTableName(Clazz<?> toClass) {
+	public String getTableName(Clazz<?> toClass) {
 		return dialect.getTableName(toClass);
 	}
 
@@ -190,13 +196,13 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public <X extends Comparable<X>> ValqueriesQuery<T> sortAscending(Property<X> property) {
-		sortElements.add(new SortElement(this, property, true, sqlNameFormatter, dialect));
+		sortElements.add(new SortElement<T>(this, property, true, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public <X extends Comparable<X>> ValqueriesQuery<T> sortDescending(Property<X> property) {
-		sortElements.add(new SortElement(this, property, false, sqlNameFormatter, dialect));
+		sortElements.add(new SortElement<T>(this, property, false, sqlNameFormatter, dialect));
 		return null;
 	}
 
@@ -283,6 +289,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	public CrudRepository.CrudUpdateResult delete() {
 		try {
 			String sql = buildDeleteSql();
+			System.out.println(sql);
 			UpdateResult update = transactionContext.update(sql, this);
 			return () -> update.getAffectedRows();
 		} finally {
@@ -295,15 +302,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildDeleteSql() {
-		String sql = "DELETE "+tableAlias+" FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias;
-		if (!elements.isEmpty()) {
-			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
-		}
-		if (limit !=  null) {
-			sql += dialect.limit(offset, limit);
-		}
-//		System.out.println(sql);
-		return sql;
+		return dialect.delete(tableAlias, typeDescriber, elements, offset, limit);
 	}
 
 	private String buildCountSql() {
@@ -342,189 +341,11 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 
-	private interface Element extends Setter {
-		String queryString();
-
-		default String fromString() {
-			return null;
-		}
-	}
-
-	private static class RelationSubQueryElement implements Element {
-		private final ValqueriesQueryImpl<?> otherQuery;
-		private SqlNameFormatter sqlNameFormatter;
-		private final RelationDescriber relation;
-		private final String tableAlias;
-		private String parentTableAlias;
-		private int subQueryNum;
-		private SqlDialect dialect;
-
-		public RelationSubQueryElement(String parentTableAlias, String tableAlias, int subQueryNum, RelationDescriber relation, ValqueriesQueryImpl<?> otherQuery, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
-			this.parentTableAlias = parentTableAlias;
-			this.tableAlias = tableAlias;
-			this.subQueryNum = subQueryNum;
-			this.relation = relation;
-			this.otherQuery = otherQuery;
-			this.sqlNameFormatter = sqlNameFormatter;
-			this.dialect = dialect;
-		}
-
-		public String queryString() {
-			return parentTableAlias + "." + dialect.escapeColumnOrTable(sqlNameFormatter.column(relation.getFromKeys().get(0).getToken())) + " IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + ")";
-
-		}
-
-		@Override
-		public void set(IStatement statement) {
-			otherQuery.set(statement);
-		}
-	}
-
-	private static class RelationJoinElement implements Element {
-		private final ValqueriesQueryImpl<?> otherQuery;
-		private SqlNameFormatter sqlNameFormatter;
-		private final RelationDescriber relation;
-		private final String tableAlias;
-		private String parentTableAlias;
-		private int subQueryNum;
-		private SqlDialect dialect;
-
-		public RelationJoinElement(String parentTableAlias, String tableAlias, int subQueryNum, RelationDescriber relation, ValqueriesQueryImpl<?> otherQuery, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
-			this.parentTableAlias = parentTableAlias;
-			this.tableAlias = tableAlias;
-			this.subQueryNum = subQueryNum;
-			this.relation = relation;
-			this.otherQuery = otherQuery;
-			this.sqlNameFormatter = sqlNameFormatter;
-			this.dialect = dialect;
-		}
-
-		public String queryString() {
-			return "";
-		}
-
-		@Override
-		public String fromString() {
-			return " JOIN "+dialect.escapeColumnOrTable(otherQuery.getTableName(relation.getToClass()))+"."+tableAlias + " ON " + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + "";
-		}
-
-		@Override
-		public void set(IStatement statement) {
-			otherQuery.set(statement);
-		}
-	}
-
 	private void setTableAlias(String tableAlias) {
 		this.tableAlias = tableAlias;
 	}
 
-	private static class SimpleElement implements Element {
-		private final ValqueriesQueryImpl<?> query;
-		private final Property.PropertyValue<?> propertyValue;
-		private final String operator;
-		private SqlNameFormatter sqlNameFormatter;
-		private final String field;
-		private SqlDialect dialect;
-
-		public SimpleElement(ValqueriesQueryImpl<?> query, Property.PropertyValue<?> propertyValue, String operator, int fieldNum, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
-			this.query = query;
-			this.propertyValue = propertyValue;
-			this.operator = operator;
-			this.sqlNameFormatter = sqlNameFormatter;
-			this.dialect = dialect;
-			this.field = propertyValue.getProperty().getToken().snake_case()+fieldNum;
-		}
-
-		public String queryString() {
-			return query.tableAlias+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(propertyValue.getProperty().getToken()))+" "+operator+" (:"+field+")";
-		}
-
-		@Override
-		public void set(IStatement statement) {
-			statement.set(field, propertyValue.getValue());
-		}
-	}
-
-	private static class FreeTextElement implements Element {
-
-		private final ValqueriesQueryImpl<?> query;
-		private final Property.PropertyValue<?> propertyValue;
-		private SqlNameFormatter sqlNameFormatter;
-		private final String field;
-		private SqlDialect dialect;
-
-		public FreeTextElement(ValqueriesQueryImpl<?> query, Property.PropertyValue<?> propertyValue, int fieldNum, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
-			this.query = query;
-			this.propertyValue = propertyValue;
-			this.sqlNameFormatter = sqlNameFormatter;
-			this.dialect = dialect;
-			this.field = propertyValue.getProperty().getToken().snake_case()+fieldNum;
-		}
-
-		@Override
-		public String queryString() {
-			return "MATCH("+query.tableAlias+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(propertyValue.getProperty().getToken()))+") AGAINST(:"+field+")";
-		}
-
-		@Override
-		public void set(IStatement statement) {
-			statement.set(field, propertyValue.getValue());
-		}
-
-	}
-
-	private class ListElement implements Element {
-		private final ValqueriesQueryImpl<T> query;
-		private final List<Property.PropertyValue> values;
-		private final String operator;
-		private final int fieldNum;
-		private SqlNameFormatter sqlNameFormatter;
-		private final String field;
-		private final SqlDialect dialect;
-
-		public ListElement(ValqueriesQueryImpl<T> query, List<Property.PropertyValue> values, String operator, int fieldNum, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
-			this.query = query;
-			this.values = values;
-			this.operator = operator;
-			this.fieldNum = fieldNum;
-			this.sqlNameFormatter = sqlNameFormatter;
-			this.dialect = dialect;
-			this.field = values.get(0).getProperty().getToken().snake_case()+fieldNum;
-
-		}
-		public String queryString() {
-			return query.tableAlias+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(values.get(0).getProperty().getToken()))+" "+operator+" (:"+field+")";
-		}
-
-		@Override
-		public void set(IStatement statement) {
-			statement.set(field, values.stream().map(Property.PropertyValue::getValue).collect(Collectors.toList()));
-		}
-	}
-
-	private class SortElement implements Element {
-		private final ValqueriesQueryImpl<T> query;
-		private final Property<?> property;
-		private boolean ascending;
-		private SqlNameFormatter sqlNameFormatter;
-		private SqlDialect dialect;
-
-		public SortElement(ValqueriesQueryImpl<T> query, Property<?> property, boolean ascending, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
-			this.query = query;
-			this.property = property;
-			this.ascending = ascending;
-			this.sqlNameFormatter = sqlNameFormatter;
-			this.dialect = dialect;
-		}
-
-		@Override
-		public String queryString() {
-			return query.tableAlias+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(property.getToken()))+""+(ascending ? " ASC" : " DESC");
-		}
-
-		@Override
-		public void set(IStatement statement) {
-
-		}
+	public String getTableAlias() {
+		return tableAlias;
 	}
 }

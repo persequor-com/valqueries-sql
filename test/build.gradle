@@ -3,4 +3,7 @@ dependencies {
     api project(':automapper')
     api project(':valqueries-mariadb')
     api project(':valqueries-sqlserver')
+    api project(':valqueries-h2')
+    compile group: 'com.h2database', name: 'h2', version: '2.0.202'
+
 }
