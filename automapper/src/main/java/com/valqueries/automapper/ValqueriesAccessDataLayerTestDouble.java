@@ -55,12 +55,14 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 	@Override
 	public CrudUpdateResult deleteById(K k) {
 		T existing = getStore(modelType).remove(k);
-		return new CrudUpdateResult() {
-			@Override
-			public int affectedRows() {
-				return existing != null ? 1 : 0;
-			}
-		};
+		return () -> existing != null ? 1 : 0;
+	}
+
+	@Override
+	public CrudUpdateResult deleteByIds(Collection<K> collection) {
+		return () -> collection.stream()
+				.mapToInt(key -> getStore(modelType).remove(key) != null ? 1 : 0)
+				.sum();
 	}
 
 	private <Z> CrudUpdateResult save(Z o, Class<Z> zClass) {
