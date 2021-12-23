@@ -141,6 +141,11 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	}
 
 	@Override
+	public void set(Token token, byte[] bytes) {
+		add(token, s -> s.set(transformFieldPlaceholder(token), bytes));
+	}
+
+	@Override
 	public void set(Token token, Enum<?> anEnum) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), anEnum));
 	}

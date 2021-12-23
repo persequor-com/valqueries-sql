@@ -196,7 +196,17 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 			return row.getInt(transformKey(token)).byteValue();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
-		}	}
+		}
+	}
+
+	@Override
+	public byte[] getBytes(Token token) {
+		try {
+			return row.getBlob(transformKey(token));
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
 	public <T extends Enum<T>> T getEnum(Token token, Class<T> aClass) {

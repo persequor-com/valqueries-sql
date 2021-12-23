@@ -46,13 +46,17 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	private void setKey(IStatement b, K id) {
+		setKey(b, id, 0);
+	}
+
+	private void setKey(IStatement b, K id, int position) {
 		if (keyType == CompoundKey.class) {
 			CompoundKey key = (CompoundKey) id;
 
 		} else if (keyType == String.class) {
-			b.set(keyColumn(), (String) id);
+			b.set(keyColumn() + position, (String) id);
 		} else if (keyType == UUID.class) {
-			b.set(keyColumn(),(UUID)id);
+			b.set(keyColumn() + position, (UUID) id);
 		} else {
 			throw new RuntimeException("So far unhandled key type: "+keyType.getName());
 		}
@@ -87,10 +91,33 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	@Override
 	public CrudUpdateResult deleteById(K id) {
 		return getUpdateResult(database.obtainInTransaction(tx -> {
-			return tx.update("DELETE from "+getTableName()+" where "+typeDescriber.primaryKeys().get(0).getToken().snake_case()+" = :id", b -> {
-				setKey(b, id);
+			return tx.update("DELETE from "+getTableName()+" where "+typeDescriber.primaryKeys().get(0).getToken().snake_case()+" = :id0", b -> {
+				setKey(b, id, 0);
 			});
 		}));
+	}
+
+	@Override
+	public CrudUpdateResult deleteByIds(Collection<K> ids) {
+		StringBuilder inIdsSql = new StringBuilder("(");
+		for (int i = 0; i < ids.size(); i++) {
+			inIdsSql.append(":id").append(i);
+			if (i < ids.size() - 1) {
+				inIdsSql.append(", ");
+			}
+		}
+		inIdsSql.append(")");
+		return getUpdateResult(database.obtainInTransaction(tx ->
+			tx.update("DELETE from " + getTableName() +
+					" where " + typeDescriber.primaryKeys().get(0).getToken().snake_case() +
+					" IN " + inIdsSql,
+					b -> {
+						int counter = 0;
+						for (K id : ids) {
+							setKey(b, id, counter++);
+						}
+					})
+				));
 	}
 
 	@Override
