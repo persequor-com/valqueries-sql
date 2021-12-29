@@ -340,7 +340,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public void close() throws Exception {
-		((AutoCloseable)transactionContext).close();
+		transactionContext.close();
 	}
 
 	private Mapping mapping(Object obj) {
