@@ -31,18 +31,7 @@ public class H2SqlDialect implements SqlDialect {
 				" WHEN NOT MATCHED THEN INSERT ("+columnizer.getFields().entrySet().stream().map(e -> escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", "))+") " +
 				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming."+escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", "))+");";
 
-		System.out.println(sql);
-return sql;
-//
-//		MERGE INTO TARGET_TABLE AS T USING SOURCE_TABLE AS S
-//		ON T.ID = S.ID
-//		WHEN MATCHED AND T.COL2 <> 'FINAL' THEN
-//		UPDATE SET T.COL1 = S.COL1
-//		WHEN MATCHED AND T.COL2 = 'FINAL' THEN
-//				DELETE
-//		WHEN NOT MATCHED THEN
-//		INSERT (ID, COL1, COL2) VALUES(S.ID, S.COL1, S.COL2);
-
+		return sql;
 	}
 
 	public String getSqlType(Class type, Property property) {
