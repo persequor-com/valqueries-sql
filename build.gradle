@@ -4,6 +4,7 @@ subprojects {
     apply plugin: 'maven-publish'
 
     group 'io.valqueries'
+    version '1.0.0'
 
     jar {
         manifest {

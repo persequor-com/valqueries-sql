@@ -1,7 +1,7 @@
 
 
 dependencies {
-    compile 'io.ran:core:0.0.1-21'
+    compile 'io.ran:core:0.0.1-28'
     api project(':core')
 }
 

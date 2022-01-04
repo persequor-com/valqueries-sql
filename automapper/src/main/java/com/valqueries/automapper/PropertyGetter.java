@@ -126,6 +126,11 @@ public class PropertyGetter<FROM> implements ObjectMapColumnizer, Setter {
 	}
 
 	@Override
+	public void set(Token token, byte[] bytes) {
+		put(token.snake_case(), bytes);
+	}
+
+	@Override
 	public void set(Token token, Enum<?> anEnum) {
 		put(token.snake_case(), anEnum);
 	}

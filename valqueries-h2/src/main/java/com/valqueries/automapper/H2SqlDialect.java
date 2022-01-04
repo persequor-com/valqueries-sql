@@ -24,12 +24,25 @@ public class H2SqlDialect implements SqlDialect {
 
 	@Override
 	public <O> String getUpsert(CompoundColumnizer<O> columnizer, Class<O> oClass) {
-		return "MERGE INTO "+getTableName(Clazz.of(oClass))+" as target USING " +
+		String sql =  "MERGE INTO "+getTableName(Clazz.of(oClass))+" as target USING " +
 				"(VALUES "+columnizer.getValueTokens().stream().map((l) -> "("+l.stream().map(e -> ":"+e).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", "))+
 				") incoming ("+columnizer.getFields().entrySet().stream().map((e) -> escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", "))+") on "+columnizer.getKeys().stream().map(k -> "target."+escapeColumnOrTable(k)+" = incoming."+escapeColumnOrTable(k)).collect(Collectors.joining(" AND "))+
 				(columnizer.getFieldsWithoutKeys().size() > 0 ? " WHEN MATCHED THEN UPDATE SET "+columnizer.getFieldsWithoutKeys().entrySet().stream().map(e -> escapeColumnOrTable(e.getValue())+" = incoming."+escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", ")):"")+
 				" WHEN NOT MATCHED THEN INSERT ("+columnizer.getFields().entrySet().stream().map(e -> escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", "))+") " +
 				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming."+escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", "))+");";
+
+		System.out.println(sql);
+return sql;
+//
+//		MERGE INTO TARGET_TABLE AS T USING SOURCE_TABLE AS S
+//		ON T.ID = S.ID
+//		WHEN MATCHED AND T.COL2 <> 'FINAL' THEN
+//		UPDATE SET T.COL1 = S.COL1
+//		WHEN MATCHED AND T.COL2 = 'FINAL' THEN
+//				DELETE
+//		WHEN NOT MATCHED THEN
+//		INSERT (ID, COL1, COL2) VALUES(S.ID, S.COL1, S.COL2);
+
 	}
 
 	public String getSqlType(Class type, Property property) {

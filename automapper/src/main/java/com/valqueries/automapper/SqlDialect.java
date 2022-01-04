@@ -93,6 +93,9 @@ public interface SqlDialect {
 		if (type == byte.class || type == Byte.class) {
 			return "TINYINT";
 		}
+		if (type == byte[].class) {
+			return "BLOB";
+		}
 		if (type == long.class || type == Long.class) {
 			return "BIGINT";
 		}

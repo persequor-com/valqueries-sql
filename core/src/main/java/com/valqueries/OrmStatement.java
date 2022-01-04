@@ -2,6 +2,7 @@
 package com.valqueries;
 
 
+import java.io.ByteArrayInputStream;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -154,7 +155,8 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 		} else if (value instanceof LocalDate) {
 			preparedStatement.setString(index.getAndIncrement(), ((LocalDate)value).toString());
 		} else if (value instanceof byte[]) {
-			preparedStatement.setBytes(index.getAndIncrement(), (byte[]) value);
+			preparedStatement.setBlob(index.getAndIncrement(), new ByteArrayInputStream((byte[])value));
+//			preparedStatement.setBinaryStream(index.getAndIncrement(), new ByteArrayInputStream((byte[])value));
 		} else if (value instanceof Collection) {
 			for (Object element : (Collection<?>) value) {
 				setValueInternal(preparedStatement, index, element);

@@ -117,6 +117,12 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	}
 
 	@Override
+	public byte[] getBytes(Token token) {
+		columns.add(token);
+		return null;
+	}
+
+	@Override
 	public <T extends Enum<T>> T getEnum(Token token, Class<T> aClass) {
 		columns.add(token);
 		return null;

@@ -166,7 +166,8 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	@Override
 	public BigDecimal getBigDecimal(Token key) {
 		try {
-			return new BigDecimal(row.getString(transformKey(key)));
+			String num = row.getString(transformKey(key));
+			return num != null ? new BigDecimal(num) : null;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -196,7 +197,17 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 			return row.getInt(transformKey(token)).byteValue();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
-		}	}
+		}
+	}
+
+	@Override
+	public byte[] getBytes(Token token) {
+		try {
+			return row.getBlob(transformKey(token));
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
 	public <T extends Enum<T>> T getEnum(Token token, Class<T> aClass) {
