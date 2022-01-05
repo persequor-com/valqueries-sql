@@ -1,6 +1,7 @@
 package com.valqueries.automapper;
 
 import com.valqueries.Database;
+import com.valqueries.DialectType;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 import org.junit.Before;
@@ -25,12 +26,14 @@ public class SqlGeneratorTest {
 
 	@Before
 	public void setup() {
+		when(database.getDialectType()).thenReturn(DialectType.MariaDB);
+
 		dbTable.getColumns().put("id", new SqlDescriber.DbRow("id", "VARCHAR(255)", false));
 		dbTable.getColumns().put("title", new SqlDescriber.DbRow("title", "VARCHAR(255)", false));
 		dbTable.getColumns().put("created_at", new SqlDescriber.DbRow("created_at", "DATETIME", false));
 		dbTable.getIndex().put("PRIMARY", new SqlDescriber.DbIndex(true, "PRIMIARY", "id"));
 		dbTable.getIndex().put("created_idx", new SqlDescriber.DbIndex(false, "created_idx", "created_at"));
-		sqlGenerator = new SqlGenerator(new SqlNameFormatter(), describer);
+		sqlGenerator = new SqlGenerator(new SqlNameFormatter(), new DialectFactory(new SqlNameFormatter()), database, describer);
 		when(describer.describe(any(TypeDescriber.class),anyString(), any(Database.class))).thenReturn(dbTable);
 	}
 
@@ -40,7 +43,7 @@ public class SqlGeneratorTest {
 
 		String actual = sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 
-		assertEquals("CREATE TABLE IF NOT EXISTS simple_test_table (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX created_idx (`created_at`));", actual);
+		assertEquals("CREATE TABLE IF NOT EXISTS `simple_test_table` (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX created_idx (`created_at`));", actual);
 	}
 
 	@Test

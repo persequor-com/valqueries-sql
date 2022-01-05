@@ -2,6 +2,7 @@ package com.valqueries.automapper;
 
 import io.ran.Clazz;
 import io.ran.Property;
+import io.ran.TypeDescriber;
 import io.ran.token.Token;
 
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -60,7 +62,32 @@ public class MssqlSqlDialect implements SqlDialect {
 				"    FETCH NEXT "+limit+" ROWS ONLY";
 	}
 
+	@Override
+	public String update(TypeDescriber<?> typeDescriber, List<ValqueriesQueryImpl.Element> elements, List<Property.PropertyValue> newPropertyValues) {
+		StringBuilder updateStatement = new StringBuilder();
+
+		updateStatement.append("UPDATE main SET ");
+
+		String columnsToUpdate = newPropertyValues.stream()
+				.map(pv -> "main." + escapeColumnOrTable(column(pv.getProperty().getToken())) + " = :" + pv.getProperty().getToken().snake_case())
+				.collect(Collectors.joining(", "));
+		updateStatement.append(columnsToUpdate);
+
+		updateStatement.append(" FROM "+getTableName(Clazz.of(typeDescriber.clazz()))+" main");
+
+		if (!elements.isEmpty()) {
+			updateStatement.append(" WHERE " + elements.stream().map(ValqueriesQueryImpl.Element::queryString).collect(Collectors.joining(" AND ")));
+		}
+
+		return updateStatement.toString();
+	}
+
 	public String getTableName(Clazz<? extends Object> modeltype) {
 		return escapeColumnOrTable(sqlNameFormatter.table(modeltype.clazz));
+	}
+
+	@Override
+	public String createTableStatement() {
+		return "CREATE TABLE ";
 	}
 }

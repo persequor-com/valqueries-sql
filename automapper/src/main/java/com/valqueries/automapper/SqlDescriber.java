@@ -20,8 +20,8 @@ public class SqlDescriber {
 		return database.obtainInTransaction(tx -> {
 			try {
 				DbTable table = new DbTable();
-				table.columns.putAll(tx.query("DESCRIBE `" + tablename + "`", DbRow::new).stream().collect(Collectors.toMap(DbRow::getField, Function.identity())));
-				table.index.putAll(tx.query("show index from `" + tablename+"`", DbIndex::new).stream().collect(Collectors.toMap(DbIndex::getKeyName, Function.identity(), (idx1, idx2) -> {
+				table.columns.putAll(tx.query("DESCRIBE " + tablename + "", DbRow::new).stream().collect(Collectors.toMap(DbRow::getField, Function.identity())));
+				table.index.putAll(tx.query("show index from " + tablename+"", DbIndex::new).stream().collect(Collectors.toMap(DbIndex::getKeyName, Function.identity(), (idx1, idx2) -> {
 					if (idx1.getKeyName().equals(idx2.getKeyName())) {
 						idx2.getColumns().putAll(idx1.getColumns());
 						return null;
@@ -30,6 +30,8 @@ public class SqlDescriber {
 				})));
 				return table;
 			} catch (Exception e) {
+				System.out.println(e.toString());
+				e.printStackTrace();
 				return null;
 			}
 		});

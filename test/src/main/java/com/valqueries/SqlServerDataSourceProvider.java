@@ -18,7 +18,7 @@ public class SqlServerDataSourceProvider extends HikariDataSource {
 		HikariConfig config = new HikariConfig();
 
 
-		config.setJdbcUrl(System.getProperty("db.url", "jdbc:sqlserver://localhost;databaseName=valqueries"));
+		config.setJdbcUrl(System.getProperty("db.url", "jdbc:sqlserver://localhost"));
 		config.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 		config.setUsername(System.getProperty("db.user", "sa"));
 		config.setPassword(System.getProperty("db.password", "7h3_s3cr3t!1s?0u7"));

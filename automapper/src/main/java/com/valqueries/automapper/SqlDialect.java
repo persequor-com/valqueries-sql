@@ -23,8 +23,9 @@ public interface SqlDialect {
 	<O> String getUpsert(CompoundColumnizer<O> columnizer, Class<O> oClass);
 	String getTableName(Clazz<? extends Object> modeltype);
 
+	String createTableStatement();
 	default String generateCreateTable(TypeDescriber<?> typeDescriber) {
-		return "CREATE TABLE "+ getTableName(Clazz.of(typeDescriber.clazz()))+" ("+typeDescriber.fields().stream().map(property -> {
+		return createTableStatement() + getTableName(Clazz.of(typeDescriber.clazz()))+" ("+typeDescriber.fields().stream().map(property -> {
 			return ""+escapeColumnOrTable(column(property.getToken()))+ " "+getSqlType(property.getType().clazz, property);
 		}).collect(Collectors.joining(", "))+", PRIMARY KEY("+typeDescriber.primaryKeys().stream().map(property -> {
 			return escapeColumnOrTable(column(property.getToken()));
@@ -40,7 +41,9 @@ public interface SqlDialect {
 			}
 		}
 		typeDescriber.indexes().forEach(keySet -> {
-			indexes.add(getIndex(keySet));
+			if(!keySet.isPrimary()) {
+				indexes.add(getIndex(keySet));
+			}
 		});
 		if (indexes.isEmpty()) {
 			return "";
@@ -105,4 +108,6 @@ public interface SqlDialect {
 	String column(Token token);
 
 	String limit(int offset, Integer limit);
+
+	String update(TypeDescriber<?> typeDescriber, List<ValqueriesQueryImpl.Element> elements, List<Property.PropertyValue> newPropertyValues);
 }

@@ -39,8 +39,7 @@ public class SqlGenerator {
 	private SqlDescriber sqlDescriber;
 
 	@Inject
-	public SqlGenerator(SqlNameFormatter sqlNameFormatter, DialectFactory dialectFactory, Database database) {
-	public SqlGenerator(SqlNameFormatter sqlNameFormatter, SqlDescriber sqlDescriber) {
+	public SqlGenerator(SqlNameFormatter sqlNameFormatter, DialectFactory dialectFactory, Database database, SqlDescriber sqlDescriber) {
 		this.sqlNameFormatter = sqlNameFormatter;
 		this.dialect = dialectFactory.get(database);
 		this.sqlDescriber = sqlDescriber;
@@ -60,25 +59,25 @@ public class SqlGenerator {
 			StringBuilder sb = new StringBuilder();
 			typeDescriber.fields().forEach(property -> {
 				String columnName = sqlNameFormatter.column(property.getToken());
-				String sqlType = getSqlType(property.getType().clazz, property);
+				String sqlType = dialect.getSqlType(property.getType().clazz, property);
 				if (!table.getColumns().containsKey(columnName)) {
-					sb.append("ALTER TABLE `" + tablename + "` ADD COLUMN `" + columnName + "` " + sqlType + ";");
+					sb.append("ALTER TABLE " + tablename + " ADD COLUMN " + dialect.escapeColumnOrTable(columnName) + " " + sqlType + ";");
 				} else if (!table.getColumns().get(columnName).matches(property, sqlType)) {
-					sb.append("ALTER TABLE `" + tablename + "` CHANGE COLUMN `" + columnName + "` `" + columnName + "` " + sqlType + ";");
+					sb.append("ALTER TABLE " + tablename + " CHANGE COLUMN " + dialect.escapeColumnOrTable(columnName) + " " + dialect.escapeColumnOrTable(columnName) + " " + sqlType + ";");
 				}
 			});
 
 			SqlDescriber.DbIndex index = table.getIndex().get("PRIMARY");
 			if (!index.matches(toDbIndex(typeDescriber.primaryKeys()))) {
-				sb.append("ALTER TABLE `" + tablename + "` DROP PRIMARY KEY;");
-				sb.append("ALTER TABLE `" + tablename + "` ADD PRIMARY KEY(" + getPrimaryKey(typeDescriber) + ");");
+				sb.append("ALTER TABLE " + dialect.escapeColumnOrTable(tablename) + " DROP PRIMARY KEY;");
+				sb.append("ALTER TABLE " + dialect.escapeColumnOrTable(tablename) + " ADD PRIMARY KEY(" + getPrimaryKey(typeDescriber) + ");");
 			}
 
 			typeDescriber.indexes().forEach(key -> {
 				SqlDescriber.DbIndex keyIndex = toDbIndex(key);
 				Optional<SqlDescriber.DbIndex> idx = table.getIndex().values().stream().filter(keyIndex::matches).findFirst();
 				if (!idx.isPresent()) {
-					sb.append("ALTER TABLE `" + tablename + "` ADD " + getIndex(key) + ";");
+					sb.append("ALTER TABLE " + dialect.escapeColumnOrTable(tablename) + " ADD " + dialect.getIndex(key) + ";");
 				}
 			});
 			return sb.toString();
@@ -99,9 +98,6 @@ public class SqlGenerator {
 
 	public String generateCreateTable(TypeDescriber<?> typeDescriber) {
 		return dialect.generateCreateTable(typeDescriber);
-		return "CREATE TABLE IF NOT EXISTS "+ getTableName(typeDescriber)+" ("+typeDescriber.fields().stream().map(property -> {
-			return "`"+sqlNameFormatter.column(property.getToken())+ "` "+getSqlType(property.getType().clazz, property);
-		}).collect(Collectors.joining(", "))+", PRIMARY KEY("+ getPrimaryKey(typeDescriber) +")"+getIndexes(typeDescriber)+");";
 	}
 
 	private String getPrimaryKey(TypeDescriber<?> typeDescriber) {
@@ -113,28 +109,5 @@ public class SqlGenerator {
 	public String generateCreateTable(Class<?> clazz) {
 		return generateCreateTable(TypeDescriberImpl.getTypeDescriber(clazz));
 	}
-
-	private String getIndexes(TypeDescriber<?> typeDescriber) {
-		List<String> indexes = new ArrayList<>();
-		for (Property property : typeDescriber.fields()) {
-			Fulltext fullText = property.getAnnotations().get(Fulltext.class);
-			if (fullText != null) {
-				indexes.add("FULLTEXT(`"+sqlNameFormatter.column(property.getToken())+"`)");
-			}
-		}
-		typeDescriber.indexes().forEach(keySet -> {
-			if(!keySet.isPrimary()) {
-				indexes.add(getIndex(keySet));
-			}
-		});
-		if (indexes.isEmpty()) {
-			return "";
-		}
-		return ", "+String.join(", ",indexes);
-	}
-
-
-
-
 
 }

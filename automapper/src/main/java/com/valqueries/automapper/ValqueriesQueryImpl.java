@@ -1,6 +1,5 @@
 package com.valqueries.automapper;
 
-import com.mysql.cj.protocol.x.StatementExecuteOk;
 import com.valqueries.IStatement;
 import com.valqueries.ITransactionContext;
 import com.valqueries.OrmResultSet;
@@ -90,7 +89,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> gte(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, ">=", ++fieldNum, sqlNameFormatter));
+		elements.add(new SimpleElement(this, propertyValue, ">=", ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
@@ -102,7 +101,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> lte(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "<=", ++fieldNum, sqlNameFormatter));
+		elements.add(new SimpleElement(this, propertyValue, "<=", ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
@@ -369,7 +368,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 
 	private String buildGroupAggregateSql(Property resultProperty, String aggregateMethod) {
-		String sql = "SELECT "+aggregateMethod+"("+this.sqlNameFormatter.column(resultProperty.getToken())+") as the_count , "+groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", "))+" FROM `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` "+tableAlias;
+		String sql = "SELECT "+aggregateMethod+"("+dialect.column(resultProperty.getToken())+") as the_count , "+groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", "))+" FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias;
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
@@ -413,6 +412,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			newPropertyValues.forEach(v -> uStmt.set(v.getProperty().getToken().snake_case(), v.getValue()));
 			set(uStmt);
 		}).getAffectedRows();
+		transactionContext.close();
 		return () -> affectedRows;
 	}
 
@@ -423,22 +423,11 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildUpdateSql(List<Property.PropertyValue> newPropertyValues) {
-		StringBuilder updateStatement = new StringBuilder();
-		updateStatement.append("UPDATE `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` main SET ");
+		return dialect.update(typeDescriber, elements, newPropertyValues);
 
-		String columnsToUpdate = newPropertyValues.stream()
-				.map(pv -> "main." + sqlNameFormatter.column(pv.getProperty().getToken()) + " = :" + pv.getProperty().getToken().snake_case())
-				.collect(Collectors.joining(", "));
-		updateStatement.append(columnsToUpdate);
-
-		if (!elements.isEmpty()) {
-			updateStatement.append(" WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
-		}
-
-		return updateStatement.toString();
 	}
 
-	private interface Element extends Setter {
+	public interface Element extends Setter {
 		String queryString();
 
 		default String fromString() {
@@ -466,9 +455,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		}
 
 		public String queryString() {
-			return parentTableAlias + "." + dialect.escapeColumnOrTable(sqlNameFormatter.column(relation.getFromKeys().get(0).getToken())) + " IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + ")";
-
-			return parentTableAlias + ".`" + sqlNameFormatter.column(relation.getFromKeys().get(0).getToken()) + "` IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + ")";
+			return parentTableAlias + "." + dialect.column(relation.getFromKeys().get(0).getToken()) + " IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + dialect.column(p.getToken())).toArray(String[]::new)) + ")";
 		}
 
 		@Override
