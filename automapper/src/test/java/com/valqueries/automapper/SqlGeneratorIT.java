@@ -43,6 +43,15 @@ public class SqlGeneratorIT {
 	}
 
 	@Test
+	public void  updateTable_simple() {
+		String actual = sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
+
+		update(actual);
+		assertEquals("CREATE TABLE IF NOT EXISTS simple_test_table (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX created_idx (`created_at`));", actual);
+	}
+
+
+	@Test
 	public void generateTable_indexOrder() {
 		update("DROP TABLE IF EXISTS index_order_test_table");
 
@@ -50,11 +59,9 @@ public class SqlGeneratorIT {
 
 		update(actual);
 		assertEquals("CREATE TABLE IF NOT EXISTS index_order_test_table (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`, `title`), INDEX created_idx (`created_at`, `title`));", actual);
-		String actual = sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
-
-		update(actual);
-		assertEquals("CREATE TABLE IF NOT EXISTS simple_test_table (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX created_idx (created_at));", actual);
 	}
+
+
 
 	@Test
 	public void tableExistsWithNoChanges() {

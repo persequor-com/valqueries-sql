@@ -129,7 +129,7 @@ public class SqlGenerator {
 
 	private String getIndex(KeySet keySet) {
 		String name = keySet.get(0).getProperty().getAnnotations().get(Key.class).name();
-		return "INDEX "+name+" ("+keySet.stream().map(f -> sqlNameFormatter.column(f.getToken())).collect(Collectors.joining(", "))+")";
+		return "INDEX "+name+" ("+keySet.stream().map(f -> "`"+sqlNameFormatter.column(f.getToken())+"`").collect(Collectors.joining(", "))+")";
 	}
 
 	private String getSqlType(Class<?> type, Property property) {
