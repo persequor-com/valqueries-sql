@@ -16,7 +16,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class SqlGeneratorTest {
+public class SqlGeneratorMariaDbTest {
 	SqlGenerator sqlGenerator;
 	@Mock
 	private SqlDescriber describer;
@@ -31,8 +31,8 @@ public class SqlGeneratorTest {
 		dbTable.getColumns().put("id", new SqlDescriber.DbRow("id", "VARCHAR(255)", false));
 		dbTable.getColumns().put("title", new SqlDescriber.DbRow("title", "VARCHAR(255)", false));
 		dbTable.getColumns().put("created_at", new SqlDescriber.DbRow("created_at", "DATETIME", false));
-		dbTable.getIndex().put("PRIMARY", new SqlDescriber.DbIndex(true, "PRIMIARY", "id"));
-		dbTable.getIndex().put("created_idx", new SqlDescriber.DbIndex(false, "created_idx", "created_at"));
+		dbTable.getIndex().put("PRIMARY", new SqlDescriber.DbIndex(true, "PRIMARY KEY", "PRIMIARY", "id"));
+		dbTable.getIndex().put("created_idx", new SqlDescriber.DbIndex(false, "created_idx", "created_idx", "created_at"));
 		sqlGenerator = new SqlGenerator(new SqlNameFormatter(), new DialectFactory(new SqlNameFormatter()), database, describer);
 		when(describer.describe(any(TypeDescriber.class),anyString(), any(Database.class))).thenReturn(dbTable);
 	}
@@ -62,6 +62,9 @@ public class SqlGeneratorTest {
 
 		assertEquals("ALTER TABLE `simple_test_table` ADD COLUMN `title` VARCHAR(255);", actual);
 	}
+
+
+
 
 
 }

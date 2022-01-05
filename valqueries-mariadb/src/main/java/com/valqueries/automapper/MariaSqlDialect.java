@@ -1,6 +1,7 @@
 package com.valqueries.automapper;
 
 import io.ran.Clazz;
+import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.token.Token;
@@ -69,6 +70,16 @@ public class MariaSqlDialect implements SqlDialect {
 
 		return updateStatement.toString();
 
+	}
+
+	@Override
+	public String changeColumn(String tablename, String columnName, String sqlType) {
+		return "ALTER TABLE " + tablename + " CHANGE COLUMN " + escapeColumnOrTable(columnName) + " " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	}
+
+	@Override
+	public String addIndex(String tablename, KeySet key) {
+		return "ALTER TABLE " + tablename + " ADD " + getIndex(key) + ";";
 	}
 
 

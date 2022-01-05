@@ -61,23 +61,23 @@ public class SqlGenerator {
 				String columnName = sqlNameFormatter.column(property.getToken());
 				String sqlType = dialect.getSqlType(property.getType().clazz, property);
 				if (!table.getColumns().containsKey(columnName)) {
-					sb.append("ALTER TABLE " + tablename + " ADD COLUMN " + dialect.escapeColumnOrTable(columnName) + " " + sqlType + ";");
+					sb.append(dialect.addColumn(tablename, columnName, sqlType));
 				} else if (!table.getColumns().get(columnName).matches(property, sqlType)) {
-					sb.append("ALTER TABLE " + tablename + " CHANGE COLUMN " + dialect.escapeColumnOrTable(columnName) + " " + dialect.escapeColumnOrTable(columnName) + " " + sqlType + ";");
+					sb.append(dialect.changeColumn(tablename, columnName, sqlType));
 				}
 			});
 
 			SqlDescriber.DbIndex index = table.getIndex().get("PRIMARY");
 			if (!index.matches(toDbIndex(typeDescriber.primaryKeys()))) {
-				sb.append("ALTER TABLE " + dialect.escapeColumnOrTable(tablename) + " DROP PRIMARY KEY;");
-				sb.append("ALTER TABLE " + dialect.escapeColumnOrTable(tablename) + " ADD PRIMARY KEY(" + getPrimaryKey(typeDescriber) + ");");
+				sb.append("ALTER TABLE " + tablename + " DROP "+index.getRealName()+";");
+				sb.append("ALTER TABLE " + tablename + " ADD PRIMARY KEY(" + getPrimaryKey(typeDescriber) + ");");
 			}
 
 			typeDescriber.indexes().forEach(key -> {
 				SqlDescriber.DbIndex keyIndex = toDbIndex(key);
 				Optional<SqlDescriber.DbIndex> idx = table.getIndex().values().stream().filter(keyIndex::matches).findFirst();
 				if (!idx.isPresent()) {
-					sb.append("ALTER TABLE " + dialect.escapeColumnOrTable(tablename) + " ADD " + dialect.getIndex(key) + ";");
+					sb.append(dialect.addIndex(tablename, key));
 				}
 			});
 			return sb.toString();
@@ -102,7 +102,7 @@ public class SqlGenerator {
 
 	private String getPrimaryKey(TypeDescriber<?> typeDescriber) {
 		return typeDescriber.primaryKeys().stream().map(property -> {
-			return "`"+sqlNameFormatter.column(property.getToken())+"`";
+			return dialect.escapeColumnOrTable(sqlNameFormatter.column(property.getToken()));
 		}).collect(Collectors.joining(", "));
 	}
 

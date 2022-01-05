@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.valqueries.OrmResultSet;
 import io.ran.Clazz;
 import io.ran.Key;
 import io.ran.KeySet;
@@ -53,7 +54,7 @@ public interface SqlDialect {
 
 	default String getIndex(KeySet keySet) {
 		String name = keySet.get(0).getProperty().getAnnotations().get(Key.class).name();
-		return "INDEX "+name+" ("+keySet.stream().map(f -> "`"+column(f.getToken())+"`").collect(Collectors.joining(", "))+")";
+		return "INDEX "+name+" ("+keySet.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")";
 
 	}
 
@@ -110,4 +111,44 @@ public interface SqlDialect {
 	String limit(int offset, Integer limit);
 
 	String update(TypeDescriber<?> typeDescriber, List<ValqueriesQueryImpl.Element> elements, List<Property.PropertyValue> newPropertyValues);
+
+	default String describe(String tablename) {
+		return "DESCRIBE " + tablename + "";
+	}
+
+	default String describeIndex(String tablename) {
+		return "show index from " + tablename + "";
+	}
+
+	default String getDescribedFieldColumnName() {
+		return "Field";
+	}
+
+	default String getDescribedFieldColumnType() {
+		return "Type";
+	}
+
+	default SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
+		try {
+			return new SqlDescriber.DbRow(ormResultSet.getString("Field"), ormResultSet.getString("Type"), ormResultSet.getString("Null").equals("Yes") ? true : false);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	default SqlDescriber.DbIndex getDbIndex(OrmResultSet r) {
+		try {
+			return new SqlDescriber.DbIndex(r.getInt("Non_unique") == 0, r.getString("Key_name")+" KEY", r.getString("Key_name"), r.getString("Column_name"));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	String changeColumn(String table, String columnName, String sqlType);
+
+	String addIndex(String tablename, KeySet key);
+
+	default String addColumn(String tablename, String columnName, String sqlType) {
+		return "ALTER TABLE " + tablename + " ADD COLUMN " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	}
 }

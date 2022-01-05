@@ -1,34 +1,21 @@
 package com.valqueries.automapper;
 
 import com.valqueries.MariaDbDataSourceProvider;
-import com.valqueries.Database;
+import com.valqueries.SqlServerDataSourceProvider;
 import io.ran.TypeDescriberImpl;
-import org.junit.Before;
 import org.junit.Test;
 
+import javax.sql.DataSource;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-public class SqlGeneratorIT {
-	SqlGenerator sqlGenerator;
-	private SqlDescriber describer;
-	private Database database;
+public class SqlGeneratorSqlServerIT extends SqlGeneratorITBase {
 
-	private void update(String sql) {
-		database.doInTransaction(tx -> {
-			for(String s : sql.split(";")) {
-				tx.update(s, setter -> {});
-			}
-		});
-	}
 
-	@Before
-	public void setup() {
-		database = new Database(MariaDbDataSourceProvider.get());
-		describer = new SqlDescriber();
-		sqlGenerator = new SqlGenerator(new SqlNameFormatter(), new DialectFactory(new SqlNameFormatter()), database, describer);
-
-		update("DROP TABLE IF EXISTS simple_test_table");
-
+	@Override
+	protected DataSource getDataSource() {
+		return SqlServerDataSourceProvider.get();
 	}
 
 	@Test
@@ -38,15 +25,15 @@ public class SqlGeneratorIT {
 		String actual = sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 
 		update(actual);
-		assertEquals("CREATE TABLE IF NOT EXISTS `simple_test_table` (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX created_idx (`created_at`));", actual);
 	}
 
 	@Test
 	public void  updateTable_simple() {
 		String actual = sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
-
 		update(actual);
-		assertEquals("CREATE TABLE IF NOT EXISTS `simple_test_table` (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX created_idx (`created_at`));", actual);
+		actual = sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
+
+		assertEquals("", actual);
 	}
 
 
@@ -57,7 +44,6 @@ public class SqlGeneratorIT {
 		String actual = sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(IndexOrderTestTable.class));
 
 		update(actual);
-		assertEquals("CREATE TABLE IF NOT EXISTS `index_order_test_table` (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`, `title`), INDEX created_idx (`created_at`, `title`));", actual);
 	}
 
 
@@ -79,7 +65,5 @@ public class SqlGeneratorIT {
 		String actual = sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 
 		update(actual);
-		assertEquals("ALTER TABLE `simple_test_table` ADD COLUMN `title` VARCHAR(255);", actual);
 	}
-
 }

@@ -1,10 +1,13 @@
 package com.valqueries.automapper;
 
 import com.valqueries.Database;
+import com.valqueries.DialectType;
+import com.valqueries.IOrm;
 import com.valqueries.OrmResultSet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
 
+import javax.inject.Inject;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,30 +19,40 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SqlDescriber {
+	private DialectFactory dialectFactory;
+
+	@Inject
+	public SqlDescriber(DialectFactory dialectFactory) {
+		this.dialectFactory = dialectFactory;
+	}
+
 	public DbTable describe(TypeDescriber<?> typeDescriber, String tablename, Database database) {
-		return database.obtainInTransaction(tx -> {
-			try {
-				DbTable table = new DbTable();
-				table.columns.putAll(tx.query("DESCRIBE " + tablename + "", DbRow::new).stream().collect(Collectors.toMap(DbRow::getField, Function.identity())));
-				table.index.putAll(tx.query("show index from " + tablename+"", DbIndex::new).stream().collect(Collectors.toMap(DbIndex::getKeyName, Function.identity(), (idx1, idx2) -> {
-					if (idx1.getKeyName().equals(idx2.getKeyName())) {
-						idx2.getColumns().putAll(idx1.getColumns());
-						return null;
-					}
-					return idx1;
-				})));
-				return table;
-			} catch (Exception e) {
-				System.out.println(e.toString());
-				e.printStackTrace();
+		try (IOrm tx = database.getOrm()) {
+			SqlDialect dialect = dialectFactory.get(database);
+			DbTable table = new DbTable();
+			table.columns.putAll(tx.query(dialect.describe(tablename), dialect::getDbRow).stream().collect(Collectors.toMap(DbRow::getField, Function.identity())));
+			table.index.putAll(tx.query(dialect.describeIndex(tablename), dialect::getDbIndex).stream().collect(Collectors.toMap(DbIndex::getKeyName, Function.identity(), (idx1, idx2) -> {
+				if (idx1.getKeyName().equals(idx2.getKeyName())) {
+					idx2.getColumns().putAll(idx1.getColumns());
+					return null;
+				}
+				return idx1;
+			})));
+			if (table.columns.isEmpty()) {
 				return null;
 			}
-		});
+			return table;
+		} catch (Exception e) {
+			System.out.println(e.toString());
+			e.printStackTrace();
+			return null;
+		}
+
 	}
 
 	public static class DbTable {
-		private Map<String, DbRow> columns = new HashMap<>();
-		private Map<String, DbIndex> index = new HashMap<>();
+		Map<String, DbRow> columns = new HashMap<>();
+		Map<String, DbIndex> index = new HashMap<>();
 
 		public Map<String, DbRow> getColumns() {
 			return columns;
@@ -61,6 +74,7 @@ public class SqlDescriber {
 
 	public static class DbIndex {
 		private boolean unique;
+		private String realName;
 		private String keyName;
 		private Map<Integer, String> columns = new HashMap<>();
 
@@ -68,19 +82,14 @@ public class SqlDescriber {
 
 		}
 
-		public DbIndex(boolean unique, String keyName, String... columns) {
+		public DbIndex(boolean unique, String realName, String keyName, String... columns) {
 			this.unique = unique;
+			this.realName = realName;
 			this.keyName = keyName;
 			int i = 0;
 			for(String column : columns) {
 				this.columns.put(++i, column);
 			}
-		}
-
-		protected DbIndex(OrmResultSet r) throws SQLException {
-			unique = r.getInt("Non_unique") == 0;
-			keyName = r.getString("Key_name");
-			columns.put(r.getInt("Seq_in_index"), r.getString("Column_name"));
 		}
 
 		public boolean isUnique() {
@@ -116,6 +125,10 @@ public class SqlDescriber {
 			if (unique != dbIndex.unique) return false;
 			return Objects.equals(columns.keySet(), dbIndex.columns.keySet()) && Objects.equals(new ArrayList<>(columns.values()), new ArrayList<>(dbIndex.columns.values()));
 		}
+
+		public String getRealName() {
+			return realName;
+		}
 	}
 
 	public static class DbRow {
@@ -127,12 +140,6 @@ public class SqlDescriber {
 			this.field = field;
 			this.type = type;
 			this.allowsNull = allowsNull;
-		}
-
-		protected DbRow(OrmResultSet r) throws SQLException {
-			field = r.getString("Field");
-			type = r.getString("Type");
-			allowsNull = r.getString("Null").equals("YES") ? true : false;
 		}
 
 		public String getField() {
