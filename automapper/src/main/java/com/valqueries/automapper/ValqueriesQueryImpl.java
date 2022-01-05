@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.mysql.cj.protocol.x.StatementExecuteOk;
 import com.valqueries.IStatement;
 import com.valqueries.ITransactionContext;
 import com.valqueries.OrmResultSet;
@@ -88,11 +89,22 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	@Override
+	public ValqueriesQuery<T> gte(Property.PropertyValue<?> propertyValue) {
+		elements.add(new SimpleElement(this, propertyValue, ">=", ++fieldNum, sqlNameFormatter));
+		return this;
+	}
+
+	@Override
 	public ValqueriesQuery<T> lt(Property.PropertyValue<?> propertyValue) {
 		elements.add(new SimpleElement(this, propertyValue, "<", ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
+	@Override
+	public ValqueriesQuery<T> lte(Property.PropertyValue<?> propertyValue) {
+		elements.add(new SimpleElement(this, propertyValue, "<=", ++fieldNum, sqlNameFormatter));
+		return this;
+	}
 
 	@SuppressWarnings("rawtypes")
 	@Override
@@ -135,6 +147,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		elements.add(new SimpleElement(this, property.value(null),"IS NOT NULL", ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
+
 
 
 	private String buildSelectSql(String tableAlias, String... columns) {
@@ -279,6 +292,45 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		}
 	}
 
+	protected GroupNumericResult aggregateMethod(Property resultProperty, String aggregateMethod) {
+		try {
+			String sql = buildGroupAggregateSql(resultProperty, aggregateMethod);
+			Map<GroupNumericResultImpl.Grouping, Long> res = transactionContext.query(sql, this, row -> {
+				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter));
+				T t = genericFactory.get(modelType);
+				mappingHelper.hydrate(t, hydrator);
+				return new GroupNumericResultImpl.Grouping(hydrator.getValues(), row.getLong("the_count"));
+			}).stream().collect(Collectors.toMap(g -> g, g -> (long)g.getValue()));
+			return new GroupNumericResultImpl(res);
+		} finally {
+			try {
+				close();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	@Override
+	protected GroupNumericResult count(Property resultProperty) {
+		return aggregateMethod(resultProperty, "COUNT");
+	}
+
+	@Override
+	protected GroupNumericResult sum(Property resultProperty) {
+		return aggregateMethod(resultProperty, "SUM");
+	}
+
+	@Override
+	protected GroupNumericResult max(Property resultProperty) {
+		return aggregateMethod(resultProperty, "MAX");
+	}
+
+	@Override
+	protected GroupNumericResult min(Property resultProperty) {
+		return aggregateMethod(resultProperty, "MIN");
+	}
+
 	@Override
 	public CrudRepository.CrudUpdateResult delete() {
 		try {
@@ -315,6 +367,17 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		return sql;
 	}
 
+
+	private String buildGroupAggregateSql(Property resultProperty, String aggregateMethod) {
+		String sql = "SELECT "+aggregateMethod+"("+this.sqlNameFormatter.column(resultProperty.getToken())+") as the_count , "+groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", "))+" FROM `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` "+tableAlias;
+		if (!elements.isEmpty()) {
+			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
+		}
+		sql += " GROUP BY "+groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", "))+"";
+//		System.out.println(sql);
+		return sql;
+	}
+
 	private <X> X hydrateEager(T rootObject, RelationDescriber relationDescriber, OrmResultSet row, int i) {
 		X otherModel = (X)genericFactory.get(relationDescriber.getToClass().clazz);
 		mapping(otherModel).hydrate(new ValqueriesHydrator("eager"+(i)+"_", row, sqlNameFormatter));
@@ -331,7 +394,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public void close() throws Exception {
-		((AutoCloseable)transactionContext).close();
+		transactionContext.close();
 	}
 
 	private Mapping mapping(Object obj) {
@@ -341,6 +404,39 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		throw new RuntimeException("Tried mapping an unmapped object: "+obj.getClass().getName());
 	}
 
+	@Override
+	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
+		List<Property.PropertyValue>  newPropertyValues = this.getPropertyValuesFromUpdater(updater);
+		String updateStatement = this.buildUpdateSql(newPropertyValues);
+
+		int affectedRows = transactionContext.update(updateStatement, uStmt -> {
+			newPropertyValues.forEach(v -> uStmt.set(v.getProperty().getToken().snake_case(), v.getValue()));
+			set(uStmt);
+		}).getAffectedRows();
+		return () -> affectedRows;
+	}
+
+	private List<Property.PropertyValue> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
+		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
+		updater.accept(updImpl);
+		return updImpl.getPropertyValues();
+	}
+
+	private String buildUpdateSql(List<Property.PropertyValue> newPropertyValues) {
+		StringBuilder updateStatement = new StringBuilder();
+		updateStatement.append("UPDATE `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` main SET ");
+
+		String columnsToUpdate = newPropertyValues.stream()
+				.map(pv -> "main." + sqlNameFormatter.column(pv.getProperty().getToken()) + " = :" + pv.getProperty().getToken().snake_case())
+				.collect(Collectors.joining(", "));
+		updateStatement.append(columnsToUpdate);
+
+		if (!elements.isEmpty()) {
+			updateStatement.append(" WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
+		}
+
+		return updateStatement.toString();
+	}
 
 	private interface Element extends Setter {
 		String queryString();
@@ -372,6 +468,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		public String queryString() {
 			return parentTableAlias + "." + dialect.escapeColumnOrTable(sqlNameFormatter.column(relation.getFromKeys().get(0).getToken())) + " IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + ")";
 
+			return parentTableAlias + ".`" + sqlNameFormatter.column(relation.getFromKeys().get(0).getToken()) + "` IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + ")";
 		}
 
 		@Override

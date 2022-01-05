@@ -42,6 +42,11 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
+	public CrudUpdateResult deleteByIds(Collection<K> collection) {
+		return baseRepo.deleteByIds(collection);
+	}
+
+	@Override
 	public CrudUpdateResult save(T entity) {
 		final ChangeMonitor changed = new ChangeMonitor();
 		doRetryableInTransaction(tx -> saveIncludingRelationInternal(changed, tx, entity, modelType));

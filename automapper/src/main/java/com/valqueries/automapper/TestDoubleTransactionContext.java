@@ -38,4 +38,9 @@ public class TestDoubleTransactionContext implements com.valqueries.ITransaction
 	public <T> Optional<T> queryOne(String sql, Setter setter, IRowMapper<T> rowMapper) throws OrmException.MoreThanOneRowFound, NullPointerException {
 		return Optional.empty();
 	}
+
+	@Override
+	public void close() {
+
+	}
 }
