@@ -688,6 +688,39 @@ public abstract class AutoMapperBaseTests {
 					u.set(AllFieldTypes::isPrimitiveBoolean, false);
 					u.set(AllFieldTypes::getPrimitiveByte, (byte) 10);
 				});
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
+
+		assertEquals(obj.getUuid(), actual.getUuid());
+		assertEquals("string2", actual.getString());
+		assertEquals(Character.valueOf('a'), actual.getCharacter());
+		//Why do we still have this assertion?
+		//Currently, the obj is getting update when we use the update() method because we use the obj reference.
+		//And so, the line bellow would be incrementing 12 months to the already updated date, making it 2023 instead of
+		//the expected 2022.
+		//This reference problem should be tackled in the near future by using a clone/copy version of the obj.
+		//assertEquals(obj.getZonedDateTime().plusMonths(12), actual.getZonedDateTime());
+		assertEquals(ZonedDateTime.parse("2022-01-01T00:00:00Z"), actual.getZonedDateTime());
+		assertEquals(Instant.parse("2022-01-01T00:00:00Z"), actual.getInstant());
+		assertEquals(LocalDateTime.parse("2022-01-01T00:00:00"), actual.getLocalDateTime());
+		assertEquals(LocalDate.parse("2022-01-01"), actual.getLocalDate());
+		assertEquals(new BigDecimal("4.4135"), actual.getBigDecimal().stripTrailingZeros());
+
+		assertEquals(Integer.valueOf(42), actual.getInteger());
+		assertEquals(Short.valueOf((short) 88), actual.getaShort());
+		assertEquals(Long.valueOf(84), actual.getaLong());
+		assertEquals(Double.valueOf(7.11), actual.getaDouble());
+		assertEquals(Float.valueOf(6.3f), actual.getaFloat());
+		assertEquals(Boolean.TRUE, actual.getaBoolean());
+		assertEquals(Byte.valueOf((byte) 5), actual.getaByte());
+
+		assertEquals(777, actual.getPrimitiveInteger());
+		assertEquals(15, actual.getPrimitiveShort());
+		assertEquals(888L, actual.getPrimitiveLong());
+		assertEquals(55.55, actual.getPrimitiveDouble(),0.001);
+		assertEquals(44.44f, actual.getPrimitiveFloat(), 0.001);
+		assertEquals(false, actual.isPrimitiveBoolean());
+		assertEquals((byte)10, actual.getPrimitiveByte());
+	}
 
 	@Test
 	public void groupByAggregate_count() {
@@ -842,39 +875,6 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(2, result.size());
 		assertEquals(20, result.get(BikeType.Mountain));
 		assertEquals(20, result.get(BikeType.Racer));
-	}
-		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
-
-		assertEquals(obj.getUuid(), actual.getUuid());
-		assertEquals("string2", actual.getString());
-		assertEquals(Character.valueOf('a'), actual.getCharacter());
-		//Why do we still have this assertion?
-		//Currently, the obj is getting update when we use the update() method because we use the obj reference.
-		//And so, the line bellow would be incrementing 12 months to the already updated date, making it 2023 instead of
-		//the expected 2022.
-		//This reference problem should be tackled in the near future by using a clone/copy version of the obj.
-		//assertEquals(obj.getZonedDateTime().plusMonths(12), actual.getZonedDateTime());
-		assertEquals(ZonedDateTime.parse("2022-01-01T00:00:00Z"), actual.getZonedDateTime());
-		assertEquals(Instant.parse("2022-01-01T00:00:00Z"), actual.getInstant());
-		assertEquals(LocalDateTime.parse("2022-01-01T00:00:00"), actual.getLocalDateTime());
-		assertEquals(LocalDate.parse("2022-01-01"), actual.getLocalDate());
-		assertEquals(new BigDecimal("4.4135"), actual.getBigDecimal().stripTrailingZeros());
-
-		assertEquals(Integer.valueOf(42), actual.getInteger());
-		assertEquals(Short.valueOf((short) 88), actual.getaShort());
-		assertEquals(Long.valueOf(84), actual.getaLong());
-		assertEquals(Double.valueOf(7.11), actual.getaDouble());
-		assertEquals(Float.valueOf(6.3f), actual.getaFloat());
-		assertEquals(Boolean.TRUE, actual.getaBoolean());
-		assertEquals(Byte.valueOf((byte) 5), actual.getaByte());
-
-		assertEquals(777, actual.getPrimitiveInteger());
-		assertEquals(15, actual.getPrimitiveShort());
-		assertEquals(888L, actual.getPrimitiveLong());
-		assertEquals(55.55, actual.getPrimitiveDouble(),0.001);
-		assertEquals(44.44f, actual.getPrimitiveFloat(), 0.001);
-		assertEquals(false, actual.isPrimitiveBoolean());
-		assertEquals((byte)10, actual.getPrimitiveByte());
 	}
 
 	@Test

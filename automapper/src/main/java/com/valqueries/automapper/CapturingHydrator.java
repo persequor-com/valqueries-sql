@@ -208,6 +208,18 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
+	public byte[] getBytes(Token token) {
+		try {
+			byte[] value = innerHydrator.getBytes(token);
+			values.put(token, value);
+			return value;
+		} catch (RuntimeException e) {
+			// Ignoring non existing fields
+			return new byte[0];
+		}
+	}
+
+	@Override
 	public <T extends Enum<T>> T getEnum(Token token, Class<T> aClass) {
 		try {
 			T value = innerHydrator.getEnum(token, aClass);
