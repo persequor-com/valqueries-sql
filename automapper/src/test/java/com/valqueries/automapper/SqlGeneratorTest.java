@@ -40,7 +40,7 @@ public class SqlGeneratorTest {
 
 		String actual = sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 
-		assertEquals("CREATE TABLE IF NOT EXISTS simple_test_table (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX created_idx (created_at));", actual);
+		assertEquals("CREATE TABLE IF NOT EXISTS simple_test_table (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX created_idx (`created_at`));", actual);
 	}
 
 	@Test
