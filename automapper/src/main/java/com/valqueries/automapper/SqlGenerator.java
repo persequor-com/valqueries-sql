@@ -1,5 +1,7 @@
 package com.valqueries.automapper;
 
+import io.ran.Key;
+import io.ran.KeySet;
 import com.valqueries.Database;
 import com.valqueries.OrmResultSet;
 import io.ran.Key;

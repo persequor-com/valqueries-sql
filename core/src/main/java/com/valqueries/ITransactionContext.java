@@ -5,5 +5,7 @@
  */
 package com.valqueries;
 
-public interface ITransactionContext extends IOrmOperations {
+public interface ITransactionContext extends IOrmOperations, AutoCloseable {
+    @Override
+    void close();
 }
