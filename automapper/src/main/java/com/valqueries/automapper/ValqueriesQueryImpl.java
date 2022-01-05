@@ -350,6 +350,39 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		throw new RuntimeException("Tried mapping an unmapped object: "+obj.getClass().getName());
 	}
 
+	@Override
+	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
+		List<Property.PropertyValue>  newPropertyValues = this.getPropertyValuesFromUpdater(updater);
+		String updateStatement = this.buildUpdateSql(newPropertyValues);
+
+		int affectedRows = transactionContext.update(updateStatement, uStmt -> {
+			newPropertyValues.forEach(v -> uStmt.set(v.getProperty().getToken().snake_case(), v.getValue()));
+			set(uStmt);
+		}).getAffectedRows();
+		return () -> affectedRows;
+	}
+
+	private List<Property.PropertyValue> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
+		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
+		updater.accept(updImpl);
+		return updImpl.getPropertyValues();
+	}
+
+	private String buildUpdateSql(List<Property.PropertyValue> newPropertyValues) {
+		StringBuilder updateStatement = new StringBuilder();
+		updateStatement.append("UPDATE `" + getTableName(Clazz.of(typeDescriber.clazz())) + "` main SET ");
+
+		String columnsToUpdate = newPropertyValues.stream()
+				.map(pv -> "main." + sqlNameFormatter.column(pv.getProperty().getToken()) + " = :" + pv.getProperty().getToken().snake_case())
+				.collect(Collectors.joining(", "));
+		updateStatement.append(columnsToUpdate);
+
+		if (!elements.isEmpty()) {
+			updateStatement.append(" WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
+		}
+
+		return updateStatement.toString();
+	}
 
 	private interface Element extends Setter {
 		String queryString();
@@ -378,7 +411,6 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 		public String queryString() {
 			return parentTableAlias + ".`" + sqlNameFormatter.column(relation.getFromKeys().get(0).getToken()) + "` IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + ")";
-
 		}
 
 		@Override
