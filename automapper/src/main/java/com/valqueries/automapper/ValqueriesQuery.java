@@ -28,4 +28,5 @@ public interface ValqueriesQuery<T> extends CrudRepository.InlineQuery<T, Valque
 
 	ValqueriesGroupQuery<T> groupBy(Function<T, ?>... field);
 	ValqueriesGroupQuery<T> groupBy(BiConsumer<T, ?>... field);
+	CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater);
 }
