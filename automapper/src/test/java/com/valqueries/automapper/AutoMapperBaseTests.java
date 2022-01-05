@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import com.valqueries.Database;
 import io.ran.GenericFactory;
@@ -628,7 +629,298 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(obj.getPrimitiveByte(), actual.getPrimitiveByte());
 	}
 
+	@Test
+	public void allFieldTypes_update() {
+		AllFieldTypes obj = factory.get(AllFieldTypes.class);
+		obj.setUuid(UUID.randomUUID());
+		obj.setString("string");
+		obj.setCharacter('c');
+		obj.setZonedDateTime(ZonedDateTime.parse("2021-01-01T00:00:00.000Z"));
+		obj.setInstant(Instant.parse("2021-01-01T00:00:00.000Z"));
+		obj.setLocalDateTime(LocalDateTime.parse("2021-01-01T00:00:00"));
+		obj.setLocalDate(LocalDate.parse("2021-01-01"));
+		obj.setBigDecimal(BigDecimal.valueOf(3.1415));
+		obj.setAnEnum(Brand.Hyundai);
 
+		obj.setInteger(24);
+		obj.setaShort((short) 44);
+		obj.setaLong(42L);
+		obj.setaDouble(3.14);
+		obj.setaFloat(3.15f);
+		obj.setaBoolean(false);
+		obj.setaByte((byte) 3);
+
+		obj.setPrimitiveInteger(666);
+		obj.setPrimitiveShort((short) 115);
+		obj.setPrimitiveLong(444L);
+		obj.setPrimitiveDouble(99.99);
+		obj.setPrimitiveFloat(88.88f);
+		obj.setPrimitiveBoolean(true);
+		obj.setPrimitiveByte((byte) 9);
+
+		allFieldTypesRepository.save(obj);
+
+		allFieldTypesRepository.query()
+				.eq(AllFieldTypes::getUuid, obj.getUuid())
+				.update(u -> {
+					u.set(AllFieldTypes::getString, "string2");
+					u.set(AllFieldTypes::getCharacter, 'a');
+					u.set(AllFieldTypes::getZonedDateTime, ZonedDateTime.parse("2022-01-01T00:00:00.000Z"));
+					u.set(AllFieldTypes::getInstant, Instant.parse("2022-01-01T00:00:00.000Z"));
+					u.set(AllFieldTypes::getLocalDateTime, LocalDateTime.parse("2022-01-01T00:00:00"));
+					u.set(AllFieldTypes::getLocalDate, LocalDate.parse("2022-01-01"));
+					u.set(AllFieldTypes::getBigDecimal, BigDecimal.valueOf(4.4135));
+					u.set(AllFieldTypes::getAnEnum, Brand.Porsche);
+
+					u.set(AllFieldTypes::getInteger, 42);
+					u.set(AllFieldTypes::getaShort, (short) 88);
+					u.set(AllFieldTypes::getaLong, 84L);
+					u.set(AllFieldTypes::getaDouble, 7.11);
+					u.set(AllFieldTypes::getaFloat, 6.3f);
+					u.set(AllFieldTypes::getaBoolean, true);
+					u.set(AllFieldTypes::getaByte, (byte) 5);
+
+					u.set(AllFieldTypes::getPrimitiveInteger, 777);
+					u.set(AllFieldTypes::getPrimitiveShort, (short) 15);
+					u.set(AllFieldTypes::getPrimitiveLong, 888L);
+					u.set(AllFieldTypes::getPrimitiveDouble, 55.55);
+					u.set(AllFieldTypes::getPrimitiveFloat, 44.44f);
+					u.set(AllFieldTypes::isPrimitiveBoolean, false);
+					u.set(AllFieldTypes::getPrimitiveByte, (byte) 10);
+				});
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
+
+		assertEquals(obj.getUuid(), actual.getUuid());
+		assertEquals("string2", actual.getString());
+		assertEquals(Character.valueOf('a'), actual.getCharacter());
+		//Why do we still have this assertion?
+		//Currently, the obj is getting update when we use the update() method because we use the obj reference.
+		//And so, the line bellow would be incrementing 12 months to the already updated date, making it 2023 instead of
+		//the expected 2022.
+		//This reference problem should be tackled in the near future by using a clone/copy version of the obj.
+		//assertEquals(obj.getZonedDateTime().plusMonths(12), actual.getZonedDateTime());
+		assertEquals(ZonedDateTime.parse("2022-01-01T00:00:00Z"), actual.getZonedDateTime());
+		assertEquals(Instant.parse("2022-01-01T00:00:00Z"), actual.getInstant());
+		assertEquals(LocalDateTime.parse("2022-01-01T00:00:00"), actual.getLocalDateTime());
+		assertEquals(LocalDate.parse("2022-01-01"), actual.getLocalDate());
+		assertEquals(new BigDecimal("4.4135"), actual.getBigDecimal().stripTrailingZeros());
+
+		assertEquals(Integer.valueOf(42), actual.getInteger());
+		assertEquals(Short.valueOf((short) 88), actual.getaShort());
+		assertEquals(Long.valueOf(84), actual.getaLong());
+		assertEquals(Double.valueOf(7.11), actual.getaDouble());
+		assertEquals(Float.valueOf(6.3f), actual.getaFloat());
+		assertEquals(Boolean.TRUE, actual.getaBoolean());
+		assertEquals(Byte.valueOf((byte) 5), actual.getaByte());
+
+		assertEquals(777, actual.getPrimitiveInteger());
+		assertEquals(15, actual.getPrimitiveShort());
+		assertEquals(888L, actual.getPrimitiveLong());
+		assertEquals(55.55, actual.getPrimitiveDouble(),0.001);
+		assertEquals(44.44f, actual.getPrimitiveFloat(), 0.001);
+		assertEquals(false, actual.isPrimitiveBoolean());
+		assertEquals((byte)10, actual.getPrimitiveByte());
+	}
+
+	@Test
+	public void groupByAggregate_count() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType).count(Bike::getId);
+		assertEquals(2, result.size());
+		assertEquals(2, result.get(BikeType.Mountain));
+		assertEquals(1, result.get(BikeType.Racer));
+		assertEquals(2, result.keys().size());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Mountain)).count());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Racer)).count());
+	}
+
+	@Test
+	public void groupByAggregate_multipleFields_count() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(22);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType, Bike::getWheelSize).count(Bike::getId);
+		assertEquals(3, result.size());
+		assertEquals(1, result.get(BikeType.Mountain, 22));
+		assertEquals(1, result.get(BikeType.Mountain, 20));
+		assertEquals(1, result.get(BikeType.Racer, 20));
+		assertEquals(3, result.keys().size());
+	}
+
+
+	@Test
+	public void groupByAggregate_sum() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType).sum(Bike::getWheelSize);
+		assertEquals(2, result.size());
+		assertEquals(40, result.get(BikeType.Mountain));
+		assertEquals(20, result.get(BikeType.Racer));
+		assertEquals(2, result.keys().size());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Mountain)).count());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Racer)).count());
+	}
+
+	@Test
+	public void groupByAggregate_max() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(22);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType).max(Bike::getWheelSize);
+		assertEquals(2, result.size());
+		assertEquals(22, result.get(BikeType.Mountain));
+		assertEquals(20, result.get(BikeType.Racer));
+	}
+
+
+	@Test
+	public void groupByAggregate_min() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(22);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType).min(Bike::getWheelSize);
+		assertEquals(2, result.size());
+		assertEquals(20, result.get(BikeType.Mountain));
+		assertEquals(20, result.get(BikeType.Racer));
+	}
+
+	@Test
+	public void update_objectsThatMatchConditions() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Car model2 = factory.get(Car.class);
+		model2.setId(UUID.randomUUID());
+		model2.setTitle("Muh");
+		model2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		carRepository.save(model);
+		carRepository.save(model2);
+
+		carRepository.updateTitle(model, "new title");
+
+		Car actual = carRepository.get(model.getId()).get();
+		assertEquals("new title", actual.getTitle());
+		actual = carRepository.get(model2.getId()).get();
+		assertEquals("Muh", actual.getTitle());
+	}
+
+
+	@Test
+	public void update_withoutPreviousRecord() {
+		Car car1 = factory.get(Car.class);
+		car1.setId(UUID.randomUUID());
+		car1.setTitle("car1");
+		car1.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Car car2 = factory.get(Car.class);
+		car2.setId(UUID.randomUUID());
+		car2.setTitle("car2");
+		car2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(car2);
+
+		int affectedRows = carRepository.query()
+				.eq(Car::getId, car1.getId())
+				.update(u -> u.set(Car::getTitle, "new_car1_title"))
+				.affectedRows();
+
+		assertEquals(0, affectedRows);
+	}
 }
 
 
