@@ -99,6 +99,11 @@ public class PropertyValueHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
+	public byte[] getBytes(Token token) {
+		return (byte[]) getValue(token);
+	}
+
+	@Override
 	public <T extends Enum<T>> T getEnum(Token token, Class<T> aClass) {
 		return (T) getValue(token);
 	}

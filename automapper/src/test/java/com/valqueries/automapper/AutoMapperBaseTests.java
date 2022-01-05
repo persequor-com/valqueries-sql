@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import com.valqueries.Database;
 import io.ran.GenericFactory;
@@ -687,7 +688,6 @@ public abstract class AutoMapperBaseTests {
 					u.set(AllFieldTypes::isPrimitiveBoolean, false);
 					u.set(AllFieldTypes::getPrimitiveByte, (byte) 10);
 				});
-
 		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
 
 		assertEquals(obj.getUuid(), actual.getUuid());
@@ -720,6 +720,161 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(44.44f, actual.getPrimitiveFloat(), 0.001);
 		assertEquals(false, actual.isPrimitiveBoolean());
 		assertEquals((byte)10, actual.getPrimitiveByte());
+	}
+
+	@Test
+	public void groupByAggregate_count() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType).count(Bike::getId);
+		assertEquals(2, result.size());
+		assertEquals(2, result.get(BikeType.Mountain));
+		assertEquals(1, result.get(BikeType.Racer));
+		assertEquals(2, result.keys().size());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Mountain)).count());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Racer)).count());
+	}
+
+	@Test
+	public void groupByAggregate_multipleFields_count() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(22);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType, Bike::getWheelSize).count(Bike::getId);
+		assertEquals(3, result.size());
+		assertEquals(1, result.get(BikeType.Mountain, 22));
+		assertEquals(1, result.get(BikeType.Mountain, 20));
+		assertEquals(1, result.get(BikeType.Racer, 20));
+		assertEquals(3, result.keys().size());
+	}
+
+
+	@Test
+	public void groupByAggregate_sum() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType).sum(Bike::getWheelSize);
+		assertEquals(2, result.size());
+		assertEquals(40, result.get(BikeType.Mountain));
+		assertEquals(20, result.get(BikeType.Racer));
+		assertEquals(2, result.keys().size());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Mountain)).count());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Racer)).count());
+	}
+
+	@Test
+	public void groupByAggregate_max() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(22);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType).max(Bike::getWheelSize);
+		assertEquals(2, result.size());
+		assertEquals(22, result.get(BikeType.Mountain));
+		assertEquals(20, result.get(BikeType.Racer));
+	}
+
+
+	@Test
+	public void groupByAggregate_min() {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(22);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		GroupNumericResult result = bikeRepository.query().groupBy(Bike::getBikeType).min(Bike::getWheelSize);
+		assertEquals(2, result.size());
+		assertEquals(20, result.get(BikeType.Mountain));
+		assertEquals(20, result.get(BikeType.Racer));
 	}
 
 	@Test
