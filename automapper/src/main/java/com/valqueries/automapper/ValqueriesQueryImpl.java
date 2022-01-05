@@ -87,11 +87,22 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	@Override
+	public ValqueriesQuery<T> gte(Property.PropertyValue<?> propertyValue) {
+		elements.add(new SimpleElement(this, propertyValue, ">=", ++fieldNum, sqlNameFormatter));
+		return this;
+	}
+
+	@Override
 	public ValqueriesQuery<T> lt(Property.PropertyValue<?> propertyValue) {
 		elements.add(new SimpleElement(this, propertyValue, "<", ++fieldNum, sqlNameFormatter));
 		return this;
 	}
 
+	@Override
+	public ValqueriesQuery<T> lte(Property.PropertyValue<?> propertyValue) {
+		elements.add(new SimpleElement(this, propertyValue, "<=", ++fieldNum, sqlNameFormatter));
+		return this;
+	}
 
 	@SuppressWarnings("rawtypes")
 	@Override
@@ -381,7 +392,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public void close() throws Exception {
-		((AutoCloseable)transactionContext).close();
+		transactionContext.close();
 	}
 
 	private Mapping mapping(Object obj) {

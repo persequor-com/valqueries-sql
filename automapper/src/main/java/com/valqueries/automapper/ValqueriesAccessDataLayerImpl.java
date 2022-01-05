@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessDataLayer<T, K> {
@@ -46,13 +47,17 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	private void setKey(IStatement b, K id) {
+		setKey(b, id, 0);
+	}
+
+	private void setKey(IStatement b, K id, int position) {
 		if (keyType == CompoundKey.class) {
 			CompoundKey key = (CompoundKey) id;
 
 		} else if (keyType == String.class) {
-			b.set(keyColumn(), (String) id);
+			b.set(getKeyName(position), (String) id);
 		} else if (keyType == UUID.class) {
-			b.set(keyColumn(),(UUID)id);
+			b.set(getKeyName(position), (UUID) id);
 		} else {
 			throw new RuntimeException("So far unhandled key type: "+keyType.getName());
 		}
@@ -60,6 +65,13 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 
 	protected String keyColumn() {
 		return "id";
+	}
+
+	private String getKeyName(int position) {
+		if(position == 0) {
+			return keyColumn();
+		}
+		return keyColumn() + position;
 	}
 
 	protected T hydrate(OrmResultSet row) {
@@ -71,7 +83,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	@Override
 	public Optional<T> get(K id) {
 		return database.obtainInTransaction(tx -> {
-			return tx.query("select * from "+getTableName()+" where "+typeDescriber.primaryKeys().get(0).getToken().snake_case()+" = :id", b -> {
+			return tx.query("select * from "+getTableName()+" where "+typeDescriber.primaryKeys().get(0).getToken().snake_case()+" = :"+ getKeyName(0), b -> {
 				setKey(b, id);
 			}, this::hydrate).stream().findFirst();
 		});
@@ -87,10 +99,26 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	@Override
 	public CrudUpdateResult deleteById(K id) {
 		return getUpdateResult(database.obtainInTransaction(tx -> {
-			return tx.update("DELETE from "+getTableName()+" where "+typeDescriber.primaryKeys().get(0).getToken().snake_case()+" = :id", b -> {
-				setKey(b, id);
+			return tx.update("DELETE from "+getTableName()+" where "+typeDescriber.primaryKeys().get(0).getToken().snake_case()+" = :"+ getKeyName(0), b -> {
+				setKey(b, id, 0);
 			});
 		}));
+	}
+
+	@Override
+	public CrudUpdateResult deleteByIds(Collection<K> ids) {
+		String inIdsSql = IntStream.range(0, ids.size()).mapToObj(this::getKeyName).collect(Collectors.joining(", "));
+		return getUpdateResult(database.obtainInTransaction(tx ->
+			tx.update("DELETE from " + getTableName() +
+					" where " + typeDescriber.primaryKeys().get(0).getToken().snake_case() +
+					" IN (" + inIdsSql + ")",
+					b -> {
+						int counter = 0;
+						for (K id : ids) {
+							setKey(b, id, counter++);
+						}
+					})
+				));
 	}
 
 	@Override
