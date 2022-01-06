@@ -3,4 +3,5 @@ dependencies {
     api project(':automapper')
     api project(':valqueries-mariadb')
     api project(':valqueries-sqlserver')
+    testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.32'
 }

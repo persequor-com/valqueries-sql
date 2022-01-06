@@ -13,6 +13,8 @@ import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 import io.ran.token.Token;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.math.BigDecimal;
@@ -34,6 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SqlGenerator {
+	private static Logger logger = LoggerFactory.getLogger(SqlGenerator.class);
 	private SqlNameFormatter sqlNameFormatter;
 	private SqlDialect dialect;
 	private SqlDescriber sqlDescriber;
@@ -50,6 +53,7 @@ public class SqlGenerator {
 	}
 
 	public String generateOrModifyTable(Database database, TypeDescriber<?> typeDescriber) {
+		logger.warn("generateOrModifyTable is a work in progress and is not considered stable");
 		String tablename = getTableName(typeDescriber);
 		SqlDescriber.DbTable table = sqlDescriber.describe(typeDescriber, tablename, database);
 		if (table == null) {
