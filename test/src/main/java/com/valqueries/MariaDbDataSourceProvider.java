@@ -21,7 +21,7 @@ public class MariaDbDataSourceProvider extends HikariDataSource {
 		config.setUsername(System.getProperty("db.user", "root"));
 		config.setPassword(System.getProperty("db.password", "s3cr3t"));
 		config.setMinimumIdle(10);
-		config.setMaximumPoolSize(1);
+		config.setMaximumPoolSize(100);
 
 		dataSource = new HikariDataSource(config);
 	}

@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
 import io.ran.Key;
@@ -24,8 +25,9 @@ public interface SqlDialect {
 	<O> String getUpsert(CompoundColumnizer<O> columnizer, Class<O> oClass);
 	String getTableName(Clazz<? extends Object> modeltype);
 
+	String createTableStatement();
 	default String generateCreateTable(TypeDescriber<?> typeDescriber) {
-		return "CREATE TABLE "+ getTableName(Clazz.of(typeDescriber.clazz()))+" ("+typeDescriber.fields().stream().map(property -> {
+		return createTableStatement() + getTableName(Clazz.of(typeDescriber.clazz()))+" ("+typeDescriber.fields().stream().map(property -> {
 			return ""+escapeColumnOrTable(column(property.getToken()))+ " "+getSqlType(property.getType().clazz, property);
 		}).collect(Collectors.joining(", "))+", PRIMARY KEY("+typeDescriber.primaryKeys().stream().map(property -> {
 			return escapeColumnOrTable(column(property.getToken()));
@@ -41,7 +43,9 @@ public interface SqlDialect {
 			}
 		}
 		typeDescriber.indexes().forEach(keySet -> {
-			indexes.add(getIndex(keySet));
+			if(!keySet.isPrimary()) {
+				indexes.add(getIndex(keySet));
+			}
 		});
 		if (indexes.isEmpty()) {
 			return "";
@@ -51,7 +55,7 @@ public interface SqlDialect {
 
 	default String getIndex(KeySet keySet) {
 		String name = keySet.get(0).getProperty().getAnnotations().get(Key.class).name();
-		return "INDEX "+name+" ("+keySet.stream().map(f -> "`"+column(f.getToken())+"`").collect(Collectors.joining(", "))+")";
+		return "INDEX "+name+" ("+keySet.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")";
 
 	}
 
@@ -109,6 +113,48 @@ public interface SqlDialect {
 	String column(Token token);
 
 	String limit(int offset, Integer limit);
+
+	String update(TypeDescriber<?> typeDescriber, List<ValqueriesQueryImpl.Element> elements, List<Property.PropertyValue> newPropertyValues);
+
+	default String describe(String tablename) {
+		return "DESCRIBE " + tablename + "";
+	}
+
+	default String describeIndex(String tablename) {
+		return "show index from " + tablename + "";
+	}
+
+	default String getDescribedFieldColumnName() {
+		return "Field";
+	}
+
+	default String getDescribedFieldColumnType() {
+		return "Type";
+	}
+
+	default SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
+		try {
+			return new SqlDescriber.DbRow(ormResultSet.getString("Field"), ormResultSet.getString("Type"), ormResultSet.getString("Null").equals("Yes") ? true : false);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	default SqlDescriber.DbIndex getDbIndex(OrmResultSet r) {
+		try {
+			return new SqlDescriber.DbIndex(r.getInt("Non_unique") == 0, r.getString("Key_name")+" KEY", r.getString("Key_name"), r.getString("Column_name"));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	String changeColumn(String table, String columnName, String sqlType);
+
+	String addIndex(String tablename, KeySet key);
+
+	default String addColumn(String tablename, String columnName, String sqlType) {
+		return "ALTER TABLE " + tablename + " ADD COLUMN " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	}
 
 	default String delete(String tableAlias, TypeDescriber<?> typeDescriber, List<Element> elements, int offset, Integer limit) {
 		String sql = "DELETE "+tableAlias+" FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " AS "+tableAlias;

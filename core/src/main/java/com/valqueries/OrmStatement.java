@@ -3,6 +3,7 @@ package com.valqueries;
 
 
 import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -130,16 +131,22 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 			preparedStatement.setNull(index.getAndIncrement(), (Integer)0);
 		} else if (value instanceof Boolean) {
 			preparedStatement.setBoolean(index.getAndIncrement(), (Boolean) value);
+		} else if (value instanceof Character) {
+			preparedStatement.setString(index.getAndIncrement(), value.toString());
 		} else if (value instanceof Long) {
 			preparedStatement.setLong(index.getAndIncrement(), (Long) value);
 		} else if (value instanceof Integer) {
 			preparedStatement.setInt(index.getAndIncrement(), (Integer) value);
+		} else if (value instanceof Short) {
+			preparedStatement.setInt(index.getAndIncrement(), (Short) value);
 		} else if (value instanceof Float) {
 			preparedStatement.setDouble(index.getAndIncrement(), (Float) value);
 		} else if (value instanceof Double) {
 			preparedStatement.setDouble(index.getAndIncrement(), (Double) value);
 		} else if (value instanceof String) {
 			preparedStatement.setString(index.getAndIncrement(), ((String) value));
+		} else if (value instanceof BigDecimal) {
+			preparedStatement.setString(index.getAndIncrement(), ((BigDecimal) value).toString());
 		} else if (value instanceof UUID) {
 			preparedStatement.setString(index.getAndIncrement(), ((UUID) value).toString());
 		} else if (value instanceof Enum) {
@@ -155,8 +162,9 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 		} else if (value instanceof LocalDate) {
 			preparedStatement.setString(index.getAndIncrement(), ((LocalDate)value).toString());
 		} else if (value instanceof byte[]) {
-			preparedStatement.setBlob(index.getAndIncrement(), new ByteArrayInputStream((byte[])value));
-//			preparedStatement.setBinaryStream(index.getAndIncrement(), new ByteArrayInputStream((byte[])value));
+			preparedStatement.setBytes(index.getAndIncrement(), (byte[]) value);
+		} else if (value instanceof Byte) {
+			preparedStatement.setInt(index.getAndIncrement(), ((Byte) value).intValue());
 		} else if (value instanceof Collection) {
 			for (Object element : (Collection<?>) value) {
 				setValueInternal(preparedStatement, index, element);

@@ -1,8 +1,12 @@
 package com.valqueries.automapper;
 
 import io.ran.Clazz;
+import io.ran.KeySet;
+import io.ran.Property;
+import io.ran.TypeDescriber;
 import io.ran.token.Token;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class MariaSqlDialect implements SqlDialect {
@@ -35,6 +39,11 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
+	public String createTableStatement() {
+		return "CREATE TABLE IF NOT EXISTS ";
+	}
+
+	@Override
 	public String column(Token token) {
 		return sqlNameFormatter.column(token);
 	}
@@ -42,6 +51,35 @@ public class MariaSqlDialect implements SqlDialect {
 	@Override
 	public String limit(int offset, Integer limit) {
 		return " LIMIT "+offset+","+limit;
+	}
+
+	@Override
+	public String update(TypeDescriber<?> typeDescriber, List<ValqueriesQueryImpl.Element> elements, List<Property.PropertyValue> newPropertyValues) {
+		StringBuilder updateStatement = new StringBuilder();
+
+		updateStatement.append("UPDATE " + getTableName(Clazz.of(typeDescriber.clazz())) + " as main SET ");
+
+		String columnsToUpdate = newPropertyValues.stream()
+				.map(pv -> "main." + sqlNameFormatter.column(pv.getProperty().getToken()) + " = :" + pv.getProperty().getToken().snake_case())
+				.collect(Collectors.joining(", "));
+		updateStatement.append(columnsToUpdate);
+
+		if (!elements.isEmpty()) {
+			updateStatement.append(" WHERE " + elements.stream().map(ValqueriesQueryImpl.Element::queryString).collect(Collectors.joining(" AND ")));
+		}
+
+		return updateStatement.toString();
+
+	}
+
+	@Override
+	public String changeColumn(String tablename, String columnName, String sqlType) {
+		return "ALTER TABLE " + tablename + " CHANGE COLUMN " + escapeColumnOrTable(columnName) + " " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	}
+
+	@Override
+	public String addIndex(String tablename, KeySet key) {
+		return "ALTER TABLE " + tablename + " ADD " + getIndex(key) + ";";
 	}
 
 

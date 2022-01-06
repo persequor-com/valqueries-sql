@@ -23,7 +23,7 @@ public class SqlServerDataSourceProvider extends HikariDataSource {
 		config.setUsername(System.getProperty("db.user", "sa"));
 		config.setPassword(System.getProperty("db.password", "7h3_s3cr3t!1s?0u7"));
 		config.setMinimumIdle(10);
-		config.setMaximumPoolSize(1);
+		config.setMaximumPoolSize(10);
 
 
 		dataSource = new HikariDataSource(config);
