@@ -114,7 +114,7 @@ public interface SqlDialect {
 
 	String limit(int offset, Integer limit);
 
-	String update(TypeDescriber<?> typeDescriber, List<ValqueriesQueryImpl.Element> elements, List<Property.PropertyValue> newPropertyValues);
+	String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues);
 
 	default String describe(String tablename) {
 		return "DESCRIBE " + tablename + "";

@@ -424,15 +424,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		return dialect.update(typeDescriber, elements, newPropertyValues);
 
 	}
-
-	public interface Element extends Setter {
-		String queryString();
-
-		default String fromString() {
-			return null;
-		}
-	}
-
+/*
 	private static class RelationSubQueryElement implements Element {
 		private final ValqueriesQueryImpl<?> otherQuery;
 		private SqlNameFormatter sqlNameFormatter;
@@ -495,7 +487,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			otherQuery.set(statement);
 		}
 	}
-
+*/
 	private void setTableAlias(String tableAlias) {
 		this.tableAlias = tableAlias;
 	}

@@ -2,6 +2,7 @@ package com.valqueries.automapper;
 
 import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
+import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.token.Token;
@@ -59,8 +60,41 @@ public class H2SqlDialect implements SqlDialect {
 				"    FETCH NEXT "+limit+" ROWS ONLY";
 	}
 
+	@Override
+	public String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
+		StringBuilder updateStatement = new StringBuilder();
+
+		updateStatement.append("UPDATE " + getTableName(Clazz.of(typeDescriber.clazz())) + " as main SET ");
+
+		String columnsToUpdate = newPropertyValues.stream()
+				.map(pv -> "main." + sqlNameFormatter.column(pv.getProperty().getToken()) + " = :" + pv.getProperty().getToken().snake_case())
+				.collect(Collectors.joining(", "));
+		updateStatement.append(columnsToUpdate);
+
+		if (!elements.isEmpty()) {
+			updateStatement.append(" WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
+		}
+
+		return updateStatement.toString();
+	}
+
+	@Override
+	public String changeColumn(String table, String columnName, String sqlType) {
+		return null;
+	}
+
+	@Override
+	public String addIndex(String tablename, KeySet key) {
+		return null;
+	}
+
 	public String getTableName(Clazz<? extends Object> modeltype) {
 		return escapeColumnOrTable(sqlNameFormatter.table(modeltype.clazz));
+	}
+
+	@Override
+	public String createTableStatement() {
+		return "CREATE TABLE ";
 	}
 
 	public String delete(String tableAlias, TypeDescriber<?> typeDescriber, List<Element> elements, int offset, Integer limit) {
