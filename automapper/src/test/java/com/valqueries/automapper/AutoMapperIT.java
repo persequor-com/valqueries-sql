@@ -185,6 +185,34 @@ public class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	public void eagerLoad_multipleRelationFields() throws Throwable {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeWheel wheel = factory.get(BikeWheel.class);
+		wheel.setBikeType(BikeType.Mountain);
+		wheel.setSize(20);
+		wheel.setColor("red");
+
+		bike.setFrontWheel(wheel);
+
+		bikeRepository.save(bike);
+
+		Bike res = bikeRepository.query()
+				.eq(Bike::getId, bike.getId())
+				.withEager(Bike::getFrontWheel)
+				.execute().findFirst().orElseThrow(() -> new RuntimeException());
+
+		res.getClass().getMethod("_resolverInject", Resolver.class).invoke(res, resolver);
+
+		assertNotNull(res);
+
+		verifyNoInteractions(resolver);
+	}
+
+	@Test
 	public void primaryKeyOnlyModel_savedMultipleTimes() throws Throwable {
 		PrimaryKeyModel model = factory.get(PrimaryKeyModel.class);
 		model.setFirst("1");
