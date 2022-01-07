@@ -18,10 +18,12 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	private List<Token> columns = new ArrayList<>();
 	private String prefix;
 	private SqlNameFormatter sqlNameFormatter;
+	private SqlDialect dialect;
 
-	public ValqueriesColumnBuilder(String prefix, SqlNameFormatter sqlNameFormatter) {
+	public ValqueriesColumnBuilder(String prefix, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
 		this.prefix = prefix;
 		this.sqlNameFormatter = sqlNameFormatter;
+		this.dialect = dialect;
 	}
 
 	@Override
@@ -115,6 +117,12 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	}
 
 	@Override
+	public byte[] getBytes(Token token) {
+		columns.add(token);
+		return null;
+	}
+
+	@Override
 	public <T extends Enum<T>> T getEnum(Token token, Class<T> aClass) {
 		columns.add(token);
 		return null;
@@ -127,6 +135,6 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	}
 
 	public String getSql() {
-		return columns.stream().map(t -> prefix+"."+sqlNameFormatter.column(t)+" "+prefix+"_"+sqlNameFormatter.column(t)).collect(Collectors.joining(", "));
+		return columns.stream().map(t -> prefix+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(t))+" "+prefix+"_"+sqlNameFormatter.column(t)).collect(Collectors.joining(", "));
 	}
 }

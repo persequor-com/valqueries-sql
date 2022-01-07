@@ -1,17 +1,18 @@
 package com.valqueries.automapper;
 
 import com.google.inject.Guice;
-import com.valqueries.DataSourceProvider;
 import com.valqueries.Database;
 import com.valqueries.IOrm;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.Resolver;
+import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.ZoneOffset;
@@ -26,13 +27,15 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoInteractions;
 
-@RunWith(MockitoJUnitRunner.class)
-public class AutoMapperIT extends AutoMapperBaseTests {
+
+public abstract class AutoMapperIT extends AutoMapperBaseTests {
+	abstract Database database();
+
 	@Override
 	protected void setInjector() {
-		database = new Database(DataSourceProvider.get());
+		database = database();
 		GuiceModule module = new GuiceModule(database, ValqueriesResolver.class);
 		injector = Guice.createInjector(module);
 		factory = injector.getInstance(GenericFactory.class);
@@ -40,44 +43,19 @@ public class AutoMapperIT extends AutoMapperBaseTests {
 
 	@Before
 	public void setup() {
+		sqlGenerator = injector.getInstance(SqlGenerator.class);
+
 		try (IOrm orm = database.getOrm()) {
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(carDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(carDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(doorDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(doorDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(engineDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(engineDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(engineCarDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(engineCarDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(exhaustDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(exhaustDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(tireDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(tireDescriber));
+			List<Class> clazzes = Arrays.asList(Car.class, Door.class, Engine.class, EngineCar.class, Exhaust.class, Tire.class, WithCollections.class, Bike.class, BikeGear.class, BikeGearBike.class, BikeWheel.class, PrimaryKeyModel.class, Bipod.class, Pod.class, AllFieldTypes.class);
+			clazzes.forEach(c -> {
+				TypeDescriber desc = TypeDescriberImpl.getTypeDescriber(c);
+				try {
+					orm.update("DROP TABLE " + sqlGenerator.getTableName(desc) + ";");
+				} catch (Exception e) {
 
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(withCollectionsDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(withCollectionsDescriber));
-
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(bikeDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(bikeGearDescriber));
-
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearBikeDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(bikeGearBikeDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeWheelDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(bikeWheelDescriber));
-
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(primaryKeyDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(primaryKeyDescriber));
-
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(TypeDescriberImpl.getTypeDescriber(Bipod.class))+";");
-			orm.update(sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(Bipod.class)));
-
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(TypeDescriberImpl.getTypeDescriber(Pod.class))+";");
-			orm.update(sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(Pod.class)));
-
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(TypeDescriberImpl.getTypeDescriber(AllFieldTypes.class))+";");
-			orm.update(sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(AllFieldTypes.class)));
+				}
+				orm.update(sqlGenerator.generateCreateTable(desc));
+			});
 		}
 	}
 
@@ -180,6 +158,34 @@ public class AutoMapperIT extends AutoMapperBaseTests {
 
 		Car actual = res.getCar();
 		assertNotNull(actual);
+
+		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void eagerLoad_multipleRelationFields() throws Throwable {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeWheel wheel = factory.get(BikeWheel.class);
+		wheel.setBikeType(BikeType.Mountain);
+		wheel.setSize(20);
+		wheel.setColor("red");
+
+		bike.setFrontWheel(wheel);
+
+		bikeRepository.save(bike);
+
+		Bike res = bikeRepository.query()
+				.eq(Bike::getId, bike.getId())
+				.withEager(Bike::getFrontWheel)
+				.execute().findFirst().orElseThrow(() -> new RuntimeException());
+
+		res.getClass().getMethod("_resolverInject", Resolver.class).invoke(res, resolver);
+
+		assertNotNull(res);
 
 		verifyNoInteractions(resolver);
 	}

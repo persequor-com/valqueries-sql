@@ -12,8 +12,8 @@ public class ValqueriesTestDoubleRepositoryFactory extends ValqueriesRepositoryF
 	private TestDoubleDb store;
 
 	@Inject
-	public ValqueriesTestDoubleRepositoryFactory(GenericFactory genericFactory, MappingHelper mappingHelper, TestDoubleDb store, SqlNameFormatter columnFormatter) {
-		super(null, genericFactory, mappingHelper, columnFormatter);
+	public ValqueriesTestDoubleRepositoryFactory(GenericFactory genericFactory, MappingHelper mappingHelper, TestDoubleDb store, SqlNameFormatter columnFormatter, DialectFactory dialectFactory) {
+		super(null, genericFactory, mappingHelper, columnFormatter, dialectFactory);
 		this.store = store;
 	}
 

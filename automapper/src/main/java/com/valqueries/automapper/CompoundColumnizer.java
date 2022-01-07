@@ -2,19 +2,15 @@ package com.valqueries.automapper;
 
 import com.valqueries.IStatement;
 import com.valqueries.Setter;
-import io.ran.CompoundKey;
 import io.ran.GenericFactory;
 import io.ran.MappingHelper;
 import io.ran.ObjectMapColumnizer;
 import io.ran.Property;
 import io.ran.token.Token;
 
-import java.math.BigDecimal;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Setter, ObjectMapColumnizer {
@@ -25,17 +21,17 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 	private final List<String> columnsWithoutKey = new ArrayList<>();
 	private final List<List<String>> valueTokens = new ArrayList<>();
 	private List<String> valueTokensCurrent = new ArrayList<>();
-	private Token.TokenList tokens;
+	private Token.TokenList keyFields;
 	private int index = 0;
 
 	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> ts, SqlNameFormatter sqlNameFormatter) {
 		this.sqlNameFormatter = sqlNameFormatter;
-
+		this.key = mappingHelper.getKey(ts.stream().findFirst().get());
 		for (T t : ts) {
-			if (tokens == null) {
-				tokens = new Token.TokenList();
+			if (keyFields == null) {
+				keyFields = new Token.TokenList();
 				for(Object propertyValue : mappingHelper.getKey(t).getValues()) {
-					tokens.add(((Property.PropertyValue)propertyValue).getProperty().getToken());
+					keyFields.add(((Property.PropertyValue)propertyValue).getProperty().getToken());
 				}
 			}
 			mappingHelper.columnize(t, this);
@@ -63,13 +59,18 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		return key.snake_case()+"_"+index;
 	}
 
-	protected void add(Token key, Consumer<IStatement> consumer) {
+	protected void add(Token token, Consumer<IStatement> consumer) {
+		fields.put(token.snake_case(),transformKey(token));
+		placeholders.add(token.snake_case());
 		if (index == 0) {
-			columns.add(transformKey(key));
+			columns.add(transformKey(token));
 		}
-		valueTokensCurrent.add(transformFieldPlaceholder(key));
-		if (!tokens.contains(key)) {
-			columnsWithoutKey.add(transformKey(key));
+		valueTokensCurrent.add(transformFieldPlaceholder(token));
+		if (keyFields.contains(token)) {
+			keys.add(transformKey(token));
+		} else {
+			fieldsWithoutKeys.put(token.snake_case(),transformKey(token));
+			columnsWithoutKey.add(transformKey(token));
 		}
 		currentStatements.add(consumer);
 	}

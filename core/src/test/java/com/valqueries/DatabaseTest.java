@@ -5,7 +5,6 @@
  */
 package com.valqueries;
 
-import com.mysql.cj.jdbc.exceptions.MySQLTransactionRollbackException;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,6 +14,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.SQLTransactionRollbackException;
 import java.time.Duration;
 
 import static org.junit.Assert.assertTrue;
@@ -32,7 +32,7 @@ public class DatabaseTest {
 	private Connection connection;
 	@Mock
 	private ITransaction tx;
-	private MySQLTransactionRollbackException deadlockEx = new MySQLTransactionRollbackException("reason", "40001", 1213);
+	private SQLTransactionRollbackException deadlockEx = new SQLTransactionRollbackException("reason", "40001", 1213);
 
 	@Before
 	public void setup() throws Exception {
@@ -47,7 +47,7 @@ public class DatabaseTest {
 			database.doInTransaction( 3, Duration.ofMillis(100), tx);
 			fail("Should fail at this point");
 		} catch (OrmException e) {
-			assertTrue(e.getCause() instanceof MySQLTransactionRollbackException);
+			assertTrue(e.getCause() instanceof SQLTransactionRollbackException);
 		}
 		verify(tx, times(3)).execute(any());
 	}
