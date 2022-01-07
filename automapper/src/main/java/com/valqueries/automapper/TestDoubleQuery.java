@@ -87,7 +87,10 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 
 	public ValqueriesQuery<T> in(Property.PropertyValueList propertyValues) {
 		filters.add(t -> {
-			Object actualValue = getValue(((Property.PropertyValueList<?>)propertyValues).get(0).getProperty(), t);
+			if (propertyValues.isEmpty()) {
+				throw new IllegalArgumentException("Empty list was set to statement");
+			}
+			Object actualValue = getValue(propertyValues.getProperty(), t);
 			return ((Property.PropertyValueList<?>)propertyValues).stream().anyMatch(pv -> Objects.equals(actualValue, pv.getValue()));
 		});
 		return this;
