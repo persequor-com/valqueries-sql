@@ -174,9 +174,12 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			eagerJoin.append(" LEFT JOIN "+eagerTable+" "+eagerAlias+" ON ");
 			List<KeySet.Field> from = relation.getFromKeys().stream().collect(Collectors.toList());
 			List<KeySet.Field> to = relation.getToKeys().stream().collect(Collectors.toList());
+			List<String> onParams = new ArrayList<>();
 			for(int x=0;x<from.size();x++) {
-				eagerJoin.append(tableAlias+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(from.get(x).getToken()))+" = "+eagerAlias+"."+sqlNameFormatter.column(to.get(x).getToken()));
+				onParams.add(tableAlias+"."+sqlNameFormatter.column(from.get(x).getToken())+" = "+eagerAlias+"."+sqlNameFormatter.column(to.get(x).getToken()));
 			}
+
+			eagerJoin.append(String.join(" AND ", onParams));
 			TypeDescriber<?> eagerRelationTypeDescriber = TypeDescriberImpl.getTypeDescriber(relation.getToClass().clazz);
 
 			eagerSelect.append(", "+eagerRelationTypeDescriber.fields().stream().map(property -> eagerAlias+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(property.getToken()))+" "+eagerAlias+"_"+sqlNameFormatter.column(property.getToken())).collect(Collectors.joining(", ")));
@@ -339,7 +342,6 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	public CrudRepository.CrudUpdateResult delete() {
 		try {
 			String sql = buildDeleteSql();
-			System.out.println(sql);
 			UpdateResult update = transactionContext.update(sql, this);
 			return () -> update.getAffectedRows();
 		} finally {

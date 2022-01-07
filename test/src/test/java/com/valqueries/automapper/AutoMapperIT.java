@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 
 public abstract class AutoMapperIT extends AutoMapperBaseTests {
@@ -92,7 +93,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		List<Door> doors = cars.stream().findFirst().get().getDoors();
 		assertEquals(2, doors.size());
 
-		Mockito.verifyNoInteractions(resolver);
+		verifyNoInteractions(resolver);
 	}
 
 	@Test
@@ -132,7 +133,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		Exhaust actualExhaust = cars.stream().findFirst().get().getExhaust();
 		assertEquals(exhaust.getId(), actualExhaust.getId());
 
-		Mockito.verifyNoInteractions(resolver);
+		verifyNoInteractions(resolver);
 	}
 
 	@Test
@@ -158,7 +159,35 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		Car actual = res.getCar();
 		assertNotNull(actual);
 
-		Mockito.verifyNoInteractions(resolver);
+		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void eagerLoad_multipleRelationFields() throws Throwable {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeWheel wheel = factory.get(BikeWheel.class);
+		wheel.setBikeType(BikeType.Mountain);
+		wheel.setSize(20);
+		wheel.setColor("red");
+
+		bike.setFrontWheel(wheel);
+
+		bikeRepository.save(bike);
+
+		Bike res = bikeRepository.query()
+				.eq(Bike::getId, bike.getId())
+				.withEager(Bike::getFrontWheel)
+				.execute().findFirst().orElseThrow(() -> new RuntimeException());
+
+		res.getClass().getMethod("_resolverInject", Resolver.class).invoke(res, resolver);
+
+		assertNotNull(res);
+
+		verifyNoInteractions(resolver);
 	}
 
 	@Test
@@ -211,6 +240,6 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		assertEquals("Pod number 1", actual.getPod1().getName());
 		assertEquals("Pod number 2", actual.getPod2().getName());
 
-		Mockito.verifyNoInteractions(resolver);
+		verifyNoInteractions(resolver);
 	}
 }
