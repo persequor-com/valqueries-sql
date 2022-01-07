@@ -1,17 +1,16 @@
 package com.valqueries.automapper;
 
 import com.valqueries.Database;
-import com.valqueries.IOrm;
-import com.valqueries.MariaDbDataSourceProvider;
+import com.valqueries.H2DataSourceProvider;
 import com.valqueries.SqlServerDataSourceProvider;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class AutoMapperSqlServerIT extends AutoMapperIT {
+public class AutoMapperH2IT extends AutoMapperIT {
 
 	@Override
 	Database database() {
-		return new Database(SqlServerDataSourceProvider.get());
+		return new Database(H2DataSourceProvider.get());
 	}
 }

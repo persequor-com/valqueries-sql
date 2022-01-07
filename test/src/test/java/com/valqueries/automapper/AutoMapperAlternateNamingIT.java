@@ -1,7 +1,6 @@
 package com.valqueries.automapper;
 
 import com.google.inject.Guice;
-import com.valqueries.MariaDbDataSourceProvider;
 import com.valqueries.Database;
 import com.valqueries.IOrm;
 import io.ran.CrudRepository;
@@ -13,9 +12,7 @@ import io.ran.token.Token;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;

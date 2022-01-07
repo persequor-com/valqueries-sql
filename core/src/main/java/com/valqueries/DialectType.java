@@ -3,7 +3,9 @@ package com.valqueries;
 import java.util.Arrays;
 
 public enum DialectType {
-	MariaDB("mysql", "com.valqueries.automapper.MariaSqlDialect"), MsSql("sqlserver", "com.valqueries.automapper.MssqlSqlDialect");
+	MariaDB("mysql", "com.valqueries.automapper.MariaSqlDialect")
+	, MsSql("sqlserver", "com.valqueries.automapper.MssqlSqlDialect")
+	, H2("h2", "com.valqueries.automapper.H2SqlDialect");
 
 	private String jdbcName;
 	private String dialect;

@@ -1,5 +1,7 @@
 package com.valqueries.automapper;
 
+import com.valqueries.OrmResultSet;
+import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
 import io.ran.KeySet;
 import io.ran.Property;
@@ -54,7 +56,7 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String update(TypeDescriber<?> typeDescriber, List<ValqueriesQueryImpl.Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
 		updateStatement.append("UPDATE " + getTableName(Clazz.of(typeDescriber.clazz())) + " as main SET ");
@@ -65,7 +67,7 @@ public class MariaSqlDialect implements SqlDialect {
 		updateStatement.append(columnsToUpdate);
 
 		if (!elements.isEmpty()) {
-			updateStatement.append(" WHERE " + elements.stream().map(ValqueriesQueryImpl.Element::queryString).collect(Collectors.joining(" AND ")));
+			updateStatement.append(" WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
 		}
 
 		return updateStatement.toString();
@@ -82,5 +84,11 @@ public class MariaSqlDialect implements SqlDialect {
 		return "ALTER TABLE " + tablename + " ADD " + getIndex(key) + ";";
 	}
 
-
+	public SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
+		try {
+			return new SqlDescriber.DbRow(ormResultSet.getString("Field"), ormResultSet.getString("Type"), ormResultSet.getString("Null").equals("Yes") ? true : false);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

@@ -1,6 +1,7 @@
 package com.valqueries.automapper;
 
 import com.valqueries.OrmResultSet;
+import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
 import io.ran.Key;
 import io.ran.KeySet;
@@ -96,6 +97,9 @@ public interface SqlDialect {
 		if (type == byte.class || type == Byte.class) {
 			return "TINYINT";
 		}
+		if (type == byte[].class) {
+			return "BLOB";
+		}
 		if (type == long.class || type == Long.class) {
 			return "BIGINT";
 		}
@@ -110,7 +114,7 @@ public interface SqlDialect {
 
 	String limit(int offset, Integer limit);
 
-	String update(TypeDescriber<?> typeDescriber, List<ValqueriesQueryImpl.Element> elements, List<Property.PropertyValue> newPropertyValues);
+	String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues);
 
 	default String describe(String tablename) {
 		return "DESCRIBE " + tablename + "";
@@ -128,13 +132,7 @@ public interface SqlDialect {
 		return "Type";
 	}
 
-	default SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
-		try {
-			return new SqlDescriber.DbRow(ormResultSet.getString("Field"), ormResultSet.getString("Type"), ormResultSet.getString("Null").equals("Yes") ? true : false);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
+	SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet);
 
 	default SqlDescriber.DbIndex getDbIndex(OrmResultSet r) {
 		try {
@@ -150,5 +148,17 @@ public interface SqlDialect {
 
 	default String addColumn(String tablename, String columnName, String sqlType) {
 		return "ALTER TABLE " + tablename + " ADD COLUMN " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	}
+
+	default String delete(String tableAlias, TypeDescriber<?> typeDescriber, List<Element> elements, int offset, Integer limit) {
+		String sql = "DELETE "+tableAlias+" FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " AS "+tableAlias;
+		if (!elements.isEmpty()) {
+			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
+		}
+		if (limit !=  null) {
+			sql += limit(offset, limit);
+		}
+//		System.out.println(sql);
+		return sql;
 	}
 }

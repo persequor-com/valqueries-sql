@@ -166,7 +166,8 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	@Override
 	public BigDecimal getBigDecimal(Token key) {
 		try {
-			return new BigDecimal(row.getString(transformKey(key)));
+			String num = row.getString(transformKey(key));
+			return num != null ? new BigDecimal(num) : null;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

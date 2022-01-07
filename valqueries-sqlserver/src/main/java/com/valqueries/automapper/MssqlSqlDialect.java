@@ -1,6 +1,7 @@
 package com.valqueries.automapper;
 
 import com.valqueries.OrmResultSet;
+import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
 import io.ran.Key;
 import io.ran.KeySet;
@@ -31,7 +32,7 @@ public class MssqlSqlDialect implements SqlDialect {
 				") incoming ("+columnizer.getFields().entrySet().stream().map((e) -> "["+e.getValue()+"]").collect(Collectors.joining(", "))+") on "+columnizer.getKeys().stream().map(k -> "target.["+k+"] = incoming.["+k+"]").collect(Collectors.joining(" AND "))+
 				(columnizer.getFieldsWithoutKeys().size() > 0 ? " WHEN MATCHED THEN UPDATE SET "+columnizer.getFieldsWithoutKeys().entrySet().stream().map(e -> "["+e.getValue()+"] = incoming.["+e.getValue()+"]").collect(Collectors.joining(", ")):"")+
 				" WHEN NOT MATCHED THEN INSERT ("+columnizer.getFields().entrySet().stream().map(e -> "["+e.getValue()+"]").collect(Collectors.joining(", "))+") " +
-				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming.["+e.getKey()+"]").collect(Collectors.joining(", "))+");";
+				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming.["+e.getValue()+"]").collect(Collectors.joining(", "))+");";
 	}
 
 	public String getSqlType(Class type, Property property) {
@@ -60,7 +61,7 @@ public class MssqlSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String update(TypeDescriber<?> typeDescriber, List<ValqueriesQueryImpl.Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
 		updateStatement.append("UPDATE main SET ");
@@ -73,7 +74,7 @@ public class MssqlSqlDialect implements SqlDialect {
 		updateStatement.append(" FROM "+getTableName(Clazz.of(typeDescriber.clazz()))+" main");
 
 		if (!elements.isEmpty()) {
-			updateStatement.append(" WHERE " + elements.stream().map(ValqueriesQueryImpl.Element::queryString).collect(Collectors.joining(" AND ")));
+			updateStatement.append(" WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
 		}
 
 		return updateStatement.toString();
