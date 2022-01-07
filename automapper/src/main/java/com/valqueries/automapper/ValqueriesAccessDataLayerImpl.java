@@ -19,7 +19,9 @@ import io.ran.MappingHelper;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,8 +36,9 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	protected TypeDescriber<T> typeDescriber;
 	protected MappingHelper mappingHelper;
 	private final SqlNameFormatter sqlNameFormatter;
+	private final SqlDialect dialect;
 
-	public ValqueriesAccessDataLayerImpl(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter) {
+	public ValqueriesAccessDataLayerImpl(Database database, GenericFactory genericFactory, Class<T> modelType, Class<K> keyType, MappingHelper mappingHelper, SqlNameFormatter sqlNameFormatter, DialectFactory dialectFactory) {
 		this.database = database;
 		this.genericFactory = genericFactory;
 		this.modelType = modelType;
@@ -44,6 +47,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		this.typeDescriber = TypeDescriberImpl.getTypeDescriber(modelType);
 		this.mappingHelper = mappingHelper;
 		this.sqlNameFormatter = sqlNameFormatter;
+		this.dialect = dialectFactory.get(database);
 	}
 
 	private void setKey(IStatement b, K id) {
@@ -129,14 +133,34 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	private <O> CrudUpdateResult saveInternal(ITransactionContext tx, O t, Class<O> oClass) {
-		ValqueriesColumnizer<O> columnizer = new ValqueriesColumnizer<O>(genericFactory, mappingHelper,t, sqlNameFormatter);
-		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" SET "+columnizer.getSql();
-		if (!columnizer.getSqlWithoutKey().isEmpty()) {
-			sql += " on duplicate key update "+columnizer.getSqlWithoutKey();
-		} else {
-			sql += " on duplicate key update "+columnizer.getSql();
-		}
-		return getUpdateResult(tx.update(sql, columnizer));
+		return saveInternal(tx, Collections.singletonList(t), oClass);
+//		ValqueriesColumnizer<O> columnizer = new ValqueriesColumnizer<O>(genericFactory, mappingHelper,t, sqlNameFormatter);
+//
+//		/**
+//		 *     MERGE dbo.AccountDetails AS myTarget
+//		 *     USING (SELECT @Email Email, @Etc etc) AS mySource
+//		 *         ON mySource.Email = myTarget.Email
+//		 *     WHEN MATCHED THEN UPDATE
+//		 *         SET etc = mySource.etc
+//		 *     WHEN NOT MATCHED THEN
+//		 *         INSERT (Email, Etc)
+//		 *         VALUES (@Email, @Etc);
+//		 */
+//
+//		String sql = "MERGE "+getTableName(Clazz.of(oClass))+" as target USING " +
+//				"(SELECT "+columnizer.getFields().entrySet().stream().map((e) -> ":"+e.getKey()+" ["+e.getValue()+"]").collect(Collectors.joining(", "))+
+//				") as incoming on "+columnizer.getFields().entrySet().stream().map(e -> "target.["+e.getValue()+"] = incoming.["+e.getValue()+"]").collect(Collectors.joining(" AND "))+
+//
+//				(columnizer.getFieldsWithoutKeys().size() > 0 ? " WHEN MATCHED THEN UPDATE SET "+columnizer.getFieldsWithoutKeys().entrySet().stream().map(e -> "["+e.getValue()+"] = incoming.["+e.getValue()+"]").collect(Collectors.joining(", ")):"")+
+//
+//				" WHEN NOT MATCHED THEN INSERT ("+columnizer.getFields().entrySet().stream().map(e -> "["+e.getValue()+"]").collect(Collectors.joining(", "))+") " +
+//				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> ":"+e.getKey()+"").collect(Collectors.joining(", "))+");";
+////		if (!columnizer.getSqlWithoutKey().isEmpty()) {
+////			sql += " on duplicate key update "+columnizer.getSqlWithoutKey();
+////		} else {
+////			sql += " on duplicate key update "+columnizer.getSql();
+////		}
+//		return getUpdateResult(tx.update(sql, columnizer));
 	}
 
 	private <O> CrudUpdateResult saveInternal(ITransactionContext tx, Collection<O> ts, Class<O> oClass) {
@@ -144,13 +168,10 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 			return () -> 0;
 		}
 		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper,ts, sqlNameFormatter);
-		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" ("+columnizer.getColumns().stream().map(s -> "`"+s+"`").collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
 
-		if (!columnizer.getColumnsWithoutKey().isEmpty()) {
-			sql += " on duplicate key update "+columnizer.getColumnsWithoutKey().stream().distinct().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
-		} else {
-			sql += " on duplicate key update "+columnizer.getColumns().stream().distinct().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
-		}
+
+		String sql = dialect.getUpsert(columnizer, oClass);
+
 		return getUpdateResult(tx.update(sql, columnizer));
 	}
 
@@ -184,21 +205,21 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 
 	@Override
 	public ValqueriesQueryImpl<T> query() {
-		return new ValqueriesQueryImpl<T>(database.getOrm(), modelType, genericFactory, sqlNameFormatter, mappingHelper);
+		return new ValqueriesQueryImpl<T>(database.getOrm(), modelType, genericFactory, sqlNameFormatter, mappingHelper, dialect);
 	}
 
 	@Override
 	public <O> ValqueriesQueryImpl<O> query(Class<O> oClass) {
-		return new ValqueriesQueryImpl<O>(database.getOrm(), oClass, genericFactory, sqlNameFormatter, mappingHelper);
+		return new ValqueriesQueryImpl<O>(database.getOrm(), oClass, genericFactory, sqlNameFormatter, mappingHelper, dialect);
 	}
 
 	public ValqueriesQueryImpl<T> query(ITransactionContext tx) {
-		return new ValqueriesQueryImpl<T>(tx, modelType, genericFactory, sqlNameFormatter, mappingHelper);
+		return new ValqueriesQueryImpl<T>(tx, modelType, genericFactory, sqlNameFormatter, mappingHelper, dialect);
 	}
 
 	@Override
 	public <O> ValqueriesQuery<O> query(ITransactionContext tx, Class<O> oClass) {
-		return new ValqueriesQueryImpl<O>(tx, oClass, genericFactory, sqlNameFormatter, mappingHelper);
+		return new ValqueriesQueryImpl<O>(tx, oClass, genericFactory, sqlNameFormatter, mappingHelper, dialect);
 	}
 
 	@Override
@@ -216,7 +237,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	String getTableName(Clazz<? extends Object> modeltype) {
-		return sqlNameFormatter.table(modeltype.clazz);
+		return dialect.getTableName(modeltype);
 	}
 
 

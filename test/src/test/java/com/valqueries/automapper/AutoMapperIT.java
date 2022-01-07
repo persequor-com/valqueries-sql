@@ -1,23 +1,24 @@
 package com.valqueries.automapper;
 
 import com.google.inject.Guice;
-import com.valqueries.DataSourceProvider;
 import com.valqueries.Database;
 import com.valqueries.IOrm;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.Resolver;
+import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
-import io.ran.token.Token;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -25,61 +26,35 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.ArgumentMatchers.any;
 
-@RunWith(MockitoJUnitRunner.class)
-public class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 
+public abstract class AutoMapperIT extends AutoMapperBaseTests {
+	abstract Database database();
 
 	@Override
 	protected void setInjector() {
-		database = new Database(DataSourceProvider.get());
+		database = database();
 		GuiceModule module = new GuiceModule(database, ValqueriesResolver.class);
-		injector = Guice.createInjector(module, binder -> binder.bind(SqlNameFormatter.class).toProvider(() -> new SqlNameFormatter() {
-			@Override
-			public String table(Token key) {
-				return "alt_"+key.CamelBack();
-			}
-
-			@Override
-			public String column(Token key) {
-				return key.CamelBack();
-			}
-		}));
+		injector = Guice.createInjector(module);
 		factory = injector.getInstance(GenericFactory.class);
 	}
 
 	@Before
 	public void setup() {
+		sqlGenerator = injector.getInstance(SqlGenerator.class);
+
 		try (IOrm orm = database.getOrm()) {
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(carDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(carDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(doorDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(doorDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(engineDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(engineDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(engineCarDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(engineCarDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(exhaustDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(exhaustDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(tireDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(tireDescriber));
+			List<Class> clazzes = Arrays.asList(Car.class, Door.class, Engine.class, EngineCar.class, Exhaust.class, Tire.class, WithCollections.class, Bike.class, BikeGear.class, BikeGearBike.class, BikeWheel.class, PrimaryKeyModel.class, Bipod.class, Pod.class, AllFieldTypes.class);
+			clazzes.forEach(c -> {
+				TypeDescriber desc = TypeDescriberImpl.getTypeDescriber(c);
+				try {
+					orm.update("DROP TABLE " + sqlGenerator.getTableName(desc) + ";");
+				} catch (Exception e) {
 
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(withCollectionsDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(withCollectionsDescriber));
-
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(bikeDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(bikeGearDescriber));
-
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeGearBikeDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(bikeGearBikeDescriber));
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(bikeWheelDescriber)+";");
-			orm.update(sqlGenerator.generateCreateTable(bikeWheelDescriber));
-
-			orm.update("DROP TABLE IF EXISTS "+sqlGenerator.getTableName(TypeDescriberImpl.getTypeDescriber(AllFieldTypes.class))+";");
-			orm.update(sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(AllFieldTypes.class)));
+				}
+				orm.update(sqlGenerator.generateCreateTable(desc));
+			});
 		}
 	}
 
@@ -117,7 +92,7 @@ public class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 		List<Door> doors = cars.stream().findFirst().get().getDoors();
 		assertEquals(2, doors.size());
 
-		verifyNoInteractions(resolver);
+		Mockito.verifyNoInteractions(resolver);
 	}
 
 	@Test
@@ -157,7 +132,7 @@ public class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 		Exhaust actualExhaust = cars.stream().findFirst().get().getExhaust();
 		assertEquals(exhaust.getId(), actualExhaust.getId());
 
-		verifyNoInteractions(resolver);
+		Mockito.verifyNoInteractions(resolver);
 	}
 
 	@Test
@@ -183,6 +158,87 @@ public class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 		Car actual = res.getCar();
 		assertNotNull(actual);
 
+		Mockito.verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void eagerLoad_multipleRelationFields() throws Throwable {
+		Bike bike = factory.get(Bike.class);
+		bike.setId(UUID.randomUUID().toString());
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		BikeWheel wheel = factory.get(BikeWheel.class);
+		wheel.setBikeType(BikeType.Mountain);
+		wheel.setSize(20);
+		wheel.setColor("red");
+
+		bike.setFrontWheel(wheel);
+
+		bikeRepository.save(bike);
+
+		Bike res = bikeRepository.query()
+				.eq(Bike::getId, bike.getId())
+				.withEager(Bike::getFrontWheel)
+				.execute().findFirst().orElseThrow(() -> new RuntimeException());
+
+		res.getClass().getMethod("_resolverInject", Resolver.class).invoke(res, resolver);
+
+		assertNotNull(res);
+
 		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void primaryKeyOnlyModel_savedMultipleTimes() throws Throwable {
+		PrimaryKeyModel model = factory.get(PrimaryKeyModel.class);
+		model.setFirst("1");
+		model.setSecond("2");
+		primayKeyModelRepository.save(model);
+		primayKeyModelRepository.save(model);
+	}
+
+	@Test
+	public void primaryKeyOnlyModelList_savedMultipleTimes() throws Throwable {
+		PrimaryKeyModel model = factory.get(PrimaryKeyModel.class);
+		model.setFirst("1");
+		model.setSecond("2");
+		PrimaryKeyModel model2 = factory.get(PrimaryKeyModel.class);
+		model2.setFirst("2");
+		model2.setSecond("3");
+		primayKeyModelRepository.doRetryableInTransaction(tx -> {
+			primayKeyModelRepository.save(tx, Arrays.asList(model, model2));
+		});
+		primayKeyModelRepository.doRetryableInTransaction(tx -> {
+			primayKeyModelRepository.save(tx, Arrays.asList(model, model2));
+		});
+	}
+
+	@Test
+	public void twoRelationsToSameClassOnOneObject() throws Throwable {
+		Pod pod1 = factory.get(Pod.class);
+		pod1.setId("pod1");
+		pod1.setName("Pod number 1");
+
+		Pod pod2 = factory.get(Pod.class);
+		pod2.setId("pod2");
+		pod2.setName("Pod number 2");
+
+		Bipod bipod = factory.get(Bipod.class);
+		bipod.setId(UUID.randomUUID().toString());
+		bipod.setPod1(pod1);
+		bipod.setPod2(pod2);
+
+		podRepository.save(bipod);
+
+
+		Bipod actual = podRepository.getEagerBipod(bipod.getId());
+		actual.getClass().getMethod("_resolverInject", Resolver.class).invoke(actual, resolver);
+
+		assertEquals(bipod.getId(), actual.getId());
+		assertEquals("Pod number 1", actual.getPod1().getName());
+		assertEquals("Pod number 2", actual.getPod2().getName());
+
+		Mockito.verifyNoInteractions(resolver);
 	}
 }

@@ -16,7 +16,7 @@ public class Car {
 	@PrimaryKey
 	private UUID id;
 	@Fulltext
-	@MappedType("TEXT")
+//	@MappedType("TEXT")
 	private String title;
 	private String key;
 	private Brand brand;

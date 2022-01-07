@@ -14,7 +14,6 @@ import io.ran.ObjectMapColumnizer;
 import io.ran.Property;
 import io.ran.token.Token;
 
-import java.awt.image.ImageProducer;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -22,7 +21,10 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -31,7 +33,11 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	private final List<Consumer<IStatement>> statements = new ArrayList<>();
 	private final List<String> sqlStatements = new ArrayList<>();
 	private final List<String> sqlWithoutKey = new ArrayList<>();
-	private CompoundKey key;
+	protected final Map<String,String> fields = new LinkedHashMap<>();
+	protected final Map<String, String> fieldsWithoutKeys = new LinkedHashMap<>();
+	protected final List<String> placeholders = new ArrayList<>();
+	protected final List<String> keys = new ArrayList<>();
+	CompoundKey key;
 	protected SqlNameFormatter sqlNameFormatter;
 
 	public ValqueriesColumnizer(GenericFactory factory, MappingHelper mappingHelper, T t, SqlNameFormatter columnFormatter) {
@@ -44,15 +50,21 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 
 
 
-	protected void add(Token key, Consumer<IStatement> consumer) {
-		String sql = "`"+transformKey(key)+"` = :"+key.snake_case();
+	protected void add(Token token, Consumer<IStatement> consumer) {
+		fields.put(token.snake_case(),transformKey(token));
+		placeholders.add(token.snake_case());
+
+		String sql = "`"+transformKey(token)+"` = :"+token.snake_case();
 		sqlStatements.add(sql);
 
 
-		if (!((Property.PropertyValueList<?>)this.key.getValues()).stream().noneMatch(pv -> {
-			return pv.getProperty().getType().equals(key);
+		if (((Property.PropertyValueList<?>)this.key.getValues()).stream().anyMatch(pv -> {
+			return !pv.getProperty().getToken().equals(token);
 		})) {
+			fieldsWithoutKeys.put(token.snake_case(),transformKey(token));
 			sqlWithoutKey.add(sql);
+		} else {
+			keys.add(transformKey(token));
 		}
 		statements.add(consumer);
 	}
@@ -166,6 +178,22 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 
 	public String getSqlWithoutKey() {
 		return String.join(", ", sqlWithoutKey);
+	}
+
+	public Map<String, String> getFields() {
+		return fields;
+	}
+
+	public List<String> getPlaceholders() {
+		return placeholders;
+	}
+
+	public List<String> getKeys() {
+		return keys;
+	}
+
+	public Map<String,String> getFieldsWithoutKeys() {
+		return fieldsWithoutKeys;
 	}
 }
 

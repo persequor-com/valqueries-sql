@@ -23,7 +23,7 @@ public class OrmIT {
 
 	@Before
 	public void setUp() throws Exception {
-		database = new Database(DataSourceProvider.get());
+		database = new Database(MariaDbDataSourceProvider.get());
 		try (IOrm orm = database.getOrm()) {
 			orm.update("DROP TABLE IF EXISTS it_orm_basic;");
 			orm.update(
@@ -42,7 +42,7 @@ public class OrmIT {
 
 	@AfterClass
 	public static void tearDown() {
-		DataSourceProvider.shutdown();
+		MariaDbDataSourceProvider.shutdown();
 	}
 
 	@Test

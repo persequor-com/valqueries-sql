@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -68,7 +69,6 @@ public abstract class AutoMapperBaseTests {
 	@Before
 	public void setupBase() {
 		setInjector();
-		sqlGenerator = injector.getInstance(SqlGenerator.class);
 		carDescriber = TypeDescriberImpl.getTypeDescriber(Car.class);
 		doorDescriber = TypeDescriberImpl.getTypeDescriber(Door.class);
 		engineDescriber = TypeDescriberImpl.getTypeDescriber(Engine.class);
@@ -306,20 +306,6 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	public void freetext() {
-		Car model = factory.get(Car.class);
-		model.setId(UUID.randomUUID());
-		model.setTitle("Muh says the cow");
-		model.setBrand(Brand.Porsche);
-		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
-		carRepository.save(model);
-
-		Optional<Car> actualOptional = carRepository.query().freetext(Car::getTitle, "says").execute().findFirst();
-		Car actual = actualOptional.orElseThrow(RuntimeException::new);
-		assertEquals(model.getId(), actual.getId());
-	}
-
-	@Test
 	public void withCollections() {
 		WithCollections w = factory.get(WithCollections.class);
 		w.setId("id");
@@ -364,7 +350,7 @@ public abstract class AutoMapperBaseTests {
 
 		carRepository.query().eq(Car::getTitle, "Muh").delete();
 
-		assertEquals(1, carRepository.query().count());
+		Assert.assertEquals(1, carRepository.query().count());
 	}
 
 	@Test
@@ -388,7 +374,7 @@ public abstract class AutoMapperBaseTests {
 				)
 				.delete();
 
-		assertEquals(0, doorRepository.query().count());
+		Assert.assertEquals(0, doorRepository.query().count());
 	}
 
 	@Test
