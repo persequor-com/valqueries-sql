@@ -44,6 +44,7 @@ public class JdbcHelper {
 			}
 			return result;
 		} catch (SQLException e) {
+			System.out.println(statement.toJdbcQuery());
 			throw new OrmException(e);
 		}
 	}
@@ -74,6 +75,7 @@ public class JdbcHelper {
 				return queryResult;
 			}
 		} catch (SQLException e) {
+			System.out.println(statement.toJdbcQuery());
 			throw new OrmException(e);
 		}
 	}

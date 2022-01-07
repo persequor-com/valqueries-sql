@@ -2,6 +2,7 @@
 package com.valqueries;
 
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -119,6 +120,7 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 	}
 
 	public void setValue(PreparedStatement preparedStatement, JdbcParameterIndex index, String parameterName) throws SQLException {
+		//if (preparedStatement instanceof )
 		Object value = getValue(parameterName);
 
 		setValueInternal(preparedStatement, index, value);
@@ -126,7 +128,7 @@ public class OrmStatement extends NamedSqlStatement implements IStatement {
 
 	private void setValueInternal(PreparedStatement preparedStatement, JdbcParameterIndex index, Object value) throws SQLException {
 		if (value == null) {
-			preparedStatement.setNull(index.getAndIncrement(), UNKNOWN);
+			preparedStatement.setNull(index.getAndIncrement(), (Integer)0);
 		} else if (value instanceof Boolean) {
 			preparedStatement.setBoolean(index.getAndIncrement(), (Boolean) value);
 		} else if (value instanceof Character) {

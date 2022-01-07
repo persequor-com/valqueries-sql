@@ -13,16 +13,18 @@ public class ValqueriesRepositoryFactory {
 	protected GenericFactory genericFactory;
 	protected MappingHelper mappingHelper;
 	private SqlNameFormatter columnFormatter;
+	private DialectFactory dialectFactory;
 
 	@Inject
-	public ValqueriesRepositoryFactory(Database database, GenericFactory genericFactory, MappingHelper mappingHelper, SqlNameFormatter columnFormatter) {
+	public ValqueriesRepositoryFactory(Database database, GenericFactory genericFactory, MappingHelper mappingHelper, SqlNameFormatter columnFormatter, DialectFactory dialectFactory) {
 		this.database = database;
 		this.genericFactory = genericFactory;
 		this.mappingHelper = mappingHelper;
 		this.columnFormatter = columnFormatter;
+		this.dialectFactory = dialectFactory;
 	}
 
 	public <T, K> ValqueriesAccessDataLayer<T, K> get(Class<T> modelType, Class<K> keyType) {
-		return new ValqueriesAccessDataLayerImpl<T, K>(database, genericFactory, modelType, keyType, mappingHelper, columnFormatter);
+		return new ValqueriesAccessDataLayerImpl<T, K>(database, genericFactory, modelType, keyType, mappingHelper, columnFormatter, dialectFactory);
 	}
 }

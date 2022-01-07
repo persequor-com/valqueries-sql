@@ -1,6 +1,9 @@
 
 package com.valqueries;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -93,7 +96,18 @@ public class OrmResultSet {
 	}
 
 	public byte[] getBlob(String column) throws SQLException {
-		return resultSet.getBytes(column);
+		try(InputStream is = resultSet.getBinaryStream(column); ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+			int nRead;
+			byte[] data = new byte[128];
+
+			while ((nRead = is.read(data, 0, data.length)) != -1) {
+				buffer.write(data, 0, nRead);
+			}
+			buffer.flush();
+			return buffer.toByteArray();
+		} catch (IOException exception) {
+			throw new RuntimeException(exception);
+		}
 	}
 
 	public byte[] getBlob(int index) throws SQLException {

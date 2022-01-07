@@ -1,7 +1,6 @@
 
 package com.valqueries;
 
-import com.mysql.cj.jdbc.exceptions.MySQLTransactionRollbackException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,6 +8,7 @@ import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLTransactionRollbackException;
 import java.time.Duration;
 
 public class Database {
@@ -25,6 +25,17 @@ public class Database {
 
 	public Database(DataSource dataSource) {
 		this(dataSource, new DatabaseConfig());
+	}
+
+	public DialectType getDialectType() {
+		try(Connection connection = dataSource.getConnection()) {
+			String url = connection.getMetaData().getURL();
+			int firstIndex = url.indexOf(":")+1;
+			String jdbcName = url.substring(firstIndex, url.indexOf(":", firstIndex));
+			return DialectType.from(jdbcName);
+		} catch (SQLException throwables) {
+			throw new RuntimeException(throwables);
+		}
 	}
 
 	private JdbcHelper getJdbc(boolean withTransaction) {
@@ -108,8 +119,8 @@ public class Database {
 	}
 
 	private boolean isRetryableException(Throwable cause) {
-		if (cause instanceof MySQLTransactionRollbackException) {
-			MySQLTransactionRollbackException ex = (MySQLTransactionRollbackException) cause;
+		if (cause instanceof SQLTransactionRollbackException) {
+			SQLTransactionRollbackException ex = (SQLTransactionRollbackException) cause;
 			//following validation will check if the error is a deadlock according to https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
 			return ex.getSQLState().equals("40001") && ex.getErrorCode() == 1213;
 		}
