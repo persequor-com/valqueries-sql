@@ -14,8 +14,10 @@ import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAccessDataLayer<T, K> {
@@ -60,9 +62,10 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 
 	@Override
 	public CrudUpdateResult deleteByIds(Collection<K> collection) {
-		return () -> collection.stream()
-				.mapToInt(key -> getStore(modelType).remove(key) != null ? 1 : 0)
-				.sum();
+		List<T> existing = collection.stream()
+				.map(key -> getStore(modelType).remove(key))
+				.collect(Collectors.toList());
+		return existing::size;
 	}
 
 	private <Z> CrudUpdateResult save(Z o, Class<Z> zClass) {
