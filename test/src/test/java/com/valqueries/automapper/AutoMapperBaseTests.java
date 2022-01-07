@@ -419,6 +419,44 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	public void deleteById() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+
+		Assert.assertEquals(1, carRepository.query().count());
+
+		carRepository.deleteById(model.getId());
+
+		Assert.assertEquals(0, carRepository.query().count());
+	}
+
+	@Test
+	public void deleteByIds() {
+		Car car1 = factory.get(Car.class);
+		car1.setId(UUID.randomUUID());
+		car1.setTitle("Muh");
+		car1.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(car1);
+
+		Car car2 = factory.get(Car.class);
+		car2.setId(UUID.randomUUID());
+		car2.setTitle("Muh");
+		car2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(car2);
+
+
+		Assert.assertEquals(2, carRepository.query().count());
+		CrudRepository.CrudUpdateResult results = carRepository.deleteByIds(Arrays.asList(car1.getId(), car2.getId()));
+		Assert.assertEquals(2, results.affectedRows());
+
+		Assert.assertEquals(0, carRepository.query().count());
+	}
+
+	@Test
 	public void saveMultiple() {
 		List<Car> models = new ArrayList<>();
 		Car model = factory.get(Car.class);

@@ -111,7 +111,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 
 	@Override
 	public CrudUpdateResult deleteByIds(Collection<K> ids) {
-		String inIdsSql = IntStream.range(0, ids.size()).mapToObj(this::getKeyName).collect(Collectors.joining(", "));
+		String inIdsSql = IntStream.range(0, ids.size()).mapToObj(id -> ":" + getKeyName(id)).collect(Collectors.joining(", "));
 		return getUpdateResult(database.obtainInTransaction(tx ->
 			tx.update("DELETE from " + getTableName() +
 					" where " + typeDescriber.primaryKeys().get(0).getToken().snake_case() +
