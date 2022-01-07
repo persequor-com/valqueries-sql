@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
 import io.ran.KeySet;
@@ -83,5 +84,11 @@ public class MariaSqlDialect implements SqlDialect {
 		return "ALTER TABLE " + tablename + " ADD " + getIndex(key) + ";";
 	}
 
-
+	public SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
+		try {
+			return new SqlDescriber.DbRow(ormResultSet.getString("Field"), ormResultSet.getString("Type"), ormResultSet.getString("Null").equals("Yes") ? true : false);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

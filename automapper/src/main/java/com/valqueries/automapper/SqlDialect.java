@@ -132,13 +132,7 @@ public interface SqlDialect {
 		return "Type";
 	}
 
-	default SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
-		try {
-			return new SqlDescriber.DbRow(ormResultSet.getString("Field"), ormResultSet.getString("Type"), ormResultSet.getString("Null").equals("Yes") ? true : false);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
+	SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet);
 
 	default SqlDescriber.DbIndex getDbIndex(OrmResultSet r) {
 		try {

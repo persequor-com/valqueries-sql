@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
 import io.ran.KeySet;
@@ -76,6 +77,12 @@ public class H2SqlDialect implements SqlDialect {
 		}
 
 		return updateStatement.toString();
+	}
+
+	@Override
+	public SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
+		// The H2 does not yet support any sql generator related methods
+		return null;
 	}
 
 	@Override
