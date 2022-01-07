@@ -342,7 +342,6 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	public CrudRepository.CrudUpdateResult delete() {
 		try {
 			String sql = buildDeleteSql();
-			System.out.println(sql);
 			UpdateResult update = transactionContext.update(sql, this);
 			return () -> update.getAffectedRows();
 		} finally {
