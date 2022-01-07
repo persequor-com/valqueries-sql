@@ -450,7 +450,8 @@ public abstract class AutoMapperBaseTests {
 
 
 		Assert.assertEquals(2, carRepository.query().count());
-		carRepository.deleteByIds(Arrays.asList(car1.getId(), car2.getId()));
+		CrudRepository.CrudUpdateResult results = carRepository.deleteByIds(Arrays.asList(car1.getId(), car2.getId()));
+		Assert.assertEquals(2, results.affectedRows());
 
 		Assert.assertEquals(0, carRepository.query().count());
 	}
