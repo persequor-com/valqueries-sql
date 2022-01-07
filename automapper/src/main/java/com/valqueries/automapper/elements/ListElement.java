@@ -33,6 +33,10 @@ public class ListElement<T> implements Element {
 
 	@Override
 	public void set(IStatement statement) {
-		statement.set(field, values.stream().map(Property.PropertyValue::getValue).collect(Collectors.toList()));
+		if (values.isEmpty()) {
+			query.setEmpty();
+		} else {
+			statement.set(field, values.stream().map(Property.PropertyValue::getValue).collect(Collectors.toList()));
+		}
 	}
 }
