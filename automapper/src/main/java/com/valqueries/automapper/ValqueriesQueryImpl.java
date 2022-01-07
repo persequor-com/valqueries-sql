@@ -51,6 +51,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	private SqlNameFormatter sqlNameFormatter;
 	private MappingHelper mappingHelper;
 	private SqlDialect dialect;
+	private boolean forcedEmpty = false;
 
 	public ValqueriesQueryImpl(ITransactionContext transactionContext, Class<T> modelType, GenericFactory genericFactory, SqlNameFormatter sqlNameFormatter, MappingHelper mappingHelper, SqlDialect dialect) {
 		super(modelType, genericFactory);
@@ -238,6 +239,9 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	@Override
 	public Stream<T> execute() {
 		try {
+			if (forcedEmpty) {
+				return Stream.empty();
+			}
 			Map<CompoundKey, T> alreadyLoaded = new LinkedHashMap<>();
 			Map<Token, Map<CompoundKey, List>> eagerModels = new HashMap<>();
 			transactionContext.query(buildSelectSql("main"), this, row -> {
@@ -341,6 +345,9 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	@Override
 	public CrudRepository.CrudUpdateResult delete() {
 		try {
+			if (forcedEmpty) {
+				return () -> 0;
+			}
 			String sql = buildDeleteSql();
 			UpdateResult update = transactionContext.update(sql, this);
 			return () -> update.getAffectedRows();
@@ -405,6 +412,9 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
+		if (forcedEmpty) {
+			return () -> 0;
+		}
 		List<Property.PropertyValue>  newPropertyValues = this.getPropertyValuesFromUpdater(updater);
 		String updateStatement = this.buildUpdateSql(newPropertyValues);
 
@@ -496,5 +506,9 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	public String getTableAlias() {
 		return tableAlias;
+	}
+
+	public void setEmpty() {
+		forcedEmpty = true;
 	}
 }

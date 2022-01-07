@@ -25,12 +25,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuery<T>> implements ValqueriesQuery<T>, ValqueriesGroupQuery<T> {
 	private MappingHelper mappingHelper;
 	private TestDoubleDb testDoubleDb;
 	private GenericFactory factory;
 	private ArrayList<Property> groupByProperties;
+	private boolean forcedEmpty = false;
 
 	public TestDoubleQuery(Class<T> modelType, GenericFactory genericFactory, MappingHelper mappingHelper, TestDoubleDb testDoubleDb) {
 		super(modelType, genericFactory, mappingHelper, testDoubleDb);
@@ -87,7 +89,10 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 
 	public ValqueriesQuery<T> in(Property.PropertyValueList propertyValues) {
 		filters.add(t -> {
-			Object actualValue = getValue(((Property.PropertyValueList<?>)propertyValues).get(0).getProperty(), t);
+			if (propertyValues.isEmpty()) {
+				this.forcedEmpty = true;
+			}
+			Object actualValue = getValue(propertyValues.getProperty(), t);
 			return ((Property.PropertyValueList<?>)propertyValues).stream().anyMatch(pv -> Objects.equals(actualValue, pv.getValue()));
 		});
 		return this;
@@ -271,6 +276,9 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 
 	@Override
 	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
+		if (forcedEmpty) {
+			return () -> 0;
+		}
 		List<Property.PropertyValue> newPropertyValues = this.getPropertyValuesFromUpdater(updater);
 		List<T> records = execute().collect(Collectors.toList());
 		records.forEach(t -> {
@@ -400,5 +408,19 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 			.entrySet()
 			.stream()
 			.collect(Collectors.toMap(e -> e.getKey(), e -> func.apply(e.getValue()))));
+	}
+
+	public Stream<T> execute() {
+		if (forcedEmpty) {
+			return Stream.empty();
+		}
+		return super.execute();
+	}
+
+	public CrudRepository.CrudUpdateResult delete() {
+		if (forcedEmpty) {
+			return () -> 0;
+		}
+		return super.delete();
 	}
 }

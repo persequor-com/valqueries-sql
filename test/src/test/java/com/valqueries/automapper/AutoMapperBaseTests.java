@@ -3,6 +3,7 @@ package com.valqueries.automapper;
 import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import com.valqueries.Database;
+import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.Resolver;
 import io.ran.TypeDescriber;
@@ -15,17 +16,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -216,6 +214,49 @@ public abstract class AutoMapperBaseTests {
 				)
 				.execute().collect(Collectors.toList());
 		assertEquals(1, doors.size());
+	}
+
+	@Test
+	public void queryBuilder_subQuery_in_withEmptyArray_returnsEmptyResult() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+		Door door = factory.get(Door.class);
+		door.setCarId(model.getId());
+		door.setTitle("Door title");
+		door.setId(UUID.randomUUID());
+		doorRepository.save(door);
+
+		Stream<Door> result = doorRepository.query()
+				.subQuery(Door::getCar
+						, query -> query.in(Car::getTitle, Collections.emptyList())
+				).execute();
+		assertEquals(0, result.count());
+	}
+
+	@Test
+	public void queryBuilder_subQuery_in_withEmptyArray_delete_deletesNothing() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+		Door door = factory.get(Door.class);
+		door.setCarId(model.getId());
+		door.setTitle("Door title");
+		door.setId(UUID.randomUUID());
+		doorRepository.save(door);
+
+		CrudRepository.CrudUpdateResult result = doorRepository.query()
+				.subQuery(Door::getCar
+						, query -> query.in(Car::getTitle, Collections.emptyList())
+				).delete();
+		assertEquals(0, result.affectedRows());
+		assertTrue(doorRepository.get(door.getId()).isPresent());
 	}
 
 	@Test
