@@ -91,12 +91,17 @@ public class H2SqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String addIndex(String tablename, KeySet key) {
+	public String addIndex(String tablename, KeySet key, boolean isUnique) {
 		return null;
 	}
 
 	public String getTableName(Clazz<? extends Object> modeltype) {
 		return escapeColumnOrTable(sqlNameFormatter.table(modeltype.clazz));
+	}
+
+	@Override
+	public String getTableName(Token token) {
+		return escapeColumnOrTable(sqlNameFormatter.table(token));
 	}
 
 	@Override

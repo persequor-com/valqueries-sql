@@ -3,7 +3,6 @@ package com.valqueries.automapper;
 import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
-import io.ran.Key;
 import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
@@ -85,6 +84,11 @@ public class MssqlSqlDialect implements SqlDialect {
 	}
 
 	@Override
+	public String getTableName(Token token) {
+		return escapeColumnOrTable(sqlNameFormatter.table(token));
+	}
+
+	@Override
 	public String createTableStatement() {
 		return "CREATE TABLE ";
 	}
@@ -152,12 +156,44 @@ public class MssqlSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String addIndex(String tablename, KeySet key) {
-		String name = key.get(0).getProperty().getAnnotations().get(Key.class).name();
-		return "CREATE INDEX  "+name+" ON " + tablename + " (" + key.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", ")) + ");";
+	public String addIndex(String tablename, KeySet key, boolean isUnique) {
+		String name = key.getName();
+		String keyType = "INDEX ";
+		if (key.isPrimary()) {
+			keyType = "PRIMARY KEY ";
+		}
+		return "CREATE "+keyType+" "+name+" ON " + tablename + " (" + key.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", ")) + ");";
 	}
 
 	public String addColumn(String tablename, String columnName, String sqlType) {
 		return "ALTER TABLE " + tablename + " ADD " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	}
+
+	public String addColumn() {
+		return "ADD ";
+	}
+
+	public String alterColumn(Token name) {
+		return "ALTER COLUMN "+escapeColumnOrTable(column(name));
+	}
+
+	public String addIndexOnCreate(Token tableName, KeySet keyset, boolean isUnique) {
+		String indexType = "INDEX "+escapeColumnOrTable(keyset.getName())+" ";
+		if (keyset.isPrimary()) {
+			indexType = "CONSTRAINT "+escapeColumnOrTable(column(tableName)+"_"+keyset.getName())+" PRIMARY KEY ";
+		} else if (isUnique) {
+			indexType = "UNIQUE "+escapeColumnOrTable(keyset.getName())+" ";
+		}
+
+		return indexType+"("+keyset.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")";
+	}
+
+	public String dropIndex(Token tableName, String indexName, boolean isPrimary) {
+		if (isPrimary) {
+			indexName = escapeColumnOrTable(column(tableName)+"_"+indexName);
+//			return "DROP INDEX "+indexName+" ON "+escapeColumnOrTable(column(tableName));
+			return "ALTER TABLE "+escapeColumnOrTable(column(tableName))+ " DROP CONSTRAINT "+indexName;
+		}
+		return "DROP INDEX "+indexName+" ON "+escapeColumnOrTable(column(tableName));
 	}
 }

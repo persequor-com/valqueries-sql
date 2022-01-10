@@ -3,7 +3,6 @@ package com.valqueries.automapper;
 import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
 import io.ran.Clazz;
-import io.ran.Key;
 import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
@@ -24,6 +23,7 @@ public interface SqlDialect {
 	String escapeColumnOrTable(String name);
 	<O> String getUpsert(CompoundColumnizer<O> columnizer, Class<O> oClass);
 	String getTableName(Clazz<? extends Object> modeltype);
+	String getTableName(Token token);
 
 	String createTableStatement();
 	default String generateCreateTable(TypeDescriber<?> typeDescriber) {
@@ -54,9 +54,12 @@ public interface SqlDialect {
 	}
 
 	default String getIndex(KeySet keySet) {
-		String name = keySet.get(0).getProperty().getAnnotations().get(Key.class).name();
-		return "INDEX "+name+" ("+keySet.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")";
-
+		String name = keySet.getName();
+		String keyName = "INDEX "+name;
+		if (keySet.isPrimary()) {
+			keyName = "PRIMARY KEY";
+		}
+		return keyName+" ("+keySet.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")";
 	}
 
 	default String getSqlType(Class type, Property property) {
@@ -144,7 +147,7 @@ public interface SqlDialect {
 
 	String changeColumn(String table, String columnName, String sqlType);
 
-	String addIndex(String tablename, KeySet key);
+	String addIndex(String tablename, KeySet key, boolean isUnique);
 
 	default String addColumn(String tablename, String columnName, String sqlType) {
 		return "ALTER TABLE " + tablename + " ADD COLUMN " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
@@ -160,5 +163,32 @@ public interface SqlDialect {
 		}
 //		System.out.println(sql);
 		return sql;
+	}
+
+	default String addColumn() {
+		return "ADD COLUMN ";
+	}
+
+	default String alterColumn(Token name) {
+		return "CHANGE COLUMN "+escapeColumnOrTable(column(name))+" "+escapeColumnOrTable(column(name));
+	}
+
+	default String addIndexOnCreate(Token name, KeySet keyset, boolean isUnique) {
+		String indexType = "INDEX ";
+		if (keyset.isPrimary()) {
+			indexType = "PRIMARY KEY";
+		} else if (isUnique) {
+			indexType = "UNIQUE ";
+		}
+		return (keyset.isPrimary() ? "PRIMARY KEY ":indexType+" ")+escapeColumnOrTable(column(name))+" "+"("+keyset.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")";
+	}
+
+	default String dropIndex(Token tableName, String indexName, boolean isPrimary) {
+		if (isPrimary) {
+			indexName = "PRIMARY KEY";
+		} else {
+			indexName = "INDEX "+indexName;
+		}
+		return "ALTER TABLE "+escapeColumnOrTable(column(tableName))+" "+"DROP "+indexName;
 	}
 }

@@ -41,6 +41,11 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
+	public String getTableName(Token token) {
+		return escapeColumnOrTable(sqlNameFormatter.table(token));
+	}
+
+	@Override
 	public String createTableStatement() {
 		return "CREATE TABLE IF NOT EXISTS ";
 	}
@@ -80,7 +85,7 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String addIndex(String tablename, KeySet key) {
+	public String addIndex(String tablename, KeySet key, boolean isUnique) {
 		return "ALTER TABLE " + tablename + " ADD " + getIndex(key) + ";";
 	}
 

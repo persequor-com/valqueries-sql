@@ -2,37 +2,15 @@ package com.valqueries.automapper;
 
 import com.valqueries.Database;
 import io.ran.Clazz;
-import io.ran.Key;
 import io.ran.KeySet;
-import com.valqueries.Database;
-import com.valqueries.OrmResultSet;
-import io.ran.Key;
-import io.ran.KeyInfo;
-import io.ran.KeySet;
-import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
-import io.ran.token.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.math.BigDecimal;
-import java.sql.SQLException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SqlGenerator {
@@ -81,7 +59,7 @@ public class SqlGenerator {
 				SqlDescriber.DbIndex keyIndex = toDbIndex(key);
 				Optional<SqlDescriber.DbIndex> idx = table.getIndex().values().stream().filter(keyIndex::matches).findFirst();
 				if (!idx.isPresent()) {
-					sb.append(dialect.addIndex(tablename, key));
+					sb.append(dialect.addIndex(tablename, key, false));
 				}
 			});
 			return sb.toString();
