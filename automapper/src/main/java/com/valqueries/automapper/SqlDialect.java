@@ -55,7 +55,7 @@ public interface SqlDialect {
 
 	default String getIndex(KeySet keySet) {
 		String name = keySet.getName();
-		String keyName = "INDEX "+name;
+		String keyName = "INDEX "+escapeColumnOrTable(name);
 		if (keySet.isPrimary()) {
 			keyName = "PRIMARY KEY";
 		}

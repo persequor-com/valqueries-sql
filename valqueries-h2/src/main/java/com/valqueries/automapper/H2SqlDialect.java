@@ -85,14 +85,15 @@ public class H2SqlDialect implements SqlDialect {
 		return null;
 	}
 
+
 	@Override
-	public String changeColumn(String table, String columnName, String sqlType) {
-		return null;
+	public String changeColumn(String tablename, String columnName, String sqlType) {
+		return "ALTER TABLE " + tablename + " ALTER COLUMN " + escapeColumnOrTable(columnName) + " " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
 	}
 
 	@Override
 	public String addIndex(String tablename, KeySet key, boolean isUnique) {
-		return null;
+		return "CREATE INDEX "+escapeColumnOrTable(key.getName())+" ON " + tablename + " (" + key.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")" + ";";
 	}
 
 	public String getTableName(Clazz<? extends Object> modeltype) {
@@ -121,5 +122,20 @@ public class H2SqlDialect implements SqlDialect {
 		}
 //		System.out.println(sql);
 		return sql;
+	}
+
+	@Override
+	public String addIndexOnCreate(Token name, KeySet keyset, boolean isUnique) {
+		String indexType = "INDEX ";
+		if (keyset.isPrimary()) {
+			indexType = "PRIMARY KEY";
+		} else if (isUnique) {
+			indexType = "UNIQUE ";
+		}
+		return (keyset.isPrimary() ? "PRIMARY KEY ":indexType+" ")+"("+keyset.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")";
+	}
+
+	public String alterColumn(Token name) {
+		return "ALTER COLUMN "+escapeColumnOrTable(column(name))+" ";
 	}
 }
