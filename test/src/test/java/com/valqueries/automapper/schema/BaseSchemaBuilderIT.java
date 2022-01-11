@@ -3,9 +3,9 @@ package com.valqueries.automapper.schema;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.valqueries.Database;
-import com.valqueries.MariaDbDataSourceProvider;
 import com.valqueries.OrmException;
 import com.valqueries.automapper.GuiceModule;
+import com.valqueries.automapper.SqlNameFormatter;
 import com.valqueries.automapper.ValqueriesResolver;
 import io.ran.token.Token;
 import org.junit.Before;
@@ -25,14 +25,16 @@ public abstract class BaseSchemaBuilderIT {
 	private Injector injector;
 	ValqueriesSchemaExecutor executor;
 	ValqueriesSchemaBuilder builder;
+	private SqlNameFormatter sqlNameFormatter;
 
 	@Before
 	public void setup() {
 		database = database();
+		sqlNameFormatter = new SqlNameFormatter();
 		GuiceModule module = new GuiceModule(database, ValqueriesResolver.class);
 		injector = Guice.createInjector(module);
 		executor = injector.getInstance(ValqueriesSchemaExecutor.class);
-		builder = new ValqueriesSchemaBuilder(executor);
+		builder = new ValqueriesSchemaBuilder(executor, sqlNameFormatter);
 		database.doInTransaction(tx -> {
 			try {
 				tx.update("drop table the_table");
@@ -166,7 +168,7 @@ public abstract class BaseSchemaBuilderIT {
 			tb.addPrimaryKey(Token.get("id"));
 		});
 		builder.build();
-		builder = new ValqueriesSchemaBuilder(executor);
+		builder = new ValqueriesSchemaBuilder(executor, sqlNameFormatter);
 
 		builder.modifyTable(Token.get("TheTable"), tb -> {
 			tb.addColumn(Token.get("CreatedAt"), ZonedDateTime.class);
@@ -201,9 +203,9 @@ public abstract class BaseSchemaBuilderIT {
 		});
 		builder.build();
 
-		builder = new ValqueriesSchemaBuilder(executor);
+		builder = new ValqueriesSchemaBuilder(executor, sqlNameFormatter);
 		builder.modifyTable(Token.get("TheTable"), tb -> {
-			tb.addIndex("my_index", Token.get("title"), Token.get("id"));
+			tb.addIndex(Token.get("my_index"), Token.get("title"), Token.get("id"));
 		});
 		builder.build();
 
@@ -237,9 +239,9 @@ public abstract class BaseSchemaBuilderIT {
 		});
 		builder.build();
 
-		builder = new ValqueriesSchemaBuilder(executor);
+		builder = new ValqueriesSchemaBuilder(executor, sqlNameFormatter);
 		builder.modifyTable(Token.get("TheTable"), tb -> {
-			tb.addIndex("myUnique", ib -> {
+			tb.addIndex(Token.get("myUnique"), ib -> {
 				ib.addField(Token.get("id"));
 				ib.addField(Token.get("title"));
 				ib.isUnique();

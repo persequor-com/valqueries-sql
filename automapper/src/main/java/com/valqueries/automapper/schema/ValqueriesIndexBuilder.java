@@ -4,8 +4,8 @@ import io.ran.schema.IndexAction;
 import io.ran.schema.IndexBuilder;
 
 public class ValqueriesIndexBuilder extends IndexBuilder<ValqueriesIndexBuilder> {
-	public ValqueriesIndexBuilder(IndexAction action) {
-		super(action);
+	public ValqueriesIndexBuilder(ValqueriesTableBuilder tableBuilder, IndexAction action) {
+		super(tableBuilder, action);
 	}
 
 	public void isUnique() {

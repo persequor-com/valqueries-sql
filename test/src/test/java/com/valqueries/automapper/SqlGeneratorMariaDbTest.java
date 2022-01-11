@@ -34,16 +34,16 @@ public class SqlGeneratorMariaDbTest {
 		dbTable.getIndex().put("PRIMARY", new SqlDescriber.DbIndex(true, "PRIMARY KEY", "PRIMIARY", "id"));
 		dbTable.getIndex().put("created_idx", new SqlDescriber.DbIndex(false, "created_idx", "created_idx", "created_at"));
 		sqlGenerator = new SqlGenerator(new SqlNameFormatter(), new DialectFactory(new SqlNameFormatter()), database, describer);
-		when(describer.describe(any(TypeDescriber.class),anyString(), any(Database.class))).thenReturn(dbTable);
+		when(describer.describe(any(TypeDescriber.class),any(), any(Database.class))).thenReturn(dbTable);
 	}
 
 	@Test
 	public void generateTable() {
-		when(describer.describe(any(TypeDescriber.class),anyString(), any(Database.class))).thenReturn(null);
+		when(describer.describe(any(TypeDescriber.class),any(), any(Database.class))).thenReturn(null);
 
 		String actual = sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 
-		assertEquals("CREATE TABLE IF NOT EXISTS `simple_test_table` (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX created_idx (`created_at`));", actual);
+		assertEquals("CREATE TABLE IF NOT EXISTS `simple_test_table` (`id` VARCHAR(255), `title` VARCHAR(255), `created_at` DATETIME, PRIMARY KEY(`id`), INDEX `created_idx` (`created_at`));", actual);
 	}
 
 	@Test
@@ -56,7 +56,7 @@ public class SqlGeneratorMariaDbTest {
 	@Test
 	public void tableExistsWithNewColumnChanges() {
 		dbTable.getColumns().remove("title");
-		when(describer.describe(any(TypeDescriber.class),anyString(), any(Database.class))).thenReturn(dbTable);
+		when(describer.describe(any(TypeDescriber.class),any(), any(Database.class))).thenReturn(dbTable);
 
 		String actual = sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 

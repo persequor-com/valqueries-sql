@@ -1,11 +1,18 @@
 package com.valqueries.automapper;
 
+import com.sun.org.apache.bcel.internal.generic.TABLESWITCH;
 import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
+import com.valqueries.automapper.schema.ValqueriesColumnToken;
+import com.valqueries.automapper.schema.ValqueriesTableToken;
 import io.ran.Clazz;
 import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
+import io.ran.schema.FormattingTokenList;
+import io.ran.token.ColumnToken;
+import io.ran.token.IndexToken;
+import io.ran.token.TableToken;
 import io.ran.token.Token;
 
 import java.util.List;
@@ -36,8 +43,9 @@ public class H2SqlDialect implements SqlDialect {
 		return sql;
 	}
 
-	public String getSqlType(Class type, Property property) {
+	public String getSqlType(Property property) {
 		MappedType mappedType = property.getAnnotations().get(MappedType.class);
+		Class type = property.getType().clazz;
 		if (mappedType != null) {
 			return mappedType.value();
 		}
@@ -47,12 +55,17 @@ public class H2SqlDialect implements SqlDialect {
 		if (type == boolean.class || type == Boolean.class) {
 			return "BOOLEAN";
 		}
-		return SqlDialect.super.getSqlType(type, property);
+		return SqlDialect.super.getSqlType(property);
 	}
 
 	@Override
-	public String column(Token token) {
-		return sqlNameFormatter.column(token);
+	public ColumnToken column(Token token) {
+		return new ValqueriesColumnToken(sqlNameFormatter, this, token);
+	}
+
+	@Override
+	public TableToken table(Token token) {
+		return new ValqueriesTableToken(sqlNameFormatter, this, token);
 	}
 
 	@Override
@@ -87,26 +100,21 @@ public class H2SqlDialect implements SqlDialect {
 
 
 	@Override
-	public String changeColumn(String tablename, String columnName, String sqlType) {
-		return "ALTER TABLE " + tablename + " ALTER COLUMN " + escapeColumnOrTable(columnName) + " " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	public String changeColumn(TableToken tablename, ColumnToken columnName, String sqlType) {
+		return "ALTER TABLE " + tablename + " ALTER COLUMN " + columnName + " " + columnName + " " + sqlType + ";";
 	}
 
 	@Override
-	public String addIndex(String tablename, KeySet key, boolean isUnique) {
-		return "CREATE INDEX "+escapeColumnOrTable(key.getName())+" ON " + tablename + " (" + key.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")" + ";";
+	public String addIndex(TableToken tablename, KeySet key, boolean isUnique) {
+		return "CREATE INDEX "+escapeColumnOrTable(key.getName())+" ON " + tablename + " (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")" + ";";
 	}
 
-	public String getTableName(Clazz<? extends Object> modeltype) {
-		return escapeColumnOrTable(sqlNameFormatter.table(modeltype.clazz));
-	}
-
-	@Override
-	public String getTableName(Token token) {
-		return escapeColumnOrTable(sqlNameFormatter.table(token));
+	public TableToken getTableName(Clazz<? extends Object> modeltype) {
+		return table(Token.get(modeltype.clazz.getSimpleName()));
 	}
 
 	@Override
-	public String createTableStatement() {
+	public String getCreateTableStatement() {
 		return "CREATE TABLE ";
 	}
 
@@ -125,17 +133,17 @@ public class H2SqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String addIndexOnCreate(Token name, KeySet keyset, boolean isUnique) {
+	public String addIndexOnCreate(TableToken name, KeySet keyset, boolean isUnique) {
 		String indexType = "INDEX ";
 		if (keyset.isPrimary()) {
 			indexType = "PRIMARY KEY";
 		} else if (isUnique) {
 			indexType = "UNIQUE ";
 		}
-		return (keyset.isPrimary() ? "PRIMARY KEY ":indexType+" ")+"("+keyset.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", "))+")";
+		return (keyset.isPrimary() ? "PRIMARY KEY ":indexType+" ")+"("+keyset.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 	}
 
-	public String alterColumn(Token name) {
-		return "ALTER COLUMN "+escapeColumnOrTable(column(name))+" ";
+	public String alterColumn(ColumnToken name) {
+		return "ALTER COLUMN "+name+" ";
 	}
 }

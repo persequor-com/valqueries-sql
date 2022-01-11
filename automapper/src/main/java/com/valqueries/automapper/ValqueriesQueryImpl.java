@@ -201,7 +201,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	public String getTableName(Clazz<?> toClass) {
-		return dialect.getTableName(toClass);
+		return dialect.getTableName(toClass).toSql();
 	}
 
 	public ValqueriesQuery<T> withEager(RelationDescriber relation) {

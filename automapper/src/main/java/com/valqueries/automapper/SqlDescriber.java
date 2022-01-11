@@ -6,6 +6,7 @@ import com.valqueries.IOrm;
 import com.valqueries.OrmResultSet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
+import io.ran.token.TableToken;
 
 import javax.inject.Inject;
 import java.sql.SQLException;
@@ -26,7 +27,7 @@ public class SqlDescriber {
 		this.dialectFactory = dialectFactory;
 	}
 
-	public DbTable describe(TypeDescriber<?> typeDescriber, String tablename, Database database) {
+	public DbTable describe(TypeDescriber<?> typeDescriber, TableToken tablename, Database database) {
 		try (IOrm tx = database.getOrm()) {
 			SqlDialect dialect = dialectFactory.get(database);
 			DbTable table = new DbTable();

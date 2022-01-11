@@ -5,6 +5,8 @@ import io.ran.Clazz;
 import io.ran.KeySet;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
+import io.ran.token.ColumnToken;
+import io.ran.token.TableToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +28,13 @@ public class SqlGenerator {
 		this.sqlDescriber = sqlDescriber;
 	}
 
-	public String getTableName(TypeDescriber<?> typeDescriber) {
+	public TableToken getTableName(TypeDescriber<?> typeDescriber) {
 		return dialect.getTableName(Clazz.of(typeDescriber.clazz()));
 	}
 
 	public String generateOrModifyTable(Database database, TypeDescriber<?> typeDescriber) {
 		logger.warn("generateOrModifyTable is a work in progress and is not considered stable");
-		String tablename = getTableName(typeDescriber);
+		TableToken tablename = getTableName(typeDescriber);
 		SqlDescriber.DbTable table = sqlDescriber.describe(typeDescriber, tablename, database);
 		if (table == null) {
 			return generateCreateTable(typeDescriber);
@@ -40,11 +42,11 @@ public class SqlGenerator {
 
 			StringBuilder sb = new StringBuilder();
 			typeDescriber.fields().forEach(property -> {
-				String columnName = sqlNameFormatter.column(property.getToken());
-				String sqlType = dialect.getSqlType(property.getType().clazz, property);
-				if (!table.getColumns().containsKey(columnName)) {
+				ColumnToken columnName = dialect.column(property.getToken());
+				String sqlType = dialect.getSqlType(property);
+				if (!table.getColumns().containsKey(columnName.unescaped())) {
 					sb.append(dialect.addColumn(tablename, columnName, sqlType));
-				} else if (!table.getColumns().get(columnName).matches(property, sqlType)) {
+				} else if (!table.getColumns().get(columnName.unescaped()).matches(property, sqlType)) {
 					sb.append(dialect.changeColumn(tablename, columnName, sqlType));
 				}
 			});

@@ -2,10 +2,14 @@ package com.valqueries.automapper;
 
 import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
+import com.valqueries.automapper.schema.ValqueriesColumnToken;
+import com.valqueries.automapper.schema.ValqueriesTableToken;
 import io.ran.Clazz;
 import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
+import io.ran.token.ColumnToken;
+import io.ran.token.TableToken;
 import io.ran.token.Token;
 
 import java.util.List;
@@ -36,23 +40,23 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String getTableName(Clazz<?> modeltype) {
-		return escapeColumnOrTable(sqlNameFormatter.table(modeltype.clazz));
+	public TableToken getTableName(Clazz<?> modeltype) {
+		return table(Token.get(modeltype.clazz.getSimpleName()));
 	}
 
 	@Override
-	public String getTableName(Token token) {
-		return escapeColumnOrTable(sqlNameFormatter.table(token));
-	}
-
-	@Override
-	public String createTableStatement() {
+	public String getCreateTableStatement() {
 		return "CREATE TABLE IF NOT EXISTS ";
 	}
 
 	@Override
-	public String column(Token token) {
-		return sqlNameFormatter.column(token);
+	public ColumnToken column(Token token) {
+		return new ValqueriesColumnToken(sqlNameFormatter, this, token);
+	}
+
+	@Override
+	public TableToken table(Token token) {
+		return new ValqueriesTableToken(sqlNameFormatter, this, token);
 	}
 
 	@Override
@@ -80,13 +84,13 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String changeColumn(String tablename, String columnName, String sqlType) {
-		return "ALTER TABLE " + tablename + " CHANGE COLUMN " + escapeColumnOrTable(columnName) + " " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	public String changeColumn(TableToken tablename, ColumnToken columnName, String sqlType) {
+		return "ALTER TABLE " + tablename + " CHANGE COLUMN " + columnName + " " + columnName + " " + sqlType + ";";
 	}
 
 	@Override
-	public String addIndex(String tablename, KeySet key, boolean isUnique) {
-		return "ALTER TABLE " + tablename + " ADD " + getIndex(key) + ";";
+	public String addIndex(TableToken tablename, KeySet key, boolean isUnique) {
+		return "ALTER TABLE " + tablename + " ADD " + generateIndex(key) + ";";
 	}
 
 	public SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {

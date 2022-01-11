@@ -1,6 +1,7 @@
 package com.valqueries.automapper.schema;
 
 import com.valqueries.automapper.SqlDialect;
+import com.valqueries.automapper.SqlNameFormatter;
 import io.ran.Clazz;
 import io.ran.KeySet;
 import io.ran.Property;
@@ -10,6 +11,8 @@ import io.ran.schema.IndexAction;
 import io.ran.schema.IndexActionDelegate;
 import io.ran.schema.TableActionType;
 import io.ran.schema.TableModifier;
+import io.ran.token.ColumnToken;
+import io.ran.token.IndexToken;
 import io.ran.token.Token;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,9 +20,11 @@ import java.util.stream.Collectors;
 
 class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder, ValqueriesColumnBuilder, ValqueriesIndexBuilder> implements IValqueriesTableBuilder {
 	private SqlDialect dialect;
+	private SqlNameFormatter sqlNameFormatter;
 
-	ValqueriesTableBuilder(SqlDialect dialect) {
+	ValqueriesTableBuilder(SqlDialect dialect, SqlNameFormatter sqlNameFormatter) {
 		this.dialect = dialect;
+		this.sqlNameFormatter = sqlNameFormatter;
 	}
 
 	@Override
@@ -29,27 +34,37 @@ class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder, Valqu
 
 	@Override
 	protected ValqueriesIndexBuilder getIndexBuilder(IndexAction indexAction) {
-		return new ValqueriesIndexBuilder(indexAction);
+		return new ValqueriesIndexBuilder(this, indexAction);
+	}
+
+	@Override
+	protected ColumnToken getColumnToken(Token token) {
+		return new ValqueriesColumnToken(sqlNameFormatter, dialect, token);
+	}
+
+	@Override
+	protected IndexToken getIndexToken(Token token) {
+		return new ValqueriesIndexToken(sqlNameFormatter, dialect, token);
 	}
 
 	@Override
 	protected ColumnActionDelegate create() {
 		return (t,ca) -> {
-			return (t.getType() == TableActionType.MODIFY ? "ALTER TABLE "+dialect.escapeColumnOrTable(dialect.column(t.getName()))+" "+dialect.addColumn() : "")+dialect.escapeColumnOrTable(dialect.column(ca.getName()))+" "+dialect.getSqlType(ca.getType(), Property.get(ca.getName(), Clazz.of(ca.getType())));
+			return (t.getType() == TableActionType.MODIFY ? "ALTER TABLE "+t.getName()+" "+dialect.addColumn() : "")+ca.getName()+" "+dialect.getSqlType(ca.getProperty());
 		};
 	}
 
 	@Override
 	protected ColumnActionDelegate modify() {
 		return (t,ca) -> {
-			return "ALTER TABLE "+dialect.escapeColumnOrTable(dialect.column(t.getName()))+" "+dialect.alterColumn(ca.getName())+" "+dialect.getSqlType(ca.getType(), Property.get(ca.getName(), Clazz.of(ca.getType())));
+			return "ALTER TABLE "+t.getName()+" "+dialect.alterColumn(ca.getName())+" "+dialect.getSqlType(ca.getProperty());
 		};
 	}
 
 	@Override
 	protected ColumnActionDelegate remove() {
 		return (t,ca) -> {
-			return "ALTER TABLE "+dialect.escapeColumnOrTable(dialect.column(t.getName()))+" DROP COLUMN "+ca.getName().snake_case();
+			return "ALTER TABLE "+t.getName()+" DROP COLUMN "+ca.getName();
 		};
 	}
 
@@ -59,12 +74,12 @@ class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder, Valqu
 
 			AtomicInteger incrementor = new AtomicInteger();
 
-			KeySet keyset = new KeySet(ia.getFields().stream().map(f -> new KeySet.Field(Property.get(f, Clazz.of(Object.class)),incrementor.incrementAndGet())).collect(Collectors.toList()));
+			KeySet keyset = new KeySet(ia.getFields().stream().map(f -> new KeySet.Field(Property.get(f.getToken(), Clazz.of(Object.class)),incrementor.incrementAndGet())).collect(Collectors.toList()));
 
 			keyset.setPrimary(ia.isPrimary());
-			keyset.setName(ia.getName());
+			keyset.setName(ia.getName().unescaped());
 			if (t.getType() == TableActionType.MODIFY) {
-				return dialect.addIndex(dialect.getTableName(t.getName()), keyset, ia.getProperty("isUnique").equals(true));
+				return dialect.addIndex(t.getName(), keyset, ia.getProperty("isUnique").equals(true));
 			} else {
 				return dialect.addIndexOnCreate(t.getName(), keyset, ia.getProperty("isUnique").equals(true));
 			}
