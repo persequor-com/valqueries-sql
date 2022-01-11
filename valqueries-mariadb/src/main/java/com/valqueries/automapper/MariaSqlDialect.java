@@ -60,12 +60,12 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String limit(int offset, Integer limit) {
+	public String getLimitDefinition(int offset, Integer limit) {
 		return " LIMIT "+offset+","+limit;
 	}
 
 	@Override
-	public String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
 		updateStatement.append("UPDATE " + getTableName(Clazz.of(typeDescriber.clazz())) + " as main SET ");
@@ -93,7 +93,7 @@ public class MariaSqlDialect implements SqlDialect {
 		return "ALTER TABLE " + tablename + " ADD " + generateIndex(key) + ";";
 	}
 
-	public SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
+	public SqlDescriber.DbRow getDescribeDbRow(OrmResultSet ormResultSet) {
 		try {
 			return new SqlDescriber.DbRow(ormResultSet.getString("Field"), ormResultSet.getString("Type"), ormResultSet.getString("Null").equals("Yes") ? true : false);
 		} catch (Exception e) {

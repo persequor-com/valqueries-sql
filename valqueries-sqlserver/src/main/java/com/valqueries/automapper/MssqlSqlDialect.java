@@ -66,13 +66,13 @@ public class MssqlSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String limit(int offset, Integer limit) {
+	public String getLimitDefinition(int offset, Integer limit) {
 		return " OFFSET "+offset+" ROWS" +
 				"    FETCH NEXT "+limit+" ROWS ONLY";
 	}
 
 	@Override
-	public String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
 		updateStatement.append("UPDATE main SET ");
@@ -127,7 +127,7 @@ public class MssqlSqlDialect implements SqlDialect {
 				"      t.name = '" + tablename.unescaped() + "'";
 	}
 
-	public SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
+	public SqlDescriber.DbRow getDescribeDbRow(OrmResultSet ormResultSet) {
 		try {
 			return new SqlDescriber.DbRow(ormResultSet.getString("COLUMN_NAME"), getSqlType(ormResultSet), ormResultSet.getString("IS_NULLABLe").equals("YES") ? true: false);
 		} catch (Exception e) {

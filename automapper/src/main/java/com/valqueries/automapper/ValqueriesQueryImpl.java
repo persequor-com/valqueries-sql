@@ -194,7 +194,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			sql += " ORDER BY "+sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
 		}
 		if (limit !=  null) {
-			sql += dialect.limit(offset, limit);
+			sql += dialect.getLimitDefinition(offset, limit);
 		}
 //		System.out.println(sql);
 		return sql;
@@ -433,7 +433,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildUpdateSql(List<Property.PropertyValue> newPropertyValues) {
-		return dialect.update(typeDescriber, elements, newPropertyValues);
+		return dialect.generateUpdateStatement(typeDescriber, elements, newPropertyValues);
 
 	}
 /*

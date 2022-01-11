@@ -1,6 +1,5 @@
 package com.valqueries.automapper;
 
-import com.sun.org.apache.bcel.internal.generic.TABLESWITCH;
 import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
 import com.valqueries.automapper.schema.ValqueriesColumnToken;
@@ -11,7 +10,6 @@ import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.schema.FormattingTokenList;
 import io.ran.token.ColumnToken;
-import io.ran.token.IndexToken;
 import io.ran.token.TableToken;
 import io.ran.token.Token;
 
@@ -69,13 +67,13 @@ public class H2SqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String limit(int offset, Integer limit) {
+	public String getLimitDefinition(int offset, Integer limit) {
 		return " OFFSET "+offset+" ROWS" +
 				"    FETCH NEXT "+limit+" ROWS ONLY";
 	}
 
 	@Override
-	public String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
 		updateStatement.append("UPDATE " + getTableName(Clazz.of(typeDescriber.clazz())) + " as main SET ");
@@ -93,7 +91,7 @@ public class H2SqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
+	public SqlDescriber.DbRow getDescribeDbRow(OrmResultSet ormResultSet) {
 		// The H2 does not yet support any sql generator related methods
 		return null;
 	}
@@ -126,7 +124,7 @@ public class H2SqlDialect implements SqlDialect {
 		}
 		sql += ")";
 		if (limit !=  null) {
-			sql += limit(offset, limit);
+			sql += getLimitDefinition(offset, limit);
 		}
 //		System.out.println(sql);
 		return sql;

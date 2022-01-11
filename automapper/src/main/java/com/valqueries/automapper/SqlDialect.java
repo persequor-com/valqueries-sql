@@ -121,9 +121,9 @@ public interface SqlDialect {
 	ColumnToken column(Token token);
 	TableToken table(Token token);
 
-	String limit(int offset, Integer limit);
+	String getLimitDefinition(int offset, Integer limit);
 
-	String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues);
+	String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues);
 
 	default String describe(TableToken tablename) {
 		return "DESCRIBE " + tablename + "";
@@ -133,15 +133,7 @@ public interface SqlDialect {
 		return "show index from " + tablename + "";
 	}
 
-	default String getDescribedFieldColumnName() {
-		return "Field";
-	}
-
-	default String getDescribedFieldColumnType() {
-		return "Type";
-	}
-
-	SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet);
+	SqlDescriber.DbRow getDescribeDbRow(OrmResultSet ormResultSet);
 
 	default SqlDescriber.DbIndex getDbIndex(OrmResultSet r) {
 		try {
@@ -165,7 +157,7 @@ public interface SqlDialect {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
 		if (limit !=  null) {
-			sql += limit(offset, limit);
+			sql += getLimitDefinition(offset, limit);
 		}
 //		System.out.println(sql);
 		return sql;
