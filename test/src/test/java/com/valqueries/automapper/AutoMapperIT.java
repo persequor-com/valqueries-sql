@@ -24,8 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -46,7 +45,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		sqlGenerator = injector.getInstance(SqlGenerator.class);
 
 		try (IOrm orm = database.getOrm()) {
-			List<Class> clazzes = Arrays.asList(Car.class, Door.class, Engine.class, EngineCar.class, Exhaust.class, Tire.class, WithCollections.class, Bike.class, BikeGear.class, BikeGearBike.class, BikeWheel.class, PrimaryKeyModel.class, Bipod.class, Pod.class, AllFieldTypes.class);
+			List<Class> clazzes = Arrays.asList(Car.class, Door.class, Driver.class, DriverCar.class, Engine.class, EngineCar.class, Exhaust.class, Tire.class, WithCollections.class, Bike.class, BikeGear.class, BikeGearBike.class, BikeWheel.class, PrimaryKeyModel.class, Bipod.class, Pod.class, AllFieldTypes.class);
 			clazzes.forEach(c -> {
 				TypeDescriber desc = TypeDescriberImpl.getTypeDescriber(c);
 				try {
@@ -241,5 +240,36 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		assertEquals("Pod number 2", actual.getPod2().getName());
 
 		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void save_manyToMany() throws Throwable {
+		Car nissan = factory.get(Car.class);
+		nissan.setId(UUID.randomUUID());
+		nissan.setTitle("Nissan");
+		nissan.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Car citroen = factory.get(Car.class);
+		citroen.setId(UUID.randomUUID());
+		citroen.setTitle("Citroen");
+		citroen.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Driver pilot1 = factory.get(Driver.class);
+		pilot1.setId("pilot1");
+		pilot1.setName("pedrito");
+
+		Driver pilot2 = factory.get(Driver.class);
+		pilot2.setId("pilot2");
+		pilot2.setName("jorgito");
+
+		nissan.setDrivers(Arrays.asList(pilot1, pilot2));
+		citroen.setDrivers(Arrays.asList(pilot1, pilot2));
+
+		carRepository.save(nissan);
+		carRepository.save(citroen);
+
+		Collection<Car> cars = carRepository.query().withEager(Car::getDrivers).execute().collect(Collectors.toList());
+
+		assertTrue(cars.stream().allMatch(car -> car.getDrivers().size() == 2));
 	}
 }

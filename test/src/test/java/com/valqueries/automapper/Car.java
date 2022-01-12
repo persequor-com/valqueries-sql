@@ -27,6 +27,8 @@ public class Car {
 	private List<Door> doors;
 	@Relation
 	private Exhaust exhaust;
+	@Relation(collectionElementType = Driver.class, via = DriverCar.class, autoSave = true)
+	private List<Driver> drivers;
 
 	public UUID getId() {
 		return id;
@@ -101,5 +103,13 @@ public class Car {
 
 	public void setKey(String key) {
 		this.key = key;
+	}
+
+	public List<Driver> getDrivers() {
+		return drivers;
+	}
+
+	public void setDrivers(List<Driver> drivers) {
+		this.drivers = drivers;
 	}
 }
