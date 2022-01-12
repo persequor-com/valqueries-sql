@@ -8,7 +8,9 @@ import io.ran.Clazz;
 import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
+import io.ran.schema.FormattingTokenList;
 import io.ran.token.ColumnToken;
+import io.ran.token.IndexToken;
 import io.ran.token.TableToken;
 import io.ran.token.Token;
 
@@ -45,11 +47,6 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String getCreateTableStatement() {
-		return "CREATE TABLE IF NOT EXISTS ";
-	}
-
-	@Override
 	public ColumnToken column(Token token) {
 		return new ValqueriesColumnToken(sqlNameFormatter, this, token);
 	}
@@ -83,21 +80,56 @@ public class MariaSqlDialect implements SqlDialect {
 
 	}
 
-	@Override
-	public String changeColumn(TableToken tablename, ColumnToken columnName, String sqlType) {
-		return "ALTER TABLE " + tablename + " CHANGE COLUMN " + columnName + " " + columnName + " " + sqlType + ";";
+	public String generateIndexOnCreateStatement(TableToken name, KeySet keyset, boolean isUnique) {
+		String indexType = "INDEX "+keyset.getName();
+		if (keyset.isPrimary()) {
+			indexType = "PRIMARY KEY";
+		} else if (isUnique) {
+			indexType = "UNIQUE "+ keyset.getName();
+		}
+		return indexType+" "+"("+keyset.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 	}
 
 	@Override
-	public String addIndex(TableToken tablename, KeySet key, boolean isUnique) {
-		return "ALTER TABLE " + tablename + " ADD " + generateIndex(key) + ";";
+	public String generatePrimaryKeyStatement(TableToken name, KeySet key, boolean isUnique) {
+		return "PRIMARY KEY ("+key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 	}
 
-	public SqlDescriber.DbRow getDescribeDbRow(OrmResultSet ormResultSet) {
+	public String generateDropIndexStatement(TableToken tableName, IndexToken index, boolean isPrimary) {
+		String indexName;
+		if (isPrimary) {
+			indexName = "PRIMARY KEY";
+		} else {
+			indexName = "INDEX "+index;
+		}
+		return "ALTER TABLE "+tableName+" "+"DROP "+indexName;
+	}
+
+	@Override
+	public String generateIndexStatement(TableToken tablename, KeySet key, boolean isUnique) {
+		String name = key.getName();
+		String keyName = "INDEX "+escapeColumnOrTable(name);
+		if (key.isPrimary()) {
+			keyName = "PRIMARY KEY";
+		}
+		String index = keyName+" ("+key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
+		return "ALTER TABLE " + tablename + " ADD " + index + ";";
+	}
+
+	public SqlDescriber.DbRow getDescribeDbResult(OrmResultSet ormResultSet) {
 		try {
 			return new SqlDescriber.DbRow(ormResultSet.getString("Field"), ormResultSet.getString("Type"), ormResultSet.getString("Null").equals("Yes") ? true : false);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
+
+	public SqlDescriber.DbIndex getDescribeIndexResult(OrmResultSet r) {
+		try {
+			return new SqlDescriber.DbIndex(r.getInt("Non_unique") == 0, r.getString("Key_name")+" KEY", r.getString("Key_name"), r.getString("Column_name"));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 }

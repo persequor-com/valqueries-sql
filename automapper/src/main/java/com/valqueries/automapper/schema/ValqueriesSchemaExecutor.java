@@ -2,6 +2,7 @@ package com.valqueries.automapper.schema;
 
 import com.valqueries.Database;
 import com.valqueries.IOrm;
+import com.valqueries.UpdateResult;
 import com.valqueries.automapper.DialectFactory;
 import com.valqueries.automapper.SqlDialect;
 import io.ran.schema.SchemaExecutor;
@@ -27,8 +28,10 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 				String action = ta.getAction().apply(ta);
 				String[] actions = action.split(";");
 				for (String a: actions) {
-					System.out.println(a);
-					orm.update(a);
+					if (a.length() > 0) {
+						System.out.println(a);
+						UpdateResult res = orm.update(a, s -> {	});
+					}
 				}
 
 			}

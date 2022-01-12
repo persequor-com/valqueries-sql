@@ -18,11 +18,11 @@ import io.ran.token.Token;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder, ValqueriesColumnBuilder, ValqueriesIndexBuilder> implements IValqueriesTableBuilder {
+public class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder, ValqueriesColumnBuilder, ValqueriesIndexBuilder> implements IValqueriesTableBuilder {
 	private SqlDialect dialect;
 	private SqlNameFormatter sqlNameFormatter;
 
-	ValqueriesTableBuilder(SqlDialect dialect, SqlNameFormatter sqlNameFormatter) {
+	public ValqueriesTableBuilder(SqlDialect dialect, SqlNameFormatter sqlNameFormatter) {
 		this.dialect = dialect;
 		this.sqlNameFormatter = sqlNameFormatter;
 	}
@@ -50,14 +50,14 @@ class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder, Valqu
 	@Override
 	protected ColumnActionDelegate create() {
 		return (t,ca) -> {
-			return (t.getType() == TableActionType.MODIFY ? "ALTER TABLE "+t.getName()+" "+dialect.addColumn() : "")+ca.getName()+" "+dialect.getSqlType(ca.getProperty());
+			return (t.getType() == TableActionType.MODIFY ? "ALTER TABLE "+t.getName()+" "+dialect.getAddColumnStatement() : "")+ca.getName()+" "+dialect.getSqlType(ca.getProperty());
 		};
 	}
 
 	@Override
 	protected ColumnActionDelegate modify() {
 		return (t,ca) -> {
-			return "ALTER TABLE "+t.getName()+" "+dialect.alterColumn(ca.getName())+" "+dialect.getSqlType(ca.getProperty());
+			return "ALTER TABLE "+t.getName()+" "+dialect.generateAlterColumnPartStatement(ca.getName())+" "+dialect.getSqlType(ca.getProperty());
 		};
 	}
 
@@ -78,10 +78,10 @@ class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder, Valqu
 
 			keyset.setPrimary(ia.isPrimary());
 			keyset.setName(ia.getName().unescaped());
-			if (t.getType() == TableActionType.MODIFY) {
-				return dialect.addIndex(t.getName(), keyset, ia.getProperty("isUnique").equals(true));
+			if (t.getType() == TableActionType.MODIFY || !keyset.isPrimary()) {
+				return dialect.generateIndexStatement(t.getName(), keyset, ia.getProperty("isUnique").equals(true));
 			} else {
-				return dialect.addIndexOnCreate(t.getName(), keyset, ia.getProperty("isUnique").equals(true));
+				return dialect.generatePrimaryKeyStatement(t.getName(), keyset, ia.getProperty("isUnique").equals(true));
 			}
 		};
 	}
@@ -89,7 +89,7 @@ class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder, Valqu
 	@Override
 	protected IndexActionDelegate removeIndex() {
 		return (t,ia) -> {
-			return dialect.dropIndex(t.getName(), ia.getName(), ia.isPrimary());
+			return dialect.generateDropIndexStatement(t.getName(), ia.getName(), ia.isPrimary());
 		};
 	}
 }

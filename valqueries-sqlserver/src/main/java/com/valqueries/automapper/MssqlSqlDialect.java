@@ -95,11 +95,6 @@ public class MssqlSqlDialect implements SqlDialect {
 		return table(Token.get(modeltype.clazz.getSimpleName()));
 	}
 
-	@Override
-	public String getCreateTableStatement() {
-		return "CREATE TABLE ";
-	}
-
 	public String describe(TableToken tablename) {
 		return "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'"+tablename.unescaped()+"' ";
 	}
@@ -127,7 +122,7 @@ public class MssqlSqlDialect implements SqlDialect {
 				"      t.name = '" + tablename.unescaped() + "'";
 	}
 
-	public SqlDescriber.DbRow getDescribeDbRow(OrmResultSet ormResultSet) {
+	public SqlDescriber.DbRow getDescribeDbResult(OrmResultSet ormResultSet) {
 		try {
 			return new SqlDescriber.DbRow(ormResultSet.getString("COLUMN_NAME"), getSqlType(ormResultSet), ormResultSet.getString("IS_NULLABLe").equals("YES") ? true: false);
 		} catch (Exception e) {
@@ -149,7 +144,7 @@ public class MssqlSqlDialect implements SqlDialect {
 		}
 	}
 
-	public SqlDescriber.DbIndex getDbIndex(OrmResultSet r) {
+	public SqlDescriber.DbIndex getDescribeIndexResult(OrmResultSet r) {
 		try {
 			return new SqlDescriber.DbIndex(r.getInt("UniqueConstraint") == 1, r.getString("RealIndexName"), r.getString("IndexName"), r.getString("ColumnName"));
 		} catch (Exception e) {
@@ -157,34 +152,36 @@ public class MssqlSqlDialect implements SqlDialect {
 		}
 	}
 
+
 	@Override
-	public String changeColumn(TableToken tablename, ColumnToken columnName, String sqlType) {
-		return "ALTER TABLE " + tablename + " ALTER COLUMN " + columnName + " " + sqlType + ";";
+	public String generatePrimaryKeyStatement(TableToken name, KeySet key, boolean isUnique) {
+		String indexType = "CONSTRAINT " + escapeColumnOrTable(name.unescaped() + "_" + key.getName()) + " PRIMARY KEY ";
+		return ""+indexType+" (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ") + ")";
 	}
 
 	@Override
-	public String addIndex(TableToken tablename, KeySet key, boolean isUnique) {
+	public String generateIndexStatement(TableToken tablename, KeySet key, boolean isUnique) {
 		String name = key.getName();
 		String keyType = "INDEX ";
 		if (key.isPrimary()) {
 			keyType = "PRIMARY KEY ";
 		}
-		return "CREATE "+keyType+" "+name+" ON " + tablename + " (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ") + ");";
+		return "CREATE "+keyType+" "+name+" ON " + tablename + " (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ") + ")";
 	}
 
 	public String addColumn(TableToken tablename, ColumnToken columnName, String sqlType) {
 		return "ALTER TABLE " + tablename + " ADD " + columnName + " " + sqlType + ";";
 	}
 
-	public String addColumn() {
-		return "ADD ";
-	}
+//	public String getAddColumnStatement() {
+//		return "ADD ";
+//	}
 
-	public String alterColumn(ColumnToken name) {
+	public String generateAlterColumnPartStatement(ColumnToken name) {
 		return "ALTER COLUMN "+name;
 	}
 
-	public String addIndexOnCreate(TableToken tableName, KeySet keyset, boolean isUnique) {
+	public String generateIndexOnCreateStatement(TableToken tableName, KeySet keyset, boolean isUnique) {
 		String indexType = "INDEX "+escapeColumnOrTable(keyset.getName())+" ";
 		if (keyset.isPrimary()) {
 			indexType = "CONSTRAINT "+tableName.unescaped()+"_"+keyset.getName()+" PRIMARY KEY ";
@@ -195,7 +192,7 @@ public class MssqlSqlDialect implements SqlDialect {
 		return indexType+"("+keyset.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 	}
 
-	public String dropIndex(TableToken tableName, IndexToken index, boolean isPrimary) {
+	public String generateDropIndexStatement(TableToken tableName, IndexToken index, boolean isPrimary) {
 		String indexName = index.unescaped();
 		if (isPrimary) {
 			indexName = tableName.unescaped()+"_"+index.unescaped();

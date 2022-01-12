@@ -23,6 +23,6 @@ public class ValqueriesTableToken extends TableToken {
 
 	@Override
 	public String unescaped() {
-		return sqlNameFormatter.column(token);
+		return dialect.prepareColumnOrTable(sqlNameFormatter.table(token));
 	}
 }

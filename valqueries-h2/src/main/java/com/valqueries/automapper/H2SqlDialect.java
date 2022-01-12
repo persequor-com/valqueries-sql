@@ -10,9 +10,11 @@ import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.schema.FormattingTokenList;
 import io.ran.token.ColumnToken;
+import io.ran.token.IndexToken;
 import io.ran.token.TableToken;
 import io.ran.token.Token;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,8 +27,13 @@ public class H2SqlDialect implements SqlDialect {
 	}
 
 	@Override
+	public String prepareColumnOrTable(String name) {
+		return name.toUpperCase();
+	}
+
+	@Override
 	public String escapeColumnOrTable(String name) {
-		return "\""+name.toUpperCase()+"\"";
+		return "\""+prepareColumnOrTable(name)+"\"";
 	}
 
 	@Override
@@ -47,11 +54,17 @@ public class H2SqlDialect implements SqlDialect {
 		if (mappedType != null) {
 			return mappedType.value();
 		}
+		if (type == String.class) {
+			return "character varying(255)";
+		}
 		if (type == UUID.class) {
 			return "UUID";
 		}
 		if (type == boolean.class || type == Boolean.class) {
 			return "BOOLEAN";
+		}
+		if (type == ZonedDateTime.class) {
+			return "timestamp";
 		}
 		return SqlDialect.super.getSqlType(property);
 	}
@@ -91,19 +104,65 @@ public class H2SqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public SqlDescriber.DbRow getDescribeDbRow(OrmResultSet ormResultSet) {
-		// The H2 does not yet support any sql generator related methods
-		return null;
+	public String describe(TableToken tablename) {
+		return "SHOW COLUMNS FROM "+tablename;
+	}
+
+	@Override
+	public String describeIndex(TableToken tablename) {
+//		return "SELECT * FROM INFORMATION_SCHEMA.INDEXES WHERE TABLE_NAME = '"+tablename.unescaped()+"'";
+		return "SELECT * FROM INFORMATION_SCHEMA.INDEX_COLUMNS kcu JOIN INFORMATION_SCHEMA.INDEXES i ON i.TABLE_NAME = kcu.TABLE_NAME AND i.INDEX_NAME = kcu.INDEX_NAME WHERE kcu.TABLE_NAME = '"+tablename.unescaped()+"'";
+//		return "SELECT * FROM INFORMATION_SCHEMA.INDEXES i WHERE i.TABLE_NAME = '"+tablename.unescaped()+"'";
+//		return "SELECT * FROM INFORMATION_SCHEMA.INDEX_COLUMNS kcu JOIN INFORMATION_SCHEMA.INDEXES i ON i.TABLE_NAME = kcu.TABLE_NAME AND i.INDEX_NAME = kcu.INDEX_NAME";
+//		return "SELECT * FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE";
+//		return "SHOW COLUMNS FROM INFORMATION_SCHEMA.INDEXES";
+//		return "SHOW TABLES FROM INFORMATION_SCHEMA";
+	}
+
+	@Override
+	public SqlDescriber.DbIndex getDescribeIndexResult(OrmResultSet ormResultSet) {
+		try {
+			return new SqlDescriber.DbIndex(
+					ormResultSet.getString("INDEX_TYPE_NAME").equals("UNIQUE") || ormResultSet.getString("INDEX_TYPE_NAME").equals("PRIMARY KEY")
+					,ormResultSet.getString("INDEX_NAME")
+					, ormResultSet.getString("INDEX_TYPE_NAME").equals("PRIMARY KEY")
+						? "PRIMARY"
+						: ormResultSet.getString("INDEX_NAME").toLowerCase()
+					, ormResultSet.getString("COLUMN_NAME").toLowerCase());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+//			return new SqlDescriber.DbIndex(false, "blah", "blah", "blah");
+		}
+	}
+
+	public String generateDropIndexStatement(TableToken tableName, IndexToken index, boolean isPrimary) {
+		String indexName;
+		if (isPrimary) {
+			return "ALTER TABLE "+tableName+" "+"DROP PRIMARY KEY";
+		} else {
+			return "DROP INDEX "+index+"  ON "+tableName;
+		}
+
+	}
+
+	@Override
+	public SqlDescriber.DbRow getDescribeDbResult(OrmResultSet ormResultSet) {
+		try {
+			return new SqlDescriber.DbRow(ormResultSet.getString("FIELD").toLowerCase(), ormResultSet.getString("TYPE").toLowerCase(), ormResultSet.getString("NULL").equals("YES"));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 
 	@Override
-	public String changeColumn(TableToken tablename, ColumnToken columnName, String sqlType) {
-		return "ALTER TABLE " + tablename + " ALTER COLUMN " + columnName + " " + columnName + " " + sqlType + ";";
+	public String generatePrimaryKeyStatement(TableToken name, KeySet key, boolean isUnique) {
+		return  "PRIMARY KEY (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 	}
 
 	@Override
-	public String addIndex(TableToken tablename, KeySet key, boolean isUnique) {
+	public String generateIndexStatement(TableToken tablename, KeySet key, boolean isUnique) {
+
 		return "CREATE INDEX "+escapeColumnOrTable(key.getName())+" ON " + tablename + " (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")" + ";";
 	}
 
@@ -111,12 +170,7 @@ public class H2SqlDialect implements SqlDialect {
 		return table(Token.get(modeltype.clazz.getSimpleName()));
 	}
 
-	@Override
-	public String getCreateTableStatement() {
-		return "CREATE TABLE ";
-	}
-
-	public String delete(String tableAlias, TypeDescriber<?> typeDescriber, List<Element> elements, int offset, Integer limit) {
+	public String generateDeleteStatement(String tableAlias, TypeDescriber<?> typeDescriber, List<Element> elements, int offset, Integer limit) {
 		String sql = "DELETE FROM " + getTableName(Clazz.of(typeDescriber.clazz()))+ " AS del";
 		sql += " WHERE exists (SELECT * FROM "+getTableName(Clazz.of(typeDescriber.clazz()))+" AS "+tableAlias+ " WHERE "+typeDescriber.primaryKeys().stream().map(f -> "del."+column(f.getToken())+" = main."+column(f.getToken())).collect(Collectors.joining(" AND "));
 		if (!elements.isEmpty()) {
@@ -130,18 +184,11 @@ public class H2SqlDialect implements SqlDialect {
 		return sql;
 	}
 
-	@Override
-	public String addIndexOnCreate(TableToken name, KeySet keyset, boolean isUnique) {
-		String indexType = "INDEX ";
-		if (keyset.isPrimary()) {
-			indexType = "PRIMARY KEY";
-		} else if (isUnique) {
-			indexType = "UNIQUE ";
-		}
-		return (keyset.isPrimary() ? "PRIMARY KEY ":indexType+" ")+"("+keyset.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
+	public String generateAlterColumnPartStatement(ColumnToken name) {
+		return "ALTER COLUMN "+name+" ";
 	}
 
-	public String alterColumn(ColumnToken name) {
-		return "ALTER COLUMN "+name+" ";
+	public String dropTableStatement(Clazz clazz) {
+		return "DROP TABLE IF EXISTS "+getTableName(clazz)+" CASCADE";
 	}
 }

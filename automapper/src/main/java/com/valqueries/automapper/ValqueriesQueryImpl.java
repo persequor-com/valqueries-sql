@@ -361,7 +361,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildDeleteSql() {
-		return dialect.delete(tableAlias, typeDescriber, elements, offset, limit);
+		return dialect.generateDeleteStatement(tableAlias, typeDescriber, elements, offset, limit);
 	}
 
 	private String buildCountSql() {

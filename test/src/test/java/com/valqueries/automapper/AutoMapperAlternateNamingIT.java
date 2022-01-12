@@ -62,7 +62,7 @@ public abstract class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 				} catch (Exception e) {
 
 				}
-				orm.update(sqlGenerator.generateCreateTable(desc));
+				sqlGenerator.generateCreateTable(desc);
 			});
 
 		}
