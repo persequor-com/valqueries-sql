@@ -1,15 +1,17 @@
 package com.valqueries.automapper;
 
 import io.ran.Mapper;
+import io.ran.PrimaryKey;
 import io.ran.Relation;
 
 import java.util.UUID;
 
 @Mapper(dbType = Valqueries.class)
 public class Door {
+	@PrimaryKey
 	private UUID id;
 	private String title;
-	@Relation()
+	@Relation(fields = "carId", relationFields = "id")
 	private Car car;
 	private UUID carId;
 
@@ -46,5 +48,20 @@ public class Door {
 
 	public void setCarId(UUID carId) {
 		this.carId = carId;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		Door door = (Door) o;
+
+		return id.equals(door.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return id.hashCode();
 	}
 }

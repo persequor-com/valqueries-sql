@@ -11,27 +11,10 @@ import com.valqueries.automapper.elements.ListElement;
 import com.valqueries.automapper.elements.RelationSubQueryElement;
 import com.valqueries.automapper.elements.SimpleElement;
 import com.valqueries.automapper.elements.SortElement;
-import io.ran.Clazz;
-import io.ran.CompoundKey;
-import io.ran.CrudRepository;
-import io.ran.GenericFactory;
-import io.ran.KeySet;
-import io.ran.Mapping;
-import io.ran.MappingHelper;
-import io.ran.Property;
-import io.ran.RelationDescriber;
-import io.ran.TypeDescriber;
-import io.ran.TypeDescriberImpl;
+import io.ran.*;
 import io.ran.token.Token;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -168,25 +151,23 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 		StringBuilder eagerSelect = new StringBuilder();
 		StringBuilder eagerJoin = new StringBuilder();
-		int i = 0;
+		int eagerCount = 0;
+		int intermediateCount = 0;
 		for (RelationDescriber relation : eagers) {
-			String eagerTable = getTableName(relation.getToClass());
-			String eagerAlias = "eager"+(++i);
-			eagerJoin.append(" LEFT JOIN "+eagerTable+" "+eagerAlias+" ON ");
-			List<KeySet.Field> from = relation.getFromKeys().stream().collect(Collectors.toList());
-			List<KeySet.Field> to = relation.getToKeys().stream().collect(Collectors.toList());
-			List<String> onParams = new ArrayList<>();
-			for(int x=0;x<from.size();x++) {
-				onParams.add(tableAlias+"."+sqlNameFormatter.column(from.get(x).getToken())+" = "+eagerAlias+"."+sqlNameFormatter.column(to.get(x).getToken()));
+			eagerCount++;
+			if (relation.getRelationAnnotation().via() != None.class) {
+				intermediateCount++;
+				RelationDescriber intermediateTableRelation = relation.getVia().stream().filter(rel -> rel.getToClass().clazz.isAssignableFrom(relation.getRelationAnnotation().via())).findFirst().get();
+				String intermediateTable = getTableName(intermediateTableRelation.getToClass());
+				String intermediateTableAlias = "intermediate" + intermediateCount;
+				appendJoin(intermediateTableRelation, eagerJoin, eagerSelect, tableAlias, intermediateTable, intermediateTableAlias);
+				RelationDescriber endTableRelation = relation.getVia().stream().filter(rel -> !rel.getToClass().clazz.isAssignableFrom(relation.getRelationAnnotation().via())).findFirst().get();
+				appendJoin(endTableRelation, eagerJoin, eagerSelect, intermediateTableAlias, eagerCount);
+			} else {
+				appendJoin(relation, eagerJoin, eagerSelect, tableAlias, eagerCount);
 			}
-
-			eagerJoin.append(String.join(" AND ", onParams));
-			TypeDescriber<?> eagerRelationTypeDescriber = TypeDescriberImpl.getTypeDescriber(relation.getToClass().clazz);
-
-			eagerSelect.append(", "+eagerRelationTypeDescriber.fields().stream().map(property -> eagerAlias+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(property.getToken()))+" "+eagerAlias+"_"+sqlNameFormatter.column(property.getToken())).collect(Collectors.joining(", ")));
-
 		}
-		String sql = "SELECT " + columnsSql + eagerSelect.toString() + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias+" "+eagerJoin.toString()+" "+elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
+		String sql = "SELECT " + columnsSql + eagerSelect + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias+" "+eagerJoin+" "+elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
@@ -243,6 +224,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				return Stream.empty();
 			}
 			Map<CompoundKey, T> alreadyLoaded = new LinkedHashMap<>();
+			Set<CompoundKey> relationsAlreadyLoaded = new HashSet<>();
 			Map<Token, Map<CompoundKey, List>> eagerModels = new HashMap<>();
 			transactionContext.query(buildSelectSql("main"), this, row -> {
 				T t2 = genericFactory.get(modelType);
@@ -256,11 +238,17 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				int i=0;
 				for (RelationDescriber relationDescriber : eagers) {
 					Object hydrated = hydrateEager(t2, relationDescriber, row, ++i);
-					if (hydrated != null) {
-						eagerModels
-								.computeIfAbsent(relationDescriber.getField(), (k) -> new HashMap<>())
-								.computeIfAbsent(key, (k) -> new ArrayList())
-								.add(hydrated);
+					CompoundKey relationKey = mappingHelper.getKey(hydrated);
+					if (relationsAlreadyLoaded.contains(relationKey)) {
+						break;
+					} else {
+						relationsAlreadyLoaded.add(relationKey);
+						if (hydrated != null) {
+							eagerModels
+									.computeIfAbsent(relationDescriber.getField(), (k) -> new HashMap<>())
+									.computeIfAbsent(key, (k) -> new ArrayList())
+									.add(hydrated);
+						}
 					}
 				}
 				return t2;
@@ -510,5 +498,26 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	public void setEmpty() {
 		forcedEmpty = true;
+	}
+
+	private void appendJoin(RelationDescriber relation, StringBuilder joinSql, StringBuilder selectSql,
+							String fromTableAlias, int counter) {
+		String eagerTable = getTableName(relation.getToClass());
+		String eagerAlias = "eager" + counter;
+		appendJoin(relation, joinSql, selectSql, fromTableAlias, eagerTable, eagerAlias);
+	}
+
+	private void appendJoin(RelationDescriber relation, StringBuilder joinSql, StringBuilder selectSql,
+							String fromTableAlias, String toTable, String toTableAlias) {
+		joinSql.append(" LEFT JOIN " + toTable + " " + toTableAlias + " ON ");
+		List<KeySet.Field> from = relation.getFromKeys().stream().collect(Collectors.toList());
+		List<KeySet.Field> to = relation.getToKeys().stream().collect(Collectors.toList());
+		List<String> onParams = new ArrayList<>();
+		for(int x=0;x<from.size();x++) {
+			onParams.add(fromTableAlias+"."+sqlNameFormatter.column(from.get(x).getToken())+" = "+toTableAlias+"."+sqlNameFormatter.column(to.get(x).getToken()));
+		}
+		joinSql.append(String.join(" AND ", onParams));
+		TypeDescriber<?> eagerRelationTypeDescriber = TypeDescriberImpl.getTypeDescriber(relation.getToClass().clazz);
+		selectSql.append(", ").append(eagerRelationTypeDescriber.fields().stream().map(property -> toTableAlias + "." + dialect.escapeColumnOrTable(sqlNameFormatter.column(property.getToken())) + " " + toTableAlias + "_" + sqlNameFormatter.column(property.getToken())).collect(Collectors.joining(", ")));
 	}
 }

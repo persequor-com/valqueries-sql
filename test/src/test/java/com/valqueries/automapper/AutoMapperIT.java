@@ -18,10 +18,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -262,14 +259,24 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		pilot2.setId("pilot2");
 		pilot2.setName("jorgito");
 
+		Door nissanDoor = factory.get(Door.class);
+		nissanDoor.setId(UUID.randomUUID());
+		nissanDoor.setTitle("Nissan door");
+		nissanDoor.setCarId(nissan.getId());
+
+		nissan.setDoors(Collections.singletonList(nissanDoor));
 		nissan.setDrivers(Arrays.asList(pilot1, pilot2));
 		citroen.setDrivers(Arrays.asList(pilot1, pilot2));
 
 		carRepository.save(nissan);
 		carRepository.save(citroen);
 
-		Collection<Car> cars = carRepository.query().withEager(Car::getDrivers).execute().collect(Collectors.toList());
+		Collection<Car> cars = carRepository.query()
+				.withEager(Car::getDrivers)
+				.withEager(Car::getDoors)
+				.execute().collect(Collectors.toList());
 
 		assertTrue(cars.stream().allMatch(car -> car.getDrivers().size() == 2));
+		assertEquals(1, cars.stream().filter(car -> car.getTitle().equals("Nissan")).findFirst().get().getDoors().size());
 	}
 }
