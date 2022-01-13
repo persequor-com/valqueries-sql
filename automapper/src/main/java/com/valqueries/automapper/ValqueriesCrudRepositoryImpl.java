@@ -115,16 +115,18 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 					relationDescriber.getVia().forEach(viaRelationDescriber -> {
 						Token intermediateTableToken;
 						Token endTableToken;
-						if (viaRelationDescriber.getToClass().clazz.isAssignableFrom(mappingRelation.getClass())) {
-							intermediateTableToken = viaRelationDescriber.getFromKeys().toProperties().get(0).getToken();
-							endTableToken = viaRelationDescriber.getToKeys().get(0).getToken();
-							map.set(intermediateTableToken, mappingRelation._getKey().getValues().get(endTableToken).getValue());
-						} else {
-							endTableToken = viaRelationDescriber.getFromKeys().toProperties().get(0).getToken();
-							intermediateTableToken = viaRelationDescriber.getToKeys().get(0).getToken();
-							map.set(intermediateTableToken, mapping._getKey().getValues().get(endTableToken).getValue());
+						Property.PropertyList properties = viaRelationDescriber.getFromKeys().toProperties();
+						for (int i = 0; i < properties.size(); i++) {
+							if (viaRelationDescriber.getToClass().clazz.isAssignableFrom(mappingRelation.getClass())) {
+								intermediateTableToken = properties.get(i).getToken();
+								endTableToken = viaRelationDescriber.getToKeys().get(i).getToken();
+								map.set(intermediateTableToken, mappingRelation._getKey().getValues().get(endTableToken).getValue());
+							} else {
+								endTableToken = properties.get(i).getToken();
+								intermediateTableToken = viaRelationDescriber.getToKeys().get(i).getToken();
+								map.set(intermediateTableToken, mapping._getKey().getValues().get(endTableToken).getValue());
+							}
 						}
-
 					});
 					manyToManyRelation.hydrate(map);
 					manyToManyRelations.add(manyToManyRelation);

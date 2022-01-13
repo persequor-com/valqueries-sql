@@ -10,6 +10,7 @@ import java.util.List;
 public class Driver {
     @PrimaryKey
     private String id;
+    @PrimaryKey
     private String name;
     @Relation(collectionElementType = Car.class, via = DriverCar.class, autoSave = true)
     private List<Car> cars;

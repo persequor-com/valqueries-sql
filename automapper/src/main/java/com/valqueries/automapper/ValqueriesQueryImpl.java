@@ -177,7 +177,6 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		if (limit !=  null) {
 			sql += dialect.limit(offset, limit);
 		}
-//		System.out.println(sql);
 		return sql;
 	}
 

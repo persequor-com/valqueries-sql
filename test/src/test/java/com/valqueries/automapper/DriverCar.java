@@ -9,9 +9,11 @@ public class DriverCar {
     @PrimaryKey
     private String driverId;
     @PrimaryKey
+    private String driverName;
+    @PrimaryKey
     private UUID carId;
 
-    @Relation(fields = "driverId", relationFields = "id")
+    @Relation(fields = {"driverId", "driverName"}, relationFields = {"id", "name"})
     private Driver driver;
     @Relation(fields = "carId", relationFields = "id")
     private Car car;
@@ -46,5 +48,13 @@ public class DriverCar {
 
     public void setCar(Car car) {
         this.car = car;
+    }
+
+    public String getDriverName() {
+        return driverName;
+    }
+
+    public void setDriverName(String driverName) {
+        this.driverName = driverName;
     }
 }
