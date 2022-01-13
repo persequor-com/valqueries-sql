@@ -278,5 +278,6 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 
 		assertTrue(cars.stream().allMatch(car -> car.getDrivers().size() == 2));
 		assertEquals(1, cars.stream().filter(car -> car.getTitle().equals("Nissan")).findFirst().get().getDoors().size());
+		assertEquals(0, cars.stream().filter(car -> car.getTitle().equals("Citroen")).findFirst().get().getDoors().size());
 	}
 }
