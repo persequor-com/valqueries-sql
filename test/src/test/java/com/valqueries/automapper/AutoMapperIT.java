@@ -18,16 +18,15 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 
 public abstract class AutoMapperIT extends AutoMapperBaseTests {
@@ -132,6 +131,32 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		assertEquals(2, doors.size());
 		Exhaust actualExhaust = cars.stream().findFirst().get().getExhaust();
 		assertEquals(exhaust.getId(), actualExhaust.getId());
+
+		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void eagerLoad_multiple_noDoorInteractions() throws Throwable {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+		Collection<Car> cars = carRepository.query()
+				.withEager(Car::getDoors)
+				.withEager(Car::getExhaust).execute().collect(Collectors.toList());
+
+		Class<? extends Car> cl = cars.stream().findFirst().get().getClass();
+		cl.getMethod("_resolverInject", Resolver.class).invoke(cars.stream().findFirst().get(), resolver);
+
+		assertEquals(1, cars.size());
+		List<Door> doors = cars.stream().findFirst().get().getDoors();
+
+		assertEquals(0, doors.size());
+
+		Exhaust actualExhaust = cars.stream().findFirst().get().getExhaust();
+		assertEquals(null, actualExhaust);
 
 		verifyNoInteractions(resolver);
 	}
