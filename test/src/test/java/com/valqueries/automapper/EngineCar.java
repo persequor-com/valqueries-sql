@@ -17,9 +17,9 @@ public class EngineCar {
 	private UUID carId;
 	@PrimaryKey
 	private UUID engineId;
-	@Relation
+	@Relation(fields = "carId", relationFields = "id")
 	private Car car;
-	@Relation
+	@Relation(fields = "engineId", relationFields = "id")
 	private Engine engine;
 
 	public UUID getCarId() {

@@ -15,5 +15,4 @@ public class SqlNameFormatter {
 	public String column(Token key) {
 		return key.snake_case();
 	}
-
 }

@@ -16,6 +16,7 @@ import io.ran.token.Token;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +27,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	private List<SortElement> sortElements = new ArrayList<>();
 	private int fieldNum = 0;
 	private int subQueryNum = 0;
+	private int intermediateNum = 0;
 	private Collection<RelationDescriber> eagers = new ArrayList<>();
 	private String tableAlias = "main";
 	private GenericFactory genericFactory;
@@ -60,7 +62,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> like(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "like",++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, "like", ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
@@ -98,42 +100,41 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	@SuppressWarnings("rawtypes")
 	@Override
 	public <X, Z extends CrudRepository.InlineQuery<X, Z>> ValqueriesQuery<T> subQuery(RelationDescriber relation, Consumer<Z> consumer) {
-		if (true || (relation. getToKeys().size() > 1)) {
-			return join(relation, consumer);
-		}
-		if (!relation.getVia().isEmpty()) {
-			return subQuery(relation.getVia().get(0), q -> {
-				((ValqueriesQuery<X>)q).subQuery(relation.getVia().get(1), (Consumer) consumer);
-			});
-		}
-		ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper, dialect);
-		otherQuery.tableAlias = "sub"+(++subQueryNum);
-		consumer.accept((Z) otherQuery);
-		elements.add(new RelationSubQueryElement(tableAlias, otherQuery.tableAlias, ++subQueryNum, relation, otherQuery, sqlNameFormatter, dialect));
-		return this;
+		return join(relation, consumer);
 	}
 
 	private <X, Z extends CrudRepository.InlineQuery<X, Z>> ValqueriesQuery<T> join(RelationDescriber relation, Consumer<Z> consumer) {
 		if (!relation.getVia().isEmpty()) {
-			return join(relation.getVia().get(0), q -> {
-				((ValqueriesQueryImpl<X>)q).join(relation.getVia().get(1), (Consumer) consumer);
-			});
+			RelationDescriber intermediateRelation = relation.getVia().get(0);
+			ValqueriesQueryImpl intermediateQuery = new ValqueriesQueryImpl(transactionContext, intermediateRelation.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper, dialect);
+			intermediateQuery.tableAlias = "intermediate" + (++intermediateNum);
+			elements.add(new RelationSubQueryElement(tableAlias, intermediateQuery.tableAlias, intermediateRelation, intermediateQuery, sqlNameFormatter, dialect));
+			try {
+				consumer.accept((Z) intermediateQuery);
+			} catch (Exception e) {
+				RelationDescriber endRelation = relation.getVia().get(1);
+				ValqueriesQueryImpl endRelationQuery = new ValqueriesQueryImpl(transactionContext, endRelation.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper, dialect);
+				endRelationQuery.tableAlias = "sub" + (++subQueryNum);
+				consumer.accept((Z) endRelationQuery);
+				endRelationQuery.elements.add(new RelationSubQueryElement(intermediateQuery.tableAlias, endRelationQuery.tableAlias, endRelation, endRelationQuery, sqlNameFormatter, dialect));
+			}
+		} else {
+			ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper, dialect);
+			otherQuery.tableAlias = "sub" + (++subQueryNum);
+			consumer.accept((Z) otherQuery);
+			elements.add(new RelationSubQueryElement(tableAlias, otherQuery.tableAlias, relation, otherQuery, sqlNameFormatter, dialect));
 		}
-		ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper, dialect);
-		otherQuery.tableAlias = "sub"+(++subQueryNum);
-		consumer.accept((Z) otherQuery);
-		elements.add(new RelationSubQueryElement(tableAlias, otherQuery.tableAlias, ++subQueryNum, relation, otherQuery, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public ValqueriesQuery<T> isNull(Property<?> property) {
-		elements.add(new SimpleElement(this, property.value(null),"IS NULL", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, property.value(null), "IS NULL", ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	public ValqueriesQuery<T> isNotNull(Property<?> property) {
-		elements.add(new SimpleElement(this, property.value(null),"IS NOT NULL", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, property.value(null), "IS NOT NULL", ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
@@ -167,14 +168,14 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				appendJoin(relation, eagerJoin, eagerSelect, tableAlias, eagerCount);
 			}
 		}
-		String sql = "SELECT " + columnsSql + eagerSelect + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias+" "+eagerJoin+" "+elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
+		String sql = "SELECT " + columnsSql + eagerSelect + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias + " " + eagerJoin + " " + elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
 		if (!sortElements.isEmpty()) {
-			sql += " ORDER BY "+sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
+			sql += " ORDER BY " + sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
 		}
-		if (limit !=  null) {
+		if (limit != null) {
 			sql += dialect.limit(offset, limit);
 		}
 		return sql;
@@ -234,15 +235,15 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				} else {
 					alreadyLoaded.put(key, t2);
 				}
-				int i=0;
+				int i = 0;
 				for (RelationDescriber relationDescriber : eagers) {
 					Object hydrated = hydrateEager(t2, relationDescriber, row, ++i);
-					CompoundKey relationKey = mappingHelper.getKey(hydrated);
-					if (relationsAlreadyLoaded.contains(relationKey)) {
-						break;
-					} else {
-						relationsAlreadyLoaded.add(relationKey);
-						if (hydrated != null) {
+					if (hydrated != null) {
+						CompoundKey relationKey = mappingHelper.getKey(hydrated);
+						if (relationsAlreadyLoaded.contains(relationKey)) {
+							break;
+						} else {
+							relationsAlreadyLoaded.add(relationKey);
 							eagerModels
 									.computeIfAbsent(relationDescriber.getField(), (k) -> new HashMap<>())
 									.computeIfAbsent(key, (k) -> new ArrayList())
@@ -257,7 +258,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				if (eagerModel != null) {
 					eagerModel.entrySet().forEach(entry -> {
 						if (relationDescriber.isCollectionRelation()) {
-							((Mapping)alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue());
+							((Mapping) alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue());
 						} else {
 							mapping(alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue().get(0));
 						}
@@ -298,7 +299,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				T t = genericFactory.get(modelType);
 				mappingHelper.hydrate(t, hydrator);
 				return new GroupNumericResultImpl.Grouping(hydrator.getValues(), row.getLong("the_count"));
-			}).stream().collect(Collectors.toMap(g -> g, g -> (long)g.getValue()));
+			}).stream().collect(Collectors.toMap(g -> g, g -> (long) g.getValue()));
 			return new GroupNumericResultImpl(res);
 		} finally {
 			try {
@@ -352,7 +353,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildCountSql() {
-		String sql = "SELECT COUNT(1) as the_count FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias;
+		String sql = "SELECT COUNT(1) as the_count FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
@@ -362,19 +363,19 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 
 	private String buildGroupAggregateSql(Property resultProperty, String aggregateMethod) {
-		String sql = "SELECT "+aggregateMethod+"("+dialect.column(resultProperty.getToken())+") as the_count , "+groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", "))+" FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " "+tableAlias;
+		String sql = "SELECT " + aggregateMethod + "(" + dialect.column(resultProperty.getToken()) + ") as the_count , " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
-		sql += " GROUP BY "+groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", "))+"";
+		sql += " GROUP BY " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + "";
 //		System.out.println(sql);
 		return sql;
 	}
 
 	private <X> X hydrateEager(T rootObject, RelationDescriber relationDescriber, OrmResultSet row, int i) {
-		X otherModel = (X)genericFactory.get(relationDescriber.getToClass().clazz);
-		mapping(otherModel).hydrate(new ValqueriesHydrator("eager"+(i)+"_", row, sqlNameFormatter));
-		if (((Property.PropertyValueList<?>)mapping(otherModel)._getKey().getValues()).get(0).getValue() == null) {
+		X otherModel = (X) genericFactory.get(relationDescriber.getToClass().clazz);
+		mapping(otherModel).hydrate(new ValqueriesHydrator("eager" + (i) + "_", row, sqlNameFormatter));
+		if (((Property.PropertyValueList<?>) mapping(otherModel)._getKey().getValues()).get(0).getValue() == null) {
 			return null;
 		}
 		return otherModel;
@@ -394,7 +395,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		if (obj instanceof Mapping) {
 			return (Mapping) obj;
 		}
-		throw new RuntimeException("Tried mapping an unmapped object: "+obj.getClass().getName());
+		throw new RuntimeException("Tried mapping an unmapped object: " + obj.getClass().getName());
 	}
 
 	@Override
@@ -402,7 +403,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		if (forcedEmpty) {
 			return () -> 0;
 		}
-		List<Property.PropertyValue>  newPropertyValues = this.getPropertyValuesFromUpdater(updater);
+		List<Property.PropertyValue> newPropertyValues = this.getPropertyValuesFromUpdater(updater);
 		String updateStatement = this.buildUpdateSql(newPropertyValues);
 
 		int affectedRows = transactionContext.update(updateStatement, uStmt -> {
@@ -423,70 +424,71 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		return dialect.update(typeDescriber, elements, newPropertyValues);
 
 	}
-/*
-	private static class RelationSubQueryElement implements Element {
-		private final ValqueriesQueryImpl<?> otherQuery;
-		private SqlNameFormatter sqlNameFormatter;
-		private final RelationDescriber relation;
-		private final String tableAlias;
-		private String parentTableAlias;
-		private int subQueryNum;
-		private SqlDialect dialect;
 
-		public RelationSubQueryElement(String parentTableAlias, String tableAlias, int subQueryNum, RelationDescriber relation, ValqueriesQueryImpl<?> otherQuery, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
-			this.parentTableAlias = parentTableAlias;
-			this.tableAlias = tableAlias;
-			this.subQueryNum = subQueryNum;
-			this.relation = relation;
-			this.otherQuery = otherQuery;
-			this.sqlNameFormatter = sqlNameFormatter;
-			this.dialect = dialect;
+	/*
+		private static class RelationSubQueryElement implements Element {
+			private final ValqueriesQueryImpl<?> otherQuery;
+			private SqlNameFormatter sqlNameFormatter;
+			private final RelationDescriber relation;
+			private final String tableAlias;
+			private String parentTableAlias;
+			private int subQueryNum;
+			private SqlDialect dialect;
+
+			public RelationSubQueryElement(String parentTableAlias, String tableAlias, int subQueryNum, RelationDescriber relation, ValqueriesQueryImpl<?> otherQuery, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
+				this.parentTableAlias = parentTableAlias;
+				this.tableAlias = tableAlias;
+				this.subQueryNum = subQueryNum;
+				this.relation = relation;
+				this.otherQuery = otherQuery;
+				this.sqlNameFormatter = sqlNameFormatter;
+				this.dialect = dialect;
+			}
+
+			public String queryString() {
+				return parentTableAlias + "." + dialect.column(relation.getFromKeys().get(0).getToken()) + " IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + dialect.column(p.getToken())).toArray(String[]::new)) + ")";
+			}
+
+			@Override
+			public void set(IStatement statement) {
+				otherQuery.set(statement);
+			}
 		}
 
-		public String queryString() {
-			return parentTableAlias + "." + dialect.column(relation.getFromKeys().get(0).getToken()) + " IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + dialect.column(p.getToken())).toArray(String[]::new)) + ")";
-		}
+		private static class RelationJoinElement implements Element {
+			private final ValqueriesQueryImpl<?> otherQuery;
+			private SqlNameFormatter sqlNameFormatter;
+			private final RelationDescriber relation;
+			private final String tableAlias;
+			private String parentTableAlias;
+			private int subQueryNum;
+			private SqlDialect dialect;
 
-		@Override
-		public void set(IStatement statement) {
-			otherQuery.set(statement);
-		}
-	}
+			public RelationJoinElement(String parentTableAlias, String tableAlias, int subQueryNum, RelationDescriber relation, ValqueriesQueryImpl<?> otherQuery, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
+				this.parentTableAlias = parentTableAlias;
+				this.tableAlias = tableAlias;
+				this.subQueryNum = subQueryNum;
+				this.relation = relation;
+				this.otherQuery = otherQuery;
+				this.sqlNameFormatter = sqlNameFormatter;
+				this.dialect = dialect;
+			}
 
-	private static class RelationJoinElement implements Element {
-		private final ValqueriesQueryImpl<?> otherQuery;
-		private SqlNameFormatter sqlNameFormatter;
-		private final RelationDescriber relation;
-		private final String tableAlias;
-		private String parentTableAlias;
-		private int subQueryNum;
-		private SqlDialect dialect;
+			public String queryString() {
+				return "";
+			}
 
-		public RelationJoinElement(String parentTableAlias, String tableAlias, int subQueryNum, RelationDescriber relation, ValqueriesQueryImpl<?> otherQuery, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
-			this.parentTableAlias = parentTableAlias;
-			this.tableAlias = tableAlias;
-			this.subQueryNum = subQueryNum;
-			this.relation = relation;
-			this.otherQuery = otherQuery;
-			this.sqlNameFormatter = sqlNameFormatter;
-			this.dialect = dialect;
-		}
+			@Override
+			public String fromString() {
+				return " JOIN "+dialect.escapeColumnOrTable(otherQuery.getTableName(relation.getToClass()))+"."+tableAlias + " ON " + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + "";
+			}
 
-		public String queryString() {
-			return "";
+			@Override
+			public void set(IStatement statement) {
+				otherQuery.set(statement);
+			}
 		}
-
-		@Override
-		public String fromString() {
-			return " JOIN "+dialect.escapeColumnOrTable(otherQuery.getTableName(relation.getToClass()))+"."+tableAlias + " ON " + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + "";
-		}
-
-		@Override
-		public void set(IStatement statement) {
-			otherQuery.set(statement);
-		}
-	}
-*/
+	*/
 	private void setTableAlias(String tableAlias) {
 		this.tableAlias = tableAlias;
 	}
@@ -512,8 +514,8 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		List<KeySet.Field> from = relation.getFromKeys().stream().collect(Collectors.toList());
 		List<KeySet.Field> to = relation.getToKeys().stream().collect(Collectors.toList());
 		List<String> onParams = new ArrayList<>();
-		for(int x=0;x<from.size();x++) {
-			onParams.add(fromTableAlias+"."+sqlNameFormatter.column(from.get(x).getToken())+" = "+toTableAlias+"."+sqlNameFormatter.column(to.get(x).getToken()));
+		for (int x = 0; x < from.size(); x++) {
+			onParams.add(fromTableAlias + "." + sqlNameFormatter.column(from.get(x).getToken()) + " = " + toTableAlias + "." + sqlNameFormatter.column(to.get(x).getToken()));
 		}
 		joinSql.append(String.join(" AND ", onParams));
 		TypeDescriber<?> eagerRelationTypeDescriber = TypeDescriberImpl.getTypeDescriber(relation.getToClass().clazz);

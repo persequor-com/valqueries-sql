@@ -251,6 +251,10 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		citroen.setTitle("Citroen");
 		citroen.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 
+		Car tesla = factory.get(Car.class);
+		tesla.setId(UUID.randomUUID());
+		tesla.setTitle("Tesla");
+
 		Driver pilot1 = factory.get(Driver.class);
 		pilot1.setId("pilot1");
 		pilot1.setName("pedrito");
@@ -270,13 +274,15 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 
 		carRepository.save(nissan);
 		carRepository.save(citroen);
+		carRepository.save(tesla);
 
 		Collection<Car> cars = carRepository.query()
 				.withEager(Car::getDrivers)
 				.withEager(Car::getDoors)
 				.execute().collect(Collectors.toList());
 
-		assertTrue(cars.stream().allMatch(car -> car.getDrivers().size() == 2));
+		assertTrue(cars.stream().filter(car -> !car.getTitle().equals("Tesla")).allMatch(car -> car.getDrivers().size() == 2));
+		assertTrue(cars.stream().filter(car -> car.getTitle().equals("Tesla")).allMatch(car -> car.getDrivers().isEmpty())); //autopilot
 		assertEquals(1, cars.stream().filter(car -> car.getTitle().equals("Nissan")).findFirst().get().getDoors().size());
 		assertEquals(0, cars.stream().filter(car -> car.getTitle().equals("Citroen")).findFirst().get().getDoors().size());
 	}

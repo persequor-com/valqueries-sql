@@ -1,9 +1,6 @@
 package com.valqueries.automapper;
 
-import io.ran.CrudRepoBaseQuery;
-import io.ran.CrudRepository;
-import io.ran.GenericFactory;
-import io.ran.Property;
+import io.ran.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -144,6 +141,12 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 	public <X> ValqueriesQuery<T> subQueryList(BiConsumer<T, List<X>> field, Consumer<ValqueriesQuery<X>> subQuery) {
 		field.accept(instance, null);
 		this.subQuery(typeDescriber.relations().get(queryWrapper.getCurrentProperty().getToken().snake_case()), subQuery);
+		return this;
+	}
+
+	@Override
+	public <X> ValqueriesQuery<T> subQueryList(RelationDescriber relationDescriber, Consumer<ValqueriesQuery<X>> subQuery) {
+		this.subQuery(relationDescriber, subQuery);
 		return this;
 	}
 
