@@ -1,13 +1,11 @@
 package com.valqueries.automapper;
 
-import io.ran.Key;
 import io.ran.Mapper;
 import io.ran.PrimaryKey;
 import io.ran.Relation;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,7 +26,7 @@ public class Car {
 	@Relation
 	private Exhaust exhaust;
 	@Relation(collectionElementType = Driver.class, via = DriverCar.class, autoSave = true)
-	private List<Driver> drivers;
+	List<Driver> drivers;
 	@Relation(collectionElementType = Engine.class, via = EngineCar.class, autoSave = true)
 	private List<Engine> engines;
 

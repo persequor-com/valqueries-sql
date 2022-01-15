@@ -116,7 +116,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				ValqueriesQueryImpl endRelationQuery = new ValqueriesQueryImpl(transactionContext, endRelation.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper, dialect);
 				endRelationQuery.tableAlias = "sub" + (++subQueryNum);
 				consumer.accept((Z) endRelationQuery);
-				endRelationQuery.elements.add(new RelationSubQueryElement(intermediateQuery.tableAlias, endRelationQuery.tableAlias, endRelation, endRelationQuery, sqlNameFormatter, dialect));
+				intermediateQuery.elements.add(new RelationSubQueryElement(intermediateQuery.tableAlias, endRelationQuery.tableAlias, endRelation, endRelationQuery, sqlNameFormatter, dialect));
 			}
 		} else {
 			ValqueriesQueryImpl otherQuery = new ValqueriesQueryImpl(transactionContext, relation.getToClass().clazz, genericFactory, sqlNameFormatter, mappingHelper, dialect);
@@ -224,7 +224,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				return Stream.empty();
 			}
 			Map<CompoundKey, T> alreadyLoaded = new LinkedHashMap<>();
-			Set<CompoundKey> relationsAlreadyLoaded = new HashSet<>();
+			Map<CompoundKey, Set<CompoundKey>> relationsAlreadyLoaded = new LinkedHashMap<>();
 			Map<Token, Map<CompoundKey, List>> eagerModels = new HashMap<>();
 			transactionContext.query(buildSelectSql("main"), this, row -> {
 				T t2 = genericFactory.get(modelType);
@@ -240,10 +240,11 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 					Object hydrated = hydrateEager(t2, relationDescriber, row, ++i);
 					if (hydrated != null) {
 						CompoundKey relationKey = mappingHelper.getKey(hydrated);
-						if (relationsAlreadyLoaded.contains(relationKey)) {
+						if (relationsAlreadyLoaded.containsKey(key) &&
+								relationsAlreadyLoaded.get(key).contains(relationKey)) {
 							break;
 						} else {
-							relationsAlreadyLoaded.add(relationKey);
+							relationsAlreadyLoaded.computeIfAbsent(key, set -> new HashSet<>()).add(relationKey);
 							eagerModels
 									.computeIfAbsent(relationDescriber.getField(), (k) -> new HashMap<>())
 									.computeIfAbsent(key, (k) -> new ArrayList())
