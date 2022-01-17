@@ -11,9 +11,6 @@ import io.ran.TypeDescriberImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -21,12 +18,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 
 public abstract class AutoMapperIT extends AutoMapperBaseTests {
@@ -136,7 +130,51 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
-	public void eagerLoad_multiple_noDoorInteractions() throws Throwable {
+	public void eagerLoad_noMoreCollectionInteractions() throws Throwable {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+		Collection<Car> cars = carRepository.query()
+				.withEager(Car::getDoors)
+				.execute().collect(Collectors.toList());
+
+		Class<? extends Car> cl = cars.stream().findFirst().get().getClass();
+		cl.getMethod("_resolverInject", Resolver.class).invoke(cars.stream().findFirst().get(), resolver);
+
+		assertEquals(1, cars.size());
+		List<Door> doors = cars.stream().findFirst().get().getDoors();
+
+		assertEquals(0, doors.size());
+
+		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void eagerLoad_noMoreObjectInteraction() throws Throwable {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+		Collection<Car> cars = carRepository.query()
+				.withEager(Car::getExhaust)
+				.execute().collect(Collectors.toList());
+
+		Class<? extends Car> cl = cars.stream().findFirst().get().getClass();
+		cl.getMethod("_resolverInject", Resolver.class).invoke(cars.stream().findFirst().get(), resolver);
+
+		Exhaust actualExhaust = cars.stream().findFirst().get().getExhaust();
+		assertNull(actualExhaust);
+
+		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void eagerLoad_multiple_noInteractions() throws Throwable {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle("Muh");
@@ -156,7 +194,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		assertEquals(0, doors.size());
 
 		Exhaust actualExhaust = cars.stream().findFirst().get().getExhaust();
-		assertEquals(null, actualExhaust);
+		assertNull(actualExhaust);
 
 		verifyNoInteractions(resolver);
 	}
@@ -213,6 +251,54 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		assertNotNull(res);
 
 		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	public void lazyLoad_emptyCollection_onlyOneInteractionWithResolver() throws Throwable {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+		Collection<Car> cars = carRepository.query()
+				.execute().collect(Collectors.toList());
+
+		Class<? extends Car> cl = cars.stream().findFirst().get().getClass();
+		cl.getMethod("_resolverInject", Resolver.class).invoke(cars.stream().findFirst().get(), resolver);
+
+		Car car = cars.stream().findFirst().get();
+		List<Door> actualDoors = car.getDoors();
+		assertEquals(0, actualDoors.size());
+		verify(resolver, times(1)).getCollection(eq(Car.class), eq("doors"), eq(car));
+
+		actualDoors = car.getDoors();
+		assertEquals(0, actualDoors.size());
+		verifyNoMoreInteractions(resolver);
+	}
+
+	@Test
+	public void lazyLoad_nullObject_onlyOneInteractionWithResolver() throws Throwable {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+		Collection<Car> cars = carRepository.query()
+				.execute().collect(Collectors.toList());
+
+		Class<? extends Car> cl = cars.stream().findFirst().get().getClass();
+		cl.getMethod("_resolverInject", Resolver.class).invoke(cars.stream().findFirst().get(), resolver);
+
+		Car car = cars.stream().findFirst().get();
+		Exhaust actualExhaust = car.getExhaust();
+		assertNull(actualExhaust);
+		verify(resolver, times(1)).get(eq(Car.class), eq("exhaust"), eq(car));
+
+		actualExhaust = car.getExhaust();
+		assertNull(actualExhaust);
+		verifyNoMoreInteractions(resolver);
 	}
 
 	@Test
