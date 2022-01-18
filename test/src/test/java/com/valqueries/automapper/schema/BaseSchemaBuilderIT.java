@@ -15,8 +15,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -101,16 +101,15 @@ public abstract class BaseSchemaBuilderIT {
 				s.set("time_field", timeWitlMilliseconds);
 			});
 
-			Optional<ZonedDateTime> result = tx.querySingle("select * from the_table where id = :id", s -> {
+			List<ZonedDateTime> result = tx.query("select * from the_table where id = :id", s -> {
 				s.set("id", id);
 			}, r -> {
 				return r.getDateTime("time_field");
 			});
 
-			assertEquals(timeWitlMilliseconds, result.get());
+			assertEquals(Collections.singletonList(timeWitlMilliseconds), result);
 		});
 	}
-
 
 	@Test
 	public void buildCompoundKeySchema() {
