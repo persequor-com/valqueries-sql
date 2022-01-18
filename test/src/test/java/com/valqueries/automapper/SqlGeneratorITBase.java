@@ -1,17 +1,13 @@
 package com.valqueries.automapper;
 
-import com.mysql.cj.xdevapi.Column;
 import com.valqueries.Database;
-import com.valqueries.UpdateResult;
 import com.valqueries.automapper.schema.ValqueriesIndexToken;
 import com.valqueries.automapper.schema.ValqueriesSchemaBuilder;
 import com.valqueries.automapper.schema.ValqueriesSchemaExecutor;
 import io.ran.Clazz;
-import io.ran.Property;
 import io.ran.TypeDescriberImpl;
 import io.ran.schema.TableAction;
 import io.ran.token.ColumnToken;
-import io.ran.token.IndexToken;
 import io.ran.token.Token;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,14 +18,11 @@ import org.mockito.Mockito;
 
 import javax.inject.Provider;
 import javax.sql.DataSource;
-
 import java.util.Collection;
-import java.util.Collections;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 
 public abstract class SqlGeneratorITBase {
 	protected SqlGenerator sqlGenerator;
