@@ -2,11 +2,16 @@ package com.valqueries.automapper;
 
 import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
+import com.valqueries.automapper.schema.ValqueriesColumnToken;
+import com.valqueries.automapper.schema.ValqueriesTableToken;
 import io.ran.Clazz;
-import io.ran.Key;
 import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
+import io.ran.schema.FormattingTokenList;
+import io.ran.token.ColumnToken;
+import io.ran.token.IndexToken;
+import io.ran.token.TableToken;
 import io.ran.token.Token;
 
 import java.util.List;
@@ -35,7 +40,8 @@ public class MssqlSqlDialect implements SqlDialect {
 				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming.["+e.getValue()+"]").collect(Collectors.joining(", "))+");";
 	}
 
-	public String getSqlType(Class type, Property property) {
+	public String getSqlType(Property property) {
+		Class type = property.getType().clazz;
 		MappedType mappedType = property.getAnnotations().get(MappedType.class);
 		if (mappedType != null) {
 			return mappedType.value();
@@ -46,28 +52,38 @@ public class MssqlSqlDialect implements SqlDialect {
 		if (type == boolean.class || type == Boolean.class) {
 			return "TINYINT";
 		}
-		return SqlDialect.super.getSqlType(type, property);
+		return SqlDialect.super.getSqlType(property);
 	}
 
 	@Override
-	public String column(Token token) {
-		return sqlNameFormatter.column(token);
+	public ColumnToken column(Token token) {
+		return new ValqueriesColumnToken(sqlNameFormatter, this, token);
 	}
 
 	@Override
-	public String limit(int offset, Integer limit) {
+	public TableToken table(Token token) {
+		return new ValqueriesTableToken(sqlNameFormatter, this, token);
+	}
+
+	@Override
+	public SqlNameFormatter sqlNameFormatter() {
+		return sqlNameFormatter;
+	}
+
+	@Override
+	public String getLimitDefinition(int offset, Integer limit) {
 		return " OFFSET "+offset+" ROWS" +
 				"    FETCH NEXT "+limit+" ROWS ONLY";
 	}
 
 	@Override
-	public String update(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
 		updateStatement.append("UPDATE main SET ");
 
 		String columnsToUpdate = newPropertyValues.stream()
-				.map(pv -> "main." + escapeColumnOrTable(column(pv.getProperty().getToken())) + " = :" + pv.getProperty().getToken().snake_case())
+				.map(pv -> "main." + column(pv.getProperty().getToken()) + " = :" + pv.getProperty().getToken().snake_case())
 				.collect(Collectors.joining(", "));
 		updateStatement.append(columnsToUpdate);
 
@@ -80,20 +96,11 @@ public class MssqlSqlDialect implements SqlDialect {
 		return updateStatement.toString();
 	}
 
-	public String getTableName(Clazz<? extends Object> modeltype) {
-		return escapeColumnOrTable(sqlNameFormatter.table(modeltype.clazz));
+	public String describe(TableToken tablename) {
+		return "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'"+tablename.unescaped()+"' ";
 	}
 
-	@Override
-	public String createTableStatement() {
-		return "CREATE TABLE ";
-	}
-
-	public String describe(String tablename) {
-		return "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'"+tablename.replace("[","").replace("]", "")+"' ";
-	}
-
-	public String describeIndex(String tablename) {
+	public String describeIndex(TableToken tablename) {
 		return "SELECT\n" +
 				"    TableName = t.name,\n" +
 				"    RealIndexName = ind.name,\n" +
@@ -113,10 +120,10 @@ public class MssqlSqlDialect implements SqlDialect {
 				"        INNER JOIN\n" +
 				"    sys.tables t ON ind.object_id = t.object_id\n" +
 				"WHERE\n" +
-				"      t.name = '" + tablename.replace("[","").replace("]", "") + "'";
+				"      t.name = '" + tablename.unescaped() + "'";
 	}
 
-	public SqlDescriber.DbRow getDbRow(OrmResultSet ormResultSet) {
+	public SqlDescriber.DbRow getDescribeDbResult(OrmResultSet ormResultSet) {
 		try {
 			return new SqlDescriber.DbRow(ormResultSet.getString("COLUMN_NAME"), getSqlType(ormResultSet), ormResultSet.getString("IS_NULLABLe").equals("YES") ? true: false);
 		} catch (Exception e) {
@@ -138,7 +145,7 @@ public class MssqlSqlDialect implements SqlDialect {
 		}
 	}
 
-	public SqlDescriber.DbIndex getDbIndex(OrmResultSet r) {
+	public SqlDescriber.DbIndex getDescribeIndexResult(OrmResultSet r) {
 		try {
 			return new SqlDescriber.DbIndex(r.getInt("UniqueConstraint") == 1, r.getString("RealIndexName"), r.getString("IndexName"), r.getString("ColumnName"));
 		} catch (Exception e) {
@@ -146,18 +153,61 @@ public class MssqlSqlDialect implements SqlDialect {
 		}
 	}
 
+
 	@Override
-	public String changeColumn(String tablename, String columnName, String sqlType) {
-		return "ALTER TABLE " + tablename + " ALTER COLUMN " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	public String generatePrimaryKeyStatement(TableToken name, KeySet key, boolean isUnique) {
+		String indexType = "CONSTRAINT " + escapeColumnOrTable(name.unescaped() + "_" + key.getName()) + " PRIMARY KEY ";
+		return ""+indexType+" (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ") + ")";
 	}
 
 	@Override
-	public String addIndex(String tablename, KeySet key) {
-		String name = key.get(0).getProperty().getAnnotations().get(Key.class).name();
-		return "CREATE INDEX  "+name+" ON " + tablename + " (" + key.stream().map(f -> escapeColumnOrTable(column(f.getToken()))).collect(Collectors.joining(", ")) + ");";
+	public String generateIndexStatement(TableToken tablename, KeySet key, boolean isUnique) {
+		String name = key.getName();
+		String keyType = "INDEX ";
+		if (key.isPrimary()) {
+			keyType = "PRIMARY KEY ";
+		}
+		return "CREATE "+keyType+" "+name+" ON " + tablename + " (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ") + ")";
 	}
 
-	public String addColumn(String tablename, String columnName, String sqlType) {
-		return "ALTER TABLE " + tablename + " ADD " + escapeColumnOrTable(columnName) + " " + sqlType + ";";
+	public String addColumn(TableToken tablename, ColumnToken columnName, String sqlType) {
+		return "ALTER TABLE " + tablename + " ADD " + columnName + " " + sqlType + ";";
+	}
+
+//	public String getAddColumnStatement() {
+//		return "ADD ";
+//	}
+
+	public String generateAlterColumnPartStatement(ColumnToken name) {
+		return "ALTER COLUMN "+name;
+	}
+
+	public String generateIndexOnCreateStatement(TableToken tableName, KeySet keyset, boolean isUnique) {
+		String indexType = "INDEX "+escapeColumnOrTable(keyset.getName())+" ";
+		if (keyset.isPrimary()) {
+			indexType = "CONSTRAINT "+tableName.unescaped()+"_"+keyset.getName()+" PRIMARY KEY ";
+		} else if (isUnique) {
+			indexType = "UNIQUE "+escapeColumnOrTable(keyset.getName())+" ";
+		}
+
+		return indexType+"("+keyset.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
+	}
+
+	public String generateDropIndexStatement(TableToken tableName, IndexToken index, boolean isPrimary) {
+		String indexName = index.unescaped();
+		if (isPrimary) {
+			indexName = tableName.unescaped()+"_"+index.unescaped();
+//			return "DROP INDEX "+indexName+" ON "+escapeColumnOrTable(column(tableName));
+			return "ALTER TABLE "+tableName+ " DROP CONSTRAINT "+indexName;
+		}
+		return "DROP INDEX "+indexName+" ON "+tableName;
+	}
+
+	@Override
+	public boolean allowsConversion(Clazz sqlType, String type) {
+		if (sqlType.clazz == String.class && (type.toLowerCase().contains("char") || type.toLowerCase().contains("text"))) {
+			return true;
+		}
+		return false;
 	}
 }

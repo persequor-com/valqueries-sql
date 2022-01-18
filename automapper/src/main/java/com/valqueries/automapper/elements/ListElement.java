@@ -28,7 +28,7 @@ public class ListElement<T> implements Element {
 		this.field = values.getProperty().getToken().snake_case()+fieldNum;
 	}
 	public String queryString() {
-		return query.getTableAlias()+"."+dialect.escapeColumnOrTable(dialect.column(values.getProperty().getToken()))+" "+operator+" (:"+field+")";
+		return query.getTableAlias()+"."+dialect.column(values.getProperty().getToken())+" "+operator+" (:"+field+")";
 	}
 
 	@Override

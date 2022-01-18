@@ -3,11 +3,7 @@ package com.valqueries.automapper;
 import com.google.inject.Guice;
 import com.valqueries.Database;
 import com.valqueries.IOrm;
-import io.ran.CrudRepository;
-import io.ran.GenericFactory;
-import io.ran.Resolver;
-import io.ran.TypeDescriber;
-import io.ran.TypeDescriberImpl;
+import io.ran.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,15 +11,18 @@ import org.junit.Test;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-
 public abstract class AutoMapperIT extends AutoMapperBaseTests {
+
+
 	abstract Database database();
 
 	@Override
@@ -35,11 +34,16 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Before
-	public void setup() {
+	public void setup() throws Throwable {
 		sqlGenerator = injector.getInstance(SqlGenerator.class);
+		TestClasses testClasses = getClass().getMethod(name.getMethodName()).getAnnotation(TestClasses.class);
 
+		List<Class> clazzes = Arrays.asList(Car.class, Door.class, Engine.class, EngineCar.class, Exhaust.class, Tire.class, WithCollections.class, Bike.class, BikeGear.class, BikeGearBike.class, BikeWheel.class, PrimaryKeyModel.class, Bipod.class, Pod.class, AllFieldTypes.class);
+		if (testClasses.value() != null) {
+			clazzes = Arrays.asList(testClasses.value());
+		}
 		try (IOrm orm = database.getOrm()) {
-			List<Class> clazzes = Arrays.asList(Car.class, Door.class, Engine.class, EngineCar.class, Exhaust.class, Tire.class, WithCollections.class, Bike.class, BikeGear.class, BikeGearBike.class, BikeWheel.class, PrimaryKeyModel.class, Bipod.class, Pod.class, AllFieldTypes.class);
+			;
 			clazzes.forEach(c -> {
 				TypeDescriber desc = TypeDescriberImpl.getTypeDescriber(c);
 				try {
@@ -47,7 +51,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 				} catch (Exception e) {
 
 				}
-				orm.update(sqlGenerator.generateCreateTable(desc));
+				sqlGenerator.generateCreateTable(desc);
 			});
 		}
 	}
@@ -58,6 +62,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses(Car.class)
 	public void eagerLoad() throws Throwable {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -81,6 +86,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		Collection<Car> cars = carRepository.getAllEager();
 		Class<? extends Car> cl = cars.stream().findFirst().get().getClass();
 		cl.getMethod("_resolverInject", Resolver.class).invoke(cars.stream().findFirst().get(), resolver);
+//		when(resolver.getCollection(any(),anyString(),any())).thenReturn(Collections.emptyList());
 
 		assertEquals(1, cars.size());
 		List<Door> doors = cars.stream().findFirst().get().getDoors();
@@ -90,6 +96,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Exhaust.class, Door.class})
 	public void eagerLoad_multiple() throws Throwable {
 		Exhaust exhaust = factory.get(Exhaust.class);
 		exhaust.setId(UUID.randomUUID());
@@ -130,6 +137,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class})
 	public void eagerLoad_noMoreCollectionInteractions() throws Throwable {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -153,6 +161,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Exhaust.class})
 	public void eagerLoad_noMoreObjectInteraction() throws Throwable {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -174,6 +183,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Exhaust.class, Door.class})
 	public void eagerLoad_multiple_noInteractions() throws Throwable {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -200,6 +210,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Tire.class})
 	public void eagerLoad_fromCompoundKey() throws Throwable {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -226,6 +237,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Bike.class, BikeWheel.class})
 	public void eagerLoad_multipleRelationFields() throws Throwable {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -254,6 +266,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class})
 	public void lazyLoad_emptyCollection_onlyOneInteractionWithResolver() throws Throwable {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -278,6 +291,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Exhaust.class, Door.class})
 	public void lazyLoad_nullObject_onlyOneInteractionWithResolver() throws Throwable {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -302,6 +316,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({PrimaryKeyModel.class})
 	public void primaryKeyOnlyModel_savedMultipleTimes() throws Throwable {
 		PrimaryKeyModel model = factory.get(PrimaryKeyModel.class);
 		model.setFirst("1");
@@ -311,6 +326,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({PrimaryKeyModel.class})
 	public void primaryKeyOnlyModelList_savedMultipleTimes() throws Throwable {
 		PrimaryKeyModel model = factory.get(PrimaryKeyModel.class);
 		model.setFirst("1");
@@ -327,6 +343,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Pod.class, Bipod.class})
 	public void twoRelationsToSameClassOnOneObject() throws Throwable {
 		Pod pod1 = factory.get(Pod.class);
 		pod1.setId("pod1");
