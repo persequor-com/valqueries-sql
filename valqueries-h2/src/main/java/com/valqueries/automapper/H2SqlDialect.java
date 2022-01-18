@@ -80,6 +80,11 @@ public class H2SqlDialect implements SqlDialect {
 	}
 
 	@Override
+	public SqlNameFormatter sqlNameFormatter() {
+		return sqlNameFormatter;
+	}
+
+	@Override
 	public String getLimitDefinition(int offset, Integer limit) {
 		return " OFFSET "+offset+" ROWS" +
 				"    FETCH NEXT "+limit+" ROWS ONLY";
@@ -165,11 +170,6 @@ public class H2SqlDialect implements SqlDialect {
 
 		return "CREATE INDEX "+escapeColumnOrTable(key.getName())+" ON " + tablename + " (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")" + ";";
 	}
-
-	public TableToken getTableName(Clazz<? extends Object> modeltype) {
-		return table(Token.get(modeltype.clazz.getSimpleName()));
-	}
-
 	public String generateDeleteStatement(String tableAlias, TypeDescriber<?> typeDescriber, List<Element> elements, int offset, Integer limit) {
 		String sql = "DELETE FROM " + getTableName(Clazz.of(typeDescriber.clazz()))+ " AS del";
 		sql += " WHERE exists (SELECT * FROM "+getTableName(Clazz.of(typeDescriber.clazz()))+" AS "+tableAlias+ " WHERE "+typeDescriber.primaryKeys().stream().map(f -> "del."+column(f.getToken())+" = main."+column(f.getToken())).collect(Collectors.joining(" AND "));
@@ -190,5 +190,13 @@ public class H2SqlDialect implements SqlDialect {
 
 	public String dropTableStatement(Clazz clazz) {
 		return "DROP TABLE IF EXISTS "+getTableName(clazz)+" CASCADE";
+	}
+
+	@Override
+	public boolean allowsConversion(Clazz sqlType, String type) {
+		if (sqlType.clazz == String.class && (type.toLowerCase().contains("char") || type.toLowerCase().contains("text"))) {
+			return true;
+		}
+		return false;
 	}
 }

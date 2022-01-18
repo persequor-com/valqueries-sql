@@ -15,6 +15,12 @@ public class ValqueriesColumnToken extends ColumnToken {
 		this.dialect = dialect;
 	}
 
+	public ValqueriesColumnToken(SqlNameFormatter sqlNameFormatter, SqlDialect dialect, String specifiedName) {
+		super(specifiedName);
+		this.sqlNameFormatter = sqlNameFormatter;
+		this.dialect = dialect;
+	}
+
 	@Override
 	public String toSql() {
 		return dialect.escapeColumnOrTable(unescaped());
@@ -22,6 +28,6 @@ public class ValqueriesColumnToken extends ColumnToken {
 
 	@Override
 	public String unescaped() {
-		return sqlNameFormatter.column(token);
+		return specifiedName != null ? specifiedName : sqlNameFormatter.column(token);
 	}
 }

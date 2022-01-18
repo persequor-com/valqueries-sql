@@ -17,6 +17,11 @@ public class SqlGeneratorSqlServerIT extends SqlGeneratorITBase {
 
 
 	@Override
+	protected String textType() {
+		return "text(2147483647)";
+	}
+
+	@Override
 	protected DataSource getDataSource() {
 		return SqlServerDataSourceProvider.get();
 	}

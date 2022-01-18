@@ -1,13 +1,10 @@
 package com.valqueries.automapper;
 
 import com.valqueries.Database;
-import com.valqueries.OrmException;
 import com.valqueries.automapper.schema.ValqueriesSchemaBuilder;
 import io.ran.Clazz;
 import io.ran.KeySet;
 import io.ran.TypeDescriber;
-import io.ran.TypeDescriberImpl;
-import io.ran.schema.SchemaBuilder;
 import io.ran.token.ColumnToken;
 import io.ran.token.TableToken;
 import org.slf4j.Logger;
@@ -16,9 +13,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class SqlGenerator {
 	private static Logger logger = LoggerFactory.getLogger(SqlGenerator.class);
@@ -48,13 +43,14 @@ public class SqlGenerator {
 			generateCreateTable(typeDescriber);
 		} else {
 			ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
-			schemaBuilder.modifyTable(Clazz.of(typeDescriber.clazz()).getToken(), t -> {
+			schemaBuilder.modifyTable(tablename, t -> {
 				typeDescriber.fields().forEach(property -> {
 					ColumnToken columnName = dialect.column(property.getToken());
 					String sqlType = dialect.getSqlType(property);
 					if (!table.getColumns().containsKey(columnName.name())) {
 						t.addColumn(property);
 					} else if (!table.getColumns().get(columnName.name()).matches(property, sqlType)) {
+						checkTypeCompatibiliy(property.getType(), table.getColumns().get(columnName.name()).getType());
 						t.modifyColumn(property.getToken(), property.getType().clazz);
 					}
 
@@ -76,6 +72,12 @@ public class SqlGenerator {
 			schemaBuilder.build();
 		}
 
+	}
+
+	private void checkTypeCompatibiliy(Clazz sqlType, String type) throws InvalidTypeConversionException {
+		if (!dialect.allowsConversion(sqlType, type)) {
+			throw new InvalidTypeConversionException(sqlType.clazz.getName(), type);
+		}
 	}
 
 	private SqlDescriber.DbIndex toDbIndex(KeySet index) {

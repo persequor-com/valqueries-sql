@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import com.mysql.cj.xdevapi.Column;
 import com.valqueries.Database;
 import com.valqueries.UpdateResult;
 import com.valqueries.automapper.schema.ValqueriesIndexToken;
@@ -9,6 +10,7 @@ import io.ran.Clazz;
 import io.ran.Property;
 import io.ran.TypeDescriberImpl;
 import io.ran.schema.TableAction;
+import io.ran.token.ColumnToken;
 import io.ran.token.IndexToken;
 import io.ran.token.Token;
 import org.junit.Before;
@@ -41,10 +43,11 @@ public abstract class SqlGeneratorITBase {
 	@Captor
 	ArgumentCaptor<Collection<TableAction>> captor;
 
+	protected abstract String textType();
+
 	protected void update(String sql) {
 		database.doInTransaction(tx -> {
 			for(String s : sql.split(";")) {
-				System.out.println(s);
 				tx.update(s, setter -> {});
 			}
 		});
@@ -63,12 +66,10 @@ public abstract class SqlGeneratorITBase {
 		dialect = dialectFactory.get(database);
 
 		try {
-			System.out.println("---");
 			update(dialect.generateDropIndexStatement(dialect.getTableName(Clazz.of(SimpleTestTable.class)), new ValqueriesIndexToken(sqlNameFormatter, dialect, Token.get("created_idx")), false));
-			System.out.println("---");
 		} catch (Exception e) {
-			System.out.println(e.toString());
-			e.printStackTrace();
+//			System.out.println(e.toString());
+//			e.printStackTrace();
 		}
 		update(dialect.dropTableStatement(Clazz.of(SimpleTestTable.class)));
 
@@ -136,4 +137,43 @@ public abstract class SqlGeneratorITBase {
 
 		assertTrue(table.columns.containsKey("title"));
 	}
+
+	@Test
+	public void tableExistsWithTypeChangeOnExistingColumn() {
+		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
+		ColumnToken column = dialect.column(Token.get("title"));
+		update("ALTER TABLE simple_test_table "+ dialect.generateAlterColumnPartStatement(column)+" TEXT");
+
+		SqlDescriber.DbTable table = describer.describe(dialect.table(Token.get("simple_test_table")), database);
+		assertEquals(textType(),table.columns.get("title").getType());
+
+		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
+
+		table = describer.describe(dialect.table(Token.get("simple_test_table")),database);
+
+		assertNotEquals(textType(),table.columns.get("title").getType());
+	}
+
+	@Test
+	public void tableExistsWithTypeChangeOnExistingColumn_toText_fromVarchar() {
+		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
+
+		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTableTextTitle.class));
+
+		SqlDescriber.DbTable table = describer.describe(dialect.table(Token.get("simple_test_table")), database);
+
+		assertNotEquals(textType(),table.columns.get("title").getType());
+	}
+
+	@Test
+	public void tableExistsWithTypeChangeOnExistingColumn_toInvalidOtherType() {
+		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
+		try {
+			sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTableBrokenTitle.class));
+			fail();
+		} catch (InvalidTypeConversionException e) {
+			// expected
+		}
+	}
+
 }

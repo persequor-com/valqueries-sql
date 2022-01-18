@@ -16,6 +16,12 @@ public class ValqueriesTableToken extends TableToken {
 		this.dialect = dialect;
 	}
 
+	public ValqueriesTableToken(SqlNameFormatter sqlNameFormatter, SqlDialect dialect, String specifiedName) {
+		super(specifiedName);
+		this.sqlNameFormatter = sqlNameFormatter;
+		this.dialect = dialect;
+	}
+
 	@Override
 	public String toSql() {
 		return dialect.escapeColumnOrTable(unescaped());
@@ -23,6 +29,6 @@ public class ValqueriesTableToken extends TableToken {
 
 	@Override
 	public String unescaped() {
-		return dialect.prepareColumnOrTable(sqlNameFormatter.table(token));
+		return dialect.prepareColumnOrTable(specifiedName != null ? specifiedName : sqlNameFormatter.table(token));
 	}
 }

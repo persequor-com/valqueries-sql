@@ -230,16 +230,12 @@ public abstract class BaseSchemaBuilderIT {
 
 	@Test
 	public void modifyTable_addIndexWithCustomProperties() {
-
-
 		builder.addTable(Token.get("TheTable"), tb -> {
 			tb.addColumn(Token.get("id"), UUID.class);
 			tb.addColumn(Token.get("title"), String.class);
 			tb.addPrimaryKey(Token.get("id"));
 		});
-		builder.build();
 
-		builder = new ValqueriesSchemaBuilder(executor, sqlNameFormatter);
 		builder.modifyTable(Token.get("TheTable"), tb -> {
 			tb.addIndex(Token.get("myUnique"), ib -> {
 				ib.addField(Token.get("id"));

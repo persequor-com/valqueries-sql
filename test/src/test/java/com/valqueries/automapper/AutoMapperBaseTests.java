@@ -24,15 +24,20 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
+
+import org.junit.rules.TestName;
 import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public abstract class AutoMapperBaseTests {
+	@Rule
+	public TestName name = new TestName();
 	static Database database;
 	static Injector injector;
 	static GenericFactory factory;
@@ -103,6 +108,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses(Car.class)
 	public void happy() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -120,6 +126,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class})
 	public void lazyLoad() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -148,6 +155,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class})
 	public void queryBuilder() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -171,6 +179,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class})
 	public void queryBuilder_subQuery() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -194,6 +203,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class})
 	public void queryBuilder_subQuery_in() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -217,6 +227,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class})
 	public void queryBuilder_subQuery_in_withEmptyArray_returnsEmptyResult() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -238,6 +249,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class})
 	public void queryBuilder_subQuery_in_withEmptyArray_delete_deletesNothing() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -260,6 +272,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Engine.class})
 	public void queryBuilder_subQueryVia() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -283,6 +296,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class})
 	public void queryBuilder_inQuery() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -312,6 +326,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class})
 	public void queryBuilder_sortAndLimit() {
 		Car model1 = factory.get(Car.class);
 		model1.setId(UUID.randomUUID());
@@ -347,6 +362,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({WithCollections.class})
 	public void withCollections() {
 		WithCollections w = factory.get(WithCollections.class);
 		w.setId("id");
@@ -361,6 +377,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({WithCollections.class})
 	public void withNullCollections() {
 		WithCollections w = factory.get(WithCollections.class);
 		w.setId("id");
@@ -376,6 +393,7 @@ public abstract class AutoMapperBaseTests {
 
 
 	@Test
+	@TestClasses({Car.class})
 	public void deleteByQueryBuilder() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -395,6 +413,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class})
 	public void deleteByqueryBuilder_subQuery() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -419,6 +438,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class})
 	public void deleteById() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -435,6 +455,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class})
 	public void deleteByIds() {
 		Car car1 = factory.get(Car.class);
 		car1.setId(UUID.randomUUID());
@@ -457,6 +478,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class})
 	public void saveMultiple() {
 		List<Car> models = new ArrayList<>();
 		Car model = factory.get(Car.class);
@@ -497,6 +519,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class, Exhaust.class})
 	public void save_autoSaveRelations() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -531,6 +554,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Bike.class, BikeWheel.class})
 	public void save_autoSaveRelations_withCompoundKey() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -554,6 +578,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Bike.class, BikeWheel.class})
 	public void save_noAutoSaveRelation() {
 		Bike raceBike = factory.get(Bike.class);
 		raceBike.setId(UUID.randomUUID().toString());
@@ -574,6 +599,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Bike.class, BikeGear.class})
 	public void save_autoSaveRelation_viaRelation() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -593,6 +619,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Bike.class, BikeGear.class})
 	public void queryOtherClass() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -610,6 +637,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Bike.class, BikeGear.class})
 	public void deleteOtherClass() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -636,6 +664,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({AllFieldTypes.class})
 	public void allFieldTypes() {
 		AllFieldTypes obj = factory.get(AllFieldTypes.class);
 		obj.setUuid(UUID.randomUUID());
@@ -695,6 +724,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({AllFieldTypes.class})
 	public void allFieldTypes_update() {
 		AllFieldTypes obj = factory.get(AllFieldTypes.class);
 		obj.setUuid(UUID.randomUUID());
@@ -788,6 +818,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Bike.class})
 	public void groupByAggregate_count() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -820,6 +851,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Bike.class})
 	public void groupByAggregate_multipleFields_count() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -852,6 +884,7 @@ public abstract class AutoMapperBaseTests {
 
 
 	@Test
+	@TestClasses({Bike.class})
 	public void groupByAggregate_sum() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -884,6 +917,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Bike.class})
 	public void groupByAggregate_max() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -914,6 +948,7 @@ public abstract class AutoMapperBaseTests {
 
 
 	@Test
+	@TestClasses({Bike.class})
 	public void groupByAggregate_min() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -943,6 +978,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class})
 	public void update_objectsThatMatchConditions() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -967,6 +1003,7 @@ public abstract class AutoMapperBaseTests {
 
 
 	@Test
+	@TestClasses({Car.class})
 	public void update_withoutPreviousRecord() {
 		Car car1 = factory.get(Car.class);
 		car1.setId(UUID.randomUUID());

@@ -12,6 +12,11 @@ public class SqlGeneratorH2IT extends SqlGeneratorITBase {
 
 
 	@Override
+	protected String textType() {
+		return "character large object";
+	}
+
+	@Override
 	protected DataSource getDataSource() {
 		return H2DataSourceProvider.get();
 	}

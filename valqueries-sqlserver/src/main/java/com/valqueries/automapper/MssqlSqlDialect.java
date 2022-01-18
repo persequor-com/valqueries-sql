@@ -66,6 +66,11 @@ public class MssqlSqlDialect implements SqlDialect {
 	}
 
 	@Override
+	public SqlNameFormatter sqlNameFormatter() {
+		return sqlNameFormatter;
+	}
+
+	@Override
 	public String getLimitDefinition(int offset, Integer limit) {
 		return " OFFSET "+offset+" ROWS" +
 				"    FETCH NEXT "+limit+" ROWS ONLY";
@@ -89,10 +94,6 @@ public class MssqlSqlDialect implements SqlDialect {
 		}
 
 		return updateStatement.toString();
-	}
-
-	public TableToken getTableName(Clazz<? extends Object> modeltype) {
-		return table(Token.get(modeltype.clazz.getSimpleName()));
 	}
 
 	public String describe(TableToken tablename) {
@@ -200,5 +201,13 @@ public class MssqlSqlDialect implements SqlDialect {
 			return "ALTER TABLE "+tableName+ " DROP CONSTRAINT "+indexName;
 		}
 		return "DROP INDEX "+indexName+" ON "+tableName;
+	}
+
+	@Override
+	public boolean allowsConversion(Clazz sqlType, String type) {
+		if (sqlType.clazz == String.class && (type.toLowerCase().contains("char") || type.toLowerCase().contains("text"))) {
+			return true;
+		}
+		return false;
 	}
 }

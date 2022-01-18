@@ -2,11 +2,13 @@ package com.valqueries.automapper;
 
 import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
+import com.valqueries.automapper.schema.ValqueriesColumnToken;
+import com.valqueries.automapper.schema.ValqueriesTableToken;
 import io.ran.Clazz;
+import io.ran.DbName;
 import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.TypeDescriber;
-import io.ran.schema.FormattingTokenList;
 import io.ran.token.ColumnToken;
 import io.ran.token.IndexToken;
 import io.ran.token.TableToken;
@@ -17,7 +19,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -30,7 +31,25 @@ public interface SqlDialect {
 	default String prepareColumnOrTable(String name) {
 		return name;
 	}
-	TableToken getTableName(Clazz<? extends Object> modeltype);
+	default TableToken getTableName(Clazz<? extends Object> modeltype) {
+		DbName dbName = modeltype.getAnnotations().get(DbName.class);
+		if (dbName != null) {
+			return new ValqueriesTableToken(sqlNameFormatter(), this, dbName.value());
+		} else {
+			return table(Token.get(modeltype.clazz.getSimpleName()));
+		}
+	}
+
+	SqlNameFormatter sqlNameFormatter();
+
+	default ColumnToken column(Property property) {
+		DbName dbName = property.getAnnotations().get(DbName.class);
+		if (dbName != null) {
+			return new ValqueriesColumnToken(sqlNameFormatter(), this, dbName.value());
+		} else {
+			return column(property.getToken());
+		}
+	}
 	ColumnToken column(Token token);
 	TableToken table(Token token);
 	default String getSqlType(Property property) {
@@ -136,4 +155,6 @@ public interface SqlDialect {
 	default String dropTableStatement(Clazz clazz) {
 		return "DROP TABLE IF EXISTS "+getTableName(clazz);
 	}
+
+	boolean allowsConversion(Clazz sqlType, String type);
 }

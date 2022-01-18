@@ -15,6 +15,7 @@ import io.ran.token.TableToken;
 import io.ran.token.Token;
 
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class MariaSqlDialect implements SqlDialect {
@@ -42,11 +43,6 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public TableToken getTableName(Clazz<?> modeltype) {
-		return table(Token.get(modeltype.clazz.getSimpleName()));
-	}
-
-	@Override
 	public ColumnToken column(Token token) {
 		return new ValqueriesColumnToken(sqlNameFormatter, this, token);
 	}
@@ -54,6 +50,11 @@ public class MariaSqlDialect implements SqlDialect {
 	@Override
 	public TableToken table(Token token) {
 		return new ValqueriesTableToken(sqlNameFormatter, this, token);
+	}
+
+	@Override
+	public SqlNameFormatter sqlNameFormatter() {
+		return sqlNameFormatter;
 	}
 
 	@Override
@@ -132,4 +133,11 @@ public class MariaSqlDialect implements SqlDialect {
 		}
 	}
 
+	@Override
+	public boolean allowsConversion(Clazz sqlType, String type) {
+		if (sqlType.clazz == String.class && (type.toLowerCase().contains("char") || type.toLowerCase().contains("text"))) {
+			return true;
+		}
+		return false;
+	}
 }

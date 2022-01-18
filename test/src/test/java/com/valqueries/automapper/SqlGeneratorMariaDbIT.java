@@ -24,6 +24,11 @@ public class SqlGeneratorMariaDbIT extends SqlGeneratorITBase {
 
 
 	@Override
+	protected String textType() {
+		return "text";
+	}
+
+	@Override
 	protected DataSource getDataSource() {
 		return MariaDbDataSourceProvider.get();
 	}
