@@ -1,6 +1,6 @@
 dependencies {
     compile 'mysql:mysql-connector-java:8.0.19'
-    compile 'io.ran:core:0.0.1-21'
+    compile "io.ran:core:$ran_version"
     api project(':core')
     api project(':automapper')
 }
