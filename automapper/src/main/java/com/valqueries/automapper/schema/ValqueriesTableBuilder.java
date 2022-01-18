@@ -17,6 +17,7 @@ import io.ran.token.Token;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder, ValqueriesColumnBuilder, ValqueriesIndexBuilder> implements IValqueriesTableBuilder {
 	private SqlDialect dialect;
@@ -73,8 +74,8 @@ public class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder
 		return (t,ia) -> {
 
 			AtomicInteger incrementor = new AtomicInteger();
-
-			KeySet keyset = new KeySet(ia.getFields().stream().map(f -> new KeySet.Field(Property.get(f.getToken(), Clazz.of(Object.class)),incrementor.incrementAndGet())).collect(Collectors.toList()));
+			Stream<KeySet.Field> fieldStream = ia.getFields().stream().map(f -> new KeySet.Field(Property.get(f.getToken(), Clazz.of(Object.class)), incrementor.incrementAndGet()));
+			KeySet keyset = new KeySet(fieldStream.collect(Collectors.toList()));
 
 			keyset.setPrimary(ia.isPrimary());
 			keyset.setName(ia.getName().unescaped());
