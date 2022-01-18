@@ -14,8 +14,9 @@ import io.ran.token.IndexToken;
 import io.ran.token.TableToken;
 import io.ran.token.Token;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class MariaSqlDialect implements SqlDialect {
@@ -89,6 +90,21 @@ public class MariaSqlDialect implements SqlDialect {
 			indexType = "UNIQUE "+ keyset.getName();
 		}
 		return indexType+" "+"("+keyset.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
+	}
+
+	@Override
+	public String getSqlType(Property property) {
+		MappedType mappedType = property.getAnnotations().get(MappedType.class);
+		if (mappedType != null) {
+			return mappedType.value();
+		}
+
+		Class<?> type = property.getType().clazz;
+		if (type == ZonedDateTime.class || type == Instant.class) {
+			return "DATETIME(3)";
+		}
+
+		return SqlDialect.super.getSqlType(property);
 	}
 
 	@Override

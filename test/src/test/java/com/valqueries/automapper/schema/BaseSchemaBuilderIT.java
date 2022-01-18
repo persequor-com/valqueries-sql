@@ -11,10 +11,12 @@ import io.ran.token.Token;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -81,6 +83,34 @@ public abstract class BaseSchemaBuilderIT {
 			assertEquals("The title", result.get(0));
 		});
 	}
+
+	@Test
+	public void buildSimpleSchema_supportTemporal() {
+		builder.addTable(Token.get("TheTable"), tb -> {
+			tb.addColumn(Token.get("id"), UUID.class);
+			tb.addColumn(Token.get("timeField"), ZonedDateTime.class);
+			tb.addPrimaryKey(Token.get("id"));
+		});
+		builder.build();
+
+		ZonedDateTime timeWitlMilliseconds = Instant.ofEpochMilli(1536421864777L).atZone(ZoneOffset.UTC);
+		database.doInTransaction(tx -> {
+			UUID id = UUID.randomUUID();
+			tx.update("INSERT INTO the_table (id, time_field) values (:id, :time_field)", s -> {
+				s.set("id", id);
+				s.set("time_field", timeWitlMilliseconds);
+			});
+
+			Optional<ZonedDateTime> result = tx.querySingle("select * from the_table where id = :id", s -> {
+				s.set("id", id);
+			}, r -> {
+				return r.getDateTime("time_field");
+			});
+
+			assertEquals(timeWitlMilliseconds, result.get());
+		});
+	}
+
 
 	@Test
 	public void buildCompoundKeySchema() {
