@@ -1,12 +1,14 @@
 package com.valqueries.automapper;
 
 import io.ran.Mapper;
+import io.ran.PrimaryKey;
 import io.ran.Relation;
 
 import java.util.UUID;
 
 @Mapper(dbType = Valqueries.class)
 public class Door {
+	@PrimaryKey
 	private UUID id;
 	private String title;
 	@Relation()
