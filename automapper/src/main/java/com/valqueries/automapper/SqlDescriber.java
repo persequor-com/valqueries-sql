@@ -1,14 +1,11 @@
 package com.valqueries.automapper;
 
 import com.valqueries.Database;
-import com.valqueries.DialectType;
 import com.valqueries.IOrm;
-import com.valqueries.OrmResultSet;
 import io.ran.Property;
-import io.ran.TypeDescriber;
+import io.ran.token.TableToken;
 
 import javax.inject.Inject;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,15 +23,14 @@ public class SqlDescriber {
 		this.dialectFactory = dialectFactory;
 	}
 
-	public DbTable describe(TypeDescriber<?> typeDescriber, String tablename, Database database) {
+	public DbTable describe(TableToken tablename, Database database) {
 		try (IOrm tx = database.getOrm()) {
 			SqlDialect dialect = dialectFactory.get(database);
 			DbTable table = new DbTable();
-			table.columns.putAll(tx.query(dialect.describe(tablename), dialect::getDbRow).stream().collect(Collectors.toMap(DbRow::getField, Function.identity())));
-			table.index.putAll(tx.query(dialect.describeIndex(tablename), dialect::getDbIndex).stream().collect(Collectors.toMap(DbIndex::getKeyName, Function.identity(), (idx1, idx2) -> {
+			table.columns.putAll(tx.query(dialect.describe(tablename), dialect::getDescribeDbResult).stream().collect(Collectors.toMap(DbRow::getField, Function.identity())));
+			table.index.putAll(tx.query(dialect.describeIndex(tablename), dialect::getDescribeIndexResult).stream().collect(Collectors.toMap(DbIndex::getKeyName, Function.identity(), (idx1, idx2) -> {
 				if (idx1.getKeyName().equals(idx2.getKeyName())) {
-					idx2.getColumns().putAll(idx1.getColumns());
-					return null;
+					idx1.getColumns().addAll(idx2.getColumns());
 				}
 				return idx1;
 			})));
@@ -43,8 +39,6 @@ public class SqlDescriber {
 			}
 			return table;
 		} catch (Exception e) {
-			System.out.println(e.toString());
-			e.printStackTrace();
 			return null;
 		}
 
@@ -76,7 +70,7 @@ public class SqlDescriber {
 		private boolean unique;
 		private String realName;
 		private String keyName;
-		private Map<Integer, String> columns = new HashMap<>();
+		private List<String> columns = new ArrayList<>();
 
 		public DbIndex() {
 
@@ -87,9 +81,7 @@ public class SqlDescriber {
 			this.realName = realName;
 			this.keyName = keyName;
 			int i = 0;
-			for(String column : columns) {
-				this.columns.put(++i, column);
-			}
+			this.columns.addAll(Arrays.asList(columns));
 		}
 
 		public boolean isUnique() {
@@ -108,13 +100,15 @@ public class SqlDescriber {
 			this.keyName = keyName;
 		}
 
-		public Map<Integer, String> getColumns() {
+		public List<String> getColumns() {
 			return columns;
 		}
 
-		public void setColumns(Map<Integer, String> columns) {
+		public void setColumns(List<String> columns) {
 			this.columns = columns;
 		}
+
+
 
 		public boolean matches(DbIndex o) {
 			if (this == o) return true;
@@ -123,7 +117,7 @@ public class SqlDescriber {
 			DbIndex dbIndex = (DbIndex) o;
 
 			if (unique != dbIndex.unique) return false;
-			return Objects.equals(columns.keySet(), dbIndex.columns.keySet()) && Objects.equals(new ArrayList<>(columns.values()), new ArrayList<>(dbIndex.columns.values()));
+			return Objects.equals(columns, dbIndex.columns);
 		}
 
 		public String getRealName() {

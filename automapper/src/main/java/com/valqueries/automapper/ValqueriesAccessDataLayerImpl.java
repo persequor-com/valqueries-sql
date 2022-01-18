@@ -237,7 +237,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	String getTableName(Clazz<? extends Object> modeltype) {
-		return dialect.getTableName(modeltype);
+		return dialect.getTableName(modeltype).toSql();
 	}
 
 
