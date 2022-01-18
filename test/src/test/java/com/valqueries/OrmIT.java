@@ -30,7 +30,7 @@ public class OrmIT {
 					"CREATE TABLE it_orm_basic " +
 							"( " +
 							"  id CHAR(36) NULL, " +
-							"  moment_in_time  DATETIME NOT NULL DEFAULT 0, " +
+							"  moment_in_time  DATETIME(3) NOT NULL DEFAULT 0, " +
 							"  nullable_field  INT, " +
 							"  floating_point  FLOAT, " +
 							"  double_precision  DOUBLE, " +
@@ -48,20 +48,37 @@ public class OrmIT {
 	@Test
 	public void writeAndReadZonedDateTime() {
 		String id = UUID.randomUUID().toString();
-		long moment = 1565352770000l;
+		long moment = 1565352770011l;
 
 		String sql = "INSERT INTO it_orm_basic SET id = :id, moment_in_time = :moment_in_time";
 		try (IOrm orm = database.getOrm()) {
+			orm.update("REPLACE INTO it_orm_basic SET id = 1, moment_in_time = '2018-09-08 17:51:04.777'");
 			orm.update(sql, statement -> {
 				statement.set("id", id);
 				statement.set("moment_in_time", ZonedDateTime.ofInstant(Instant.ofEpochMilli(moment), ZoneOffset.UTC));
 			});
 
+			assertEquals("Failed to read fractional seconds", 1536421864777l, orm.querySingle("SELECT * FROM it_orm_basic WHERE id=1", s->{}, rowMapper).get().getTimestamp());
+
 			Optional<ItOrmBasic> row = orm.querySingle("SELECT * FROM it_orm_basic WHERE id=:id", statement -> {
 				statement.set("id", id);
 			}, rowMapper);
 
-			assertEquals(moment, row.get().getTimestamp());
+			assertEquals("Failed to write and then read fractional seconds", moment, row.get().getTimestamp());
+
+			// can use fractional seconds in where clauses
+			List<ItOrmBasic> found = orm.query("SELECT * FROM it_orm_basic WHERE moment_in_time > :time_in", statement -> {
+				statement.set("time_in", Instant.ofEpochMilli(moment).minusMillis(1).atZone(ZoneOffset.UTC));
+			}, rowMapper);
+
+			assertEquals("Failed to use fractional seconds in 'where' clause", 1, found.size());
+
+			List<ItOrmBasic> everythingStored = orm.query("SELECT * FROM it_orm_basic WHERE moment_in_time > :time_in", statement -> {
+				statement.set("time_in", Instant.ofEpochMilli(0).atZone(ZoneOffset.UTC));
+			}, rowMapper);
+
+
+			assertEquals(2, everythingStored.size());
 		}
 	}
 

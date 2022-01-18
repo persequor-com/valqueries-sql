@@ -1,5 +1,5 @@
 dependencies {
-    compile 'mysql:mysql-connector-java:8.0.19'
+    compile 'org.mariadb.jdbc:mariadb-java-client:2.7.3'
     compile "io.ran:core:$ran_version"
     api project(':core')
     api project(':automapper')
