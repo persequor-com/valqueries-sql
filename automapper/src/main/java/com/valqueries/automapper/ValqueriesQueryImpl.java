@@ -1,22 +1,11 @@
 package com.valqueries.automapper;
 
-import com.valqueries.IStatement;
-import com.valqueries.ITransactionContext;
-import com.valqueries.OrmResultSet;
-import com.valqueries.Setter;
-import com.valqueries.UpdateResult;
-import com.valqueries.automapper.elements.Element;
-import com.valqueries.automapper.elements.FreeTextElement;
-import com.valqueries.automapper.elements.ListElement;
-import com.valqueries.automapper.elements.RelationSubQueryElement;
-import com.valqueries.automapper.elements.SimpleElement;
-import com.valqueries.automapper.elements.SortElement;
+import com.valqueries.*;
+import com.valqueries.automapper.elements.*;
 import io.ran.*;
 import io.ran.token.Token;
-
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -175,14 +164,14 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		if (!sortElements.isEmpty()) {
 			sql += " ORDER BY " + sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
 		}
-		if (limit != null) {
-			sql += dialect.limit(offset, limit);
+		if (limit !=  null) {
+			sql += dialect.getLimitDefinition(offset, limit);
 		}
 		return sql;
 	}
 
 	public String getTableName(Clazz<?> toClass) {
-		return dialect.getTableName(toClass);
+		return dialect.getTableName(toClass).toSql();
 	}
 
 	public ValqueriesQuery<T> withEager(RelationDescriber relation) {
@@ -237,6 +226,9 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				}
 				int i = 0;
 				for (RelationDescriber relationDescriber : eagers) {
+					List list = eagerModels
+							.computeIfAbsent(relationDescriber.getField(), (k) -> new HashMap<>())
+							.computeIfAbsent(key, (k) -> new ArrayList());
 					Object hydrated = hydrateEager(t2, relationDescriber, row, ++i);
 					if (hydrated != null) {
 						CompoundKey relationKey = mappingHelper.getKey(hydrated);
@@ -249,6 +241,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 									.computeIfAbsent(relationDescriber.getField(), (k) -> new HashMap<>())
 									.computeIfAbsent(key, (k) -> new ArrayList())
 									.add(hydrated);
+							list.add(hydrated);
 						}
 					}
 				}
@@ -261,7 +254,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 						if (relationDescriber.isCollectionRelation()) {
 							((Mapping) alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue());
 						} else {
-							mapping(alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue().get(0));
+							mapping(alreadyLoaded.get(entry.getKey()))._setRelation(relationDescriber, entry.getValue().size() > 0 ? entry.getValue().get(0): null);
 						}
 					});
 				}
@@ -350,7 +343,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildDeleteSql() {
-		return dialect.delete(tableAlias, typeDescriber, elements, offset, limit);
+		return dialect.generateDeleteStatement(tableAlias, typeDescriber, elements, offset, limit);
 	}
 
 	private String buildCountSql() {
@@ -422,7 +415,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildUpdateSql(List<Property.PropertyValue> newPropertyValues) {
-		return dialect.update(typeDescriber, elements, newPropertyValues);
+		return dialect.generateUpdateStatement(typeDescriber, elements, newPropertyValues);
 
 	}
 

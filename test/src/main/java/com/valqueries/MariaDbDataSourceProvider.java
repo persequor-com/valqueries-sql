@@ -17,7 +17,7 @@ public class MariaDbDataSourceProvider extends HikariDataSource {
 	private MariaDbDataSourceProvider() {
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl(System.getProperty("db.url", "jdbc:mysql://localhost:3307/valqueries"));
-		config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+		config.setDriverClassName("org.mariadb.jdbc.Driver");
 		config.setUsername(System.getProperty("db.user", "root"));
 		config.setPassword(System.getProperty("db.password", "s3cr3t"));
 		config.setMinimumIdle(10);

@@ -50,11 +50,17 @@ public abstract class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 	protected abstract Database database();
 
 	@Before
-	public void setup() {
+	public void setup() throws Throwable {
 		sqlGenerator = injector.getInstance(SqlGenerator.class);
 
+		TestClasses testClasses = getClass().getMethod(name.getMethodName()).getAnnotation(TestClasses.class);
+
+		List<Class> clazzes = Arrays.asList(Car.class, Door.class, Engine.class, EngineCar.class, Exhaust.class, Tire.class, WithCollections.class, Bike.class, BikeGear.class, BikeGearBike.class, BikeWheel.class, PrimaryKeyModel.class, Bipod.class, Pod.class, AllFieldTypes.class);
+		if (testClasses != null && (testClasses.value() != null)) {
+			clazzes = Arrays.asList(testClasses.value());
+		}
 		try (IOrm orm = database.getOrm()) {
-			List<Class> clazzes = Arrays.asList(Car.class, Door.class, Engine.class, EngineCar.class, Exhaust.class, Tire.class, WithCollections.class, Bike.class, BikeGear.class, BikeGearBike.class, BikeWheel.class, PrimaryKeyModel.class, Bipod.class, Pod.class, AllFieldTypes.class);
+			;
 			clazzes.forEach(c -> {
 				TypeDescriber desc = TypeDescriberImpl.getTypeDescriber(c);
 				try {
@@ -62,9 +68,8 @@ public abstract class AutoMapperAlternateNamingIT extends AutoMapperBaseTests {
 				} catch (Exception e) {
 
 				}
-				orm.update(sqlGenerator.generateCreateTable(desc));
+				sqlGenerator.generateCreateTable(desc);
 			});
-
 		}
 	}
 

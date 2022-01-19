@@ -73,6 +73,7 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 		for (RelationDescriber relation : TypeDescriberImpl.getTypeDescriber(zClass).relations()) {
 			if (!relation.getRelationAnnotation().autoSave()) {
 				mapping._setRelation(relation, null);
+				mapping._setRelationNotLoaded(relation);
 			}
 		}
 
