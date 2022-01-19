@@ -10,9 +10,9 @@ public class BikeGearBike {
 	private String bikeId;
 	@PrimaryKey
 	private int gearNum;
-	@Relation
+	@Relation(fields = "bikeId", relationFields = "id")
 	private Bike bike;
-	@Relation
+	@Relation(fields = "gearNum", relationFields = "gearNum")
 	private BikeGear bikeGear;
 
 	public String getBikeId() {

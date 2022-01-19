@@ -6,15 +6,13 @@ import com.valqueries.IOrm;
 import io.ran.*;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -43,7 +41,6 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 			clazzes = Arrays.asList(testClasses.value());
 		}
 		try (IOrm orm = database.getOrm()) {
-			;
 			clazzes.forEach(c -> {
 				TypeDescriber desc = TypeDescriberImpl.getTypeDescriber(c);
 				try {
@@ -369,5 +366,141 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		assertEquals("Pod number 2", actual.getPod2().getName());
 
 		verifyNoInteractions(resolver);
+	}
+
+	@Test
+	@TestClasses({Car.class, Driver.class, DriverCar.class, Door.class})
+	public void save_manyToMany_eagerWithMoreJoins() throws Throwable {
+		Car nissan = factory.get(Car.class);
+		nissan.setId(UUID.randomUUID());
+		nissan.setTitle("Nissan");
+		nissan.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Car citroen = factory.get(Car.class);
+		citroen.setId(UUID.randomUUID());
+		citroen.setTitle("Citroen");
+		citroen.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Car tesla = factory.get(Car.class);
+		tesla.setId(UUID.randomUUID());
+		tesla.setTitle("Tesla");
+
+		Driver pilot1 = factory.get(Driver.class);
+		pilot1.setId("pilot1");
+		pilot1.setName("pedrito");
+
+		Driver pilot2 = factory.get(Driver.class);
+		pilot2.setId("pilot2");
+		pilot2.setName("jorgito");
+
+		Door nissanDoor = factory.get(Door.class);
+		nissanDoor.setId(UUID.randomUUID());
+		nissanDoor.setTitle("Nissan door");
+		nissanDoor.setCarId(nissan.getId());
+
+		nissan.setDoors(Collections.singletonList(nissanDoor));
+		nissan.setDrivers(Arrays.asList(pilot1, pilot2));
+		citroen.setDrivers(Arrays.asList(pilot1, pilot2));
+
+		carRepository.save(nissan);
+		carRepository.save(citroen);
+		carRepository.save(tesla);
+
+		Collection<Car> cars = carRepository.query()
+				.withEager(Car::getDrivers)
+				.withEager(Car::getDoors)
+				.execute().collect(Collectors.toList());
+
+		assertTrue(cars.stream().filter(car -> !car.getTitle().equals("Tesla")).allMatch(car -> car.drivers.size() == 2));
+		assertTrue(cars.stream().filter(car -> car.getTitle().equals("Tesla")).allMatch(car -> car.drivers.isEmpty())); //autopilot
+		assertEquals(1, cars.stream().filter(car -> car.getTitle().equals("Nissan")).findFirst().get().getDoors().size());
+		assertEquals(0, cars.stream().filter(car -> car.getTitle().equals("Citroen")).findFirst().get().getDoors().size());
+	}
+
+	@Test
+	@TestClasses({Car.class, Driver.class, DriverCar.class})
+	@Ignore
+	public void save_manyToMany_eagerWithSubquery_doesNotFilterResults() throws Throwable {
+		Car nissan = factory.get(Car.class);
+		nissan.setId(UUID.randomUUID());
+		nissan.setTitle("Nissan");
+		nissan.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Car citroen = factory.get(Car.class);
+		citroen.setId(UUID.randomUUID());
+		citroen.setTitle("Citroen");
+		citroen.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Driver pilot1 = factory.get(Driver.class);
+		pilot1.setId("pilot1");
+		pilot1.setName("pedrito");
+
+		Driver pilot2 = factory.get(Driver.class);
+		pilot2.setId("pilot2");
+		pilot2.setName("jorgito");
+
+		Driver pilot3 = factory.get(Driver.class);
+		pilot3.setId("pilot3");
+		pilot3.setName("juancito");
+
+		nissan.setDrivers(Arrays.asList(pilot1, pilot2));
+		citroen.setDrivers(Arrays.asList(pilot1, pilot3));
+
+		carRepository.save(nissan);
+		carRepository.save(citroen);
+
+		Collection<Car> cars = carRepository.query()
+				.subQueryList(Car::getDrivers, sq -> sq.eq(Driver::getName, "jorgito"))
+				.withEager(Car::getDrivers)
+				.execute().collect(Collectors.toList());
+
+		Car car = cars.stream().findAny().get();
+		assertEquals(1, cars.size());
+		assertEquals(2, car.drivers.size());
+		assertTrue(car.drivers
+				.stream()
+				.allMatch(driver -> driver.getName().equals("jorgito")
+						|| driver.getName().equals("pedrito")));
+	}
+
+	@Test
+	@TestClasses({Car.class, Driver.class, DriverCar.class})
+	@Ignore
+	public void save_manyToMany_lazyWithSubquery() throws Throwable {
+		Car nissan = factory.get(Car.class);
+		nissan.setId(UUID.randomUUID());
+		nissan.setTitle("Nissan");
+		nissan.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Car citroen = factory.get(Car.class);
+		citroen.setId(UUID.randomUUID());
+		citroen.setTitle("Citroen");
+		citroen.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Driver pilot1 = factory.get(Driver.class);
+		pilot1.setId("pilot1");
+		pilot1.setName("pedrito");
+
+		Driver pilot2 = factory.get(Driver.class);
+		pilot2.setId("pilot2");
+		pilot2.setName("jorgito");
+
+		Driver pilot3 = factory.get(Driver.class);
+		pilot3.setId("pilot3");
+		pilot3.setName("juancito");
+
+		nissan.setDrivers(Arrays.asList(pilot1, pilot2));
+		citroen.setDrivers(Arrays.asList(pilot1, pilot3));
+
+		carRepository.save(nissan);
+		carRepository.save(citroen);
+
+		Collection<Car> cars = carRepository.query()
+				.subQueryList(Car::getDrivers, sq -> sq.eq(Driver::getName, "jorgito"))
+				.execute().collect(Collectors.toList());
+
+		assertEquals(1, cars.size());
+		Car car = cars.stream().findAny().get();
+		assertNull(car.drivers);
 	}
 }

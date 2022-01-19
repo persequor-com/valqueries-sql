@@ -25,6 +25,7 @@ public interface ValqueriesQuery<T> extends CrudRepository.InlineQuery<T, Valque
 	<X> ValqueriesQuery<T> subQuery(BiConsumer<T, X> field, Consumer<ValqueriesQuery<X>> subQuery);
 	<X> ValqueriesQuery<T> subQueryList(Function<T, List<X>> field, Consumer<ValqueriesQuery<X>> subQuery);
 	<X> ValqueriesQuery<T> subQueryList(BiConsumer<T, List<X>> field, Consumer<ValqueriesQuery<X>> subQuery);
+	<X> ValqueriesQuery<T> subQueryList(RelationDescriber relationDescriber, Consumer<ValqueriesQuery<X>> subQuery);
 
 	ValqueriesGroupQuery<T> groupBy(Function<T, ?>... field);
 	ValqueriesGroupQuery<T> groupBy(BiConsumer<T, ?>... field);

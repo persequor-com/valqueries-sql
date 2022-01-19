@@ -1,13 +1,11 @@
 package com.valqueries.automapper;
 
-import io.ran.Key;
 import io.ran.Mapper;
 import io.ran.PrimaryKey;
 import io.ran.Relation;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,6 +25,10 @@ public class Car {
 	private List<Door> doors;
 	@Relation
 	private Exhaust exhaust;
+	@Relation(collectionElementType = Driver.class, via = DriverCar.class, autoSave = true)
+	List<Driver> drivers;
+	@Relation(collectionElementType = Engine.class, via = EngineCar.class, autoSave = true)
+	private List<Engine> engines;
 
 	public UUID getId() {
 		return id;
@@ -101,5 +103,21 @@ public class Car {
 
 	public void setKey(String key) {
 		this.key = key;
+	}
+
+	public List<Driver> getDrivers() {
+		return drivers;
+	}
+
+	public void setDrivers(List<Driver> drivers) {
+		this.drivers = drivers;
+	}
+
+	public List<Engine> getEngines() {
+		return engines;
+	}
+
+	public void setEngines(List<Engine> engines) {
+		this.engines = engines;
 	}
 }

@@ -275,6 +275,12 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 	}
 
 	@Override
+	public <X> ValqueriesQuery<T> subQueryList(RelationDescriber relationDescriber, Consumer<ValqueriesQuery<X>> subQuery) {
+		this.subQuery(relationDescriber, subQuery);
+		return this;
+	}
+
+	@Override
 	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
 		if (forcedEmpty) {
 			return () -> 0;
