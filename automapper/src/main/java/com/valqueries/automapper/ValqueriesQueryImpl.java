@@ -237,10 +237,6 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 							break;
 						} else {
 							relationsAlreadyLoaded.computeIfAbsent(key, set -> new HashSet<>()).add(relationKey);
-							eagerModels
-									.computeIfAbsent(relationDescriber.getField(), (k) -> new HashMap<>())
-									.computeIfAbsent(key, (k) -> new ArrayList())
-									.add(hydrated);
 							list.add(hydrated);
 						}
 					}
