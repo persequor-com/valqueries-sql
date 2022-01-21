@@ -229,13 +229,11 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 					List list = eagerModels
 							.computeIfAbsent(relationDescriber.getField(), (k) -> new HashMap<>())
 							.computeIfAbsent(key, (k) -> new ArrayList());
+
 					Object hydrated = hydrateEager(t2, relationDescriber, row, ++i);
 					if (hydrated != null) {
 						CompoundKey relationKey = mappingHelper.getKey(hydrated);
-						if (relationsAlreadyLoaded.containsKey(key) &&
-								relationsAlreadyLoaded.get(key).contains(relationKey)) {
-							break;
-						} else {
+						if (!relationsAlreadyLoaded.containsKey(key) || !relationsAlreadyLoaded.get(key).contains(relationKey)) {
 							relationsAlreadyLoaded.computeIfAbsent(key, set -> new HashSet<>()).add(relationKey);
 							list.add(hydrated);
 						}
