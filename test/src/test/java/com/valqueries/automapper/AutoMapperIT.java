@@ -263,6 +263,56 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class, CarWheel.class})
+	public void eagerLoad_getAllEager() throws Throwable {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Door door1 = factory.get(Door.class);
+		door1.setId(UUID.randomUUID());
+		door1.setTitle("Nissan door 1");
+		door1.setCarId(model.getId());
+
+		Door door2 = factory.get(Door.class);
+		door2.setId(UUID.randomUUID());
+		door2.setTitle("Nissan door 1");
+		door2.setCarId(model.getId());
+
+		model.setDoors(Arrays.asList(door1, door2));
+
+		CarWheel wheel1 = factory.get(CarWheel.class);
+		wheel1.setId(UUID.randomUUID());
+		wheel1.setBrand("Michelin");
+		wheel1.setCarId(model.getId());
+
+		CarWheel wheel2 = factory.get(CarWheel.class);
+		wheel2.setId(UUID.randomUUID());
+		wheel2.setBrand("Michelin");
+		wheel2.setCarId(model.getId());
+
+		model.setWheels(Arrays.asList(wheel1, wheel2));
+		carRepository.save(model);
+
+
+		Optional<Car> res = carRepository.query()
+				.withEager(Car::getDoors)
+				.withEager(Car::getWheels)
+				.execute()
+				.findFirst();
+		if(!res.isPresent()) {
+			fail();
+			return;
+		}
+
+		Car car = res.get();
+
+		assertEquals(2, car.getDoors().size());
+		assertEquals(2, car.getWheels().size());
+	}
+
+	@Test
 	@TestClasses({Car.class, Door.class})
 	public void lazyLoad_emptyCollection_onlyOneInteractionWithResolver() throws Throwable {
 		Car model = factory.get(Car.class);
@@ -411,8 +461,8 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 				.withEager(Car::getDoors)
 				.execute().collect(Collectors.toList());
 
-		assertTrue(cars.stream().filter(car -> !car.getTitle().equals("Tesla")).allMatch(car -> car.drivers.size() == 2));
-		assertTrue(cars.stream().filter(car -> car.getTitle().equals("Tesla")).allMatch(car -> car.drivers.isEmpty())); //autopilot
+		assertTrue(cars.stream().filter(car -> !car.getTitle().equals("Tesla")).allMatch(car -> car.getDrivers().size() == 2));
+		assertTrue(cars.stream().filter(car -> car.getTitle().equals("Tesla")).allMatch(car -> car.getDrivers().isEmpty())); //autopilot
 		assertEquals(1, cars.stream().filter(car -> car.getTitle().equals("Nissan")).findFirst().get().getDoors().size());
 		assertEquals(0, cars.stream().filter(car -> car.getTitle().equals("Citroen")).findFirst().get().getDoors().size());
 	}

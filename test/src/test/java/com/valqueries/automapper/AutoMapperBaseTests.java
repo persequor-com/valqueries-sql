@@ -272,7 +272,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses({Car.class, Engine.class})
+	@TestClasses({Car.class, Engine.class, EngineCar.class})
 	public void queryBuilder_subQueryVia() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -619,7 +619,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses({Bike.class, BikeGear.class})
+	@TestClasses({Bike.class, BikeGear.class, BikeGearBike.class})
 	public void queryOtherClass() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
