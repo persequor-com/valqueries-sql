@@ -29,6 +29,8 @@ public class Car {
 	List<Driver> drivers;
 	@Relation(collectionElementType = Engine.class, via = EngineCar.class, autoSave = true)
 	private List<Engine> engines;
+	@Relation(collectionElementType = CarWheel.class, fields = "id", relationFields = "carId", autoSave = true)
+	private List<CarWheel> wheels;
 
 	public UUID getId() {
 		return id;
@@ -119,5 +121,13 @@ public class Car {
 
 	public void setEngines(List<Engine> engines) {
 		this.engines = engines;
+	}
+
+	public List<CarWheel> getWheels() {
+		return wheels;
+	}
+
+	public void setWheels(List<CarWheel> wheels) {
+		this.wheels = wheels;
 	}
 }
