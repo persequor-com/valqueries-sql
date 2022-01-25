@@ -6,9 +6,7 @@ import com.valqueries.ITransactionWithResult;
 import io.ran.*;
 import io.ran.token.Token;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -77,9 +75,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		Collection<O> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
 		changed.increment(notAlreadySaved, saveOthers(tx, notAlreadySaved, xClass).affectedRows());
 		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
-			for (O t : notAlreadySaved) {
-				internalSaveRelation(changed, tx, t, relationDescriber);
-			}
+			internalSaveRelation(changed, tx, notAlreadySaved, relationDescriber);
 		});
 	}
 
@@ -89,59 +85,71 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		}
 		changed.increment(t, saveOther(tx, t, xClass).affectedRows());
 		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
-
-			internalSaveRelation(changed, tx, t, relationDescriber);
+			internalSaveRelation(changed, tx, Arrays.asList(t), relationDescriber);
 		});
 	}
 
-	private void internalSaveRelation(ChangeMonitor changed, ITransactionContext tx, Object t, RelationDescriber relationDescriber) {
-		if (!relationDescriber.getRelationAnnotation().autoSave()) {
-			return;
-		}
-		if (!(t instanceof Mapping)) {
-			throw new RuntimeException("Valqueries models should have a @Mapper annotation");
-		}
-		Mapping mapping = (Mapping) t;
-		Object relation = mapping._getRelation(relationDescriber);
+	private <O> void internalSaveRelation(ChangeMonitor changed, ITransactionContext tx, Collection<O> ts, RelationDescriber relationDescriber) {
 		Class<?> via = relationDescriber.getRelationAnnotation().via();
-		Collection<Object> manyToManyRelations = new ArrayList<>();
-		if (relation != null) {
-			if (!via.equals(None.class)) {
-				Collection<?> relations = (Collection<?>) relation;
-				relations.forEach(rel -> {
-					Mapping mappingRelation = (Mapping) rel;
-					Mapping manyToManyRelation = (Mapping) factory.genericFactory.get(via);
-					UncheckedObjectMap map = new UncheckedObjectMap();
-					relationDescriber.getVia().forEach(viaRelationDescriber -> {
-						Token intermediateTableToken;
-						Token endTableToken;
-						Property.PropertyList properties = viaRelationDescriber.getFromKeys().toProperties();
-						for (int i = 0; i < properties.size(); i++) {
-							if (viaRelationDescriber.getToClass().clazz.isAssignableFrom(mappingRelation.getClass())) {
-								intermediateTableToken = properties.get(i).getToken();
-								endTableToken = viaRelationDescriber.getToKeys().get(i).getToken();
-								map.set(intermediateTableToken, mappingRelation._getKey().getValues().get(endTableToken).getValue());
-							} else {
-								endTableToken = properties.get(i).getToken();
-								intermediateTableToken = viaRelationDescriber.getToKeys().get(i).getToken();
-								map.set(intermediateTableToken, mapping._getKey().getValues().get(endTableToken).getValue());
-							}
-						}
-					});
-					manyToManyRelation.hydrate(map);
-					manyToManyRelations.add(manyToManyRelation);
-				});
+		Set<Object> objectsToSave = new HashSet<>();
+		Set<Object> manyToManyRelations = new HashSet<>();
+
+		for(O t : ts) {
+			if (!relationDescriber.getRelationAnnotation().autoSave()) {
+				return;
 			}
-			if (relationDescriber.isCollectionRelation()) {
-				Collection<Object> relations = (Collection<Object>) relation;
-				saveIncludingRelationsInternal(changed, tx, relations, (Class<Object>) relationDescriber.getToClass().clazz);
-				if (!manyToManyRelations.isEmpty()) {
-					saveIncludingRelationsInternal(changed, tx, manyToManyRelations, (Class<Object>) via);
+			if (!(t instanceof Mapping)) {
+				throw new RuntimeException("Valqueries models should have a @Mapper annotation");
+			}
+			Mapping mapping = (Mapping) t;
+			Object relation = mapping._getRelation(relationDescriber);
+
+			if (relation != null) {
+				manyToManyRelations.addAll(getManyToManyRelations(relationDescriber, mapping, relation, via));
+				if(relationDescriber.isCollectionRelation()) {
+					objectsToSave.addAll((Collection<Object>) relation);
+				} else {
+					objectsToSave.add(relation);
 				}
-			} else {
-				saveIncludingRelationInternal(changed, tx, relation, (Class<Object>) relationDescriber.getToClass().clazz);
 			}
 		}
+
+		if(!objectsToSave.isEmpty()) {
+			saveIncludingRelationsInternal(changed, tx, objectsToSave, (Class<Object>) relationDescriber.getToClass().clazz);
+		}
+		if (!manyToManyRelations.isEmpty()) {
+			saveIncludingRelationsInternal(changed, tx, manyToManyRelations, (Class<Object>) via);
+		}
+	}
+
+	private Collection<Object> getManyToManyRelations(RelationDescriber relationDescriber, Mapping mapping, Object relation, Class<?> via) {
+		Collection<Object> manyToManyRelations = new ArrayList<>();
+
+		if (!via.equals(None.class)) {
+			((Collection <?>) relation).forEach(rel -> {
+				Mapping mappingRelation = (Mapping) rel;
+				Mapping manyToManyRelation = (Mapping) factory.genericFactory.get(via);
+				UncheckedObjectMap map = new UncheckedObjectMap();
+
+				relationDescriber.getVia().forEach(viaRelationDescriber -> {
+					Property.PropertyList properties = viaRelationDescriber.getFromKeys().toProperties();
+
+					for (int i = 0; i < properties.size(); i++) {
+						Token propertiesToken = properties.get(i).getToken();
+						Token viaToken = viaRelationDescriber.getToKeys().get(i).getToken();
+
+						if (viaRelationDescriber.getToClass().clazz.isAssignableFrom(mappingRelation.getClass())) {
+							map.set(propertiesToken, mappingRelation._getKey().getValues().get(viaToken).getValue());
+						} else {
+							map.set(viaToken, mapping._getKey().getValues().get(propertiesToken).getValue());
+						}
+					}
+				});
+				manyToManyRelation.hydrate(map);
+				manyToManyRelations.add(manyToManyRelation);
+			});
+		}
+		return manyToManyRelations;
 	}
 
 	protected ValqueriesQuery<T> query() {

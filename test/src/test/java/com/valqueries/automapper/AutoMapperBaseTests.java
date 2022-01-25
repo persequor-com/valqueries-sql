@@ -554,6 +554,89 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class, Door.class, Exhaust.class})
+	public void save_autoSaveRelations_multiple() {
+		Car car1 = factory.get(Car.class);
+		car1.setId(UUID.randomUUID());
+		car1.setTitle("Muh");
+		car1.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Door door1 = factory.get(Door.class);
+		door1.setId(UUID.randomUUID());
+		door1.setTitle("Lazy as such");
+		door1.setCar(car1);
+		car1.getDoors().add(door1);
+
+		Car car2 = factory.get(Car.class);
+		car2.setId(UUID.randomUUID());
+		car2.setTitle("Muh");
+		car2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Door door2 = factory.get(Door.class);
+		door2.setId(UUID.randomUUID());
+		door2.setTitle("Lazy as well");
+		door2.setCar(car2);
+		car1.getDoors().add(door2);
+
+		Exhaust exhaust = factory.get(Exhaust.class);
+		exhaust.setBrand(Brand.Hyundai);
+		exhaust.setId(UUID.randomUUID());
+		car1.setExhaust(exhaust);
+		carRepository.doRetryableInTransaction(tx -> {
+			carRepository.save(tx, Arrays.asList(car1, car2));
+		});
+
+		Door actual1 = doorRepository.get(door1.getId()).orElseThrow(RuntimeException::new);
+		Door actual2 = doorRepository.get(door2.getId()).orElseThrow(RuntimeException::new);
+		assertEquals(door1.getId(), actual1.getId());
+		assertEquals(door2.getId(), actual2.getId());
+		// Since the exhaust relation is not marked as auto save, save including relations will not include it
+		Optional<Exhaust> actualExhaust = exhaustRepository.get(exhaust.getId());
+		assertFalse(actualExhaust.isPresent());
+	}
+
+	@Test
+	@TestClasses({Car.class, Door.class, Exhaust.class})
+	public void save_autoSaveRelations_multipleSameDoor() {
+		Car car1 = factory.get(Car.class);
+		car1.setId(UUID.randomUUID());
+		car1.setTitle("Muh");
+		car1.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Door door1 = factory.get(Door.class);
+		door1.setId(UUID.randomUUID());
+		door1.setTitle("Lazy as such");
+		car1.getDoors().add(door1);
+
+		Door door2 = factory.get(Door.class);
+		door2.setId(UUID.randomUUID());
+		door2.setTitle("Lazy as such");
+		car1.getDoors().add(door2);
+
+		Car car2 = factory.get(Car.class);
+		car2.setId(UUID.randomUUID());
+		car2.setTitle("Muh");
+		car2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		car2.getDoors().add(door2);
+
+		Exhaust exhaust = factory.get(Exhaust.class);
+		exhaust.setBrand(Brand.Hyundai);
+		exhaust.setId(UUID.randomUUID());
+		car1.setExhaust(exhaust);
+		carRepository.doRetryableInTransaction(tx -> {
+			carRepository.save(tx, Arrays.asList(car1, car2));
+		});
+
+		Door actual1 = doorRepository.get(door1.getId()).orElseThrow(RuntimeException::new);
+		Door actual2 = doorRepository.get(door2.getId()).orElseThrow(RuntimeException::new);
+		assertEquals(door1.getId(), actual1.getId());
+		assertEquals(door2.getId(), actual2.getId());
+		// Since the exhaust relation is not marked as auto save, save including relations will not include it
+		Optional<Exhaust> actualExhaust = exhaustRepository.get(exhaust.getId());
+		assertFalse(actualExhaust.isPresent());
+	}
+
+	@Test
 	@TestClasses({Bike.class, BikeWheel.class})
 	public void save_autoSaveRelations_withCompoundKey() {
 		Bike bike = factory.get(Bike.class);
