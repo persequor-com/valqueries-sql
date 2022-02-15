@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -306,6 +305,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 				.subQueryList(Car::getDoors, sq -> {
 					sq.in(Door::getTitle, "Nissan door 1");
 				})
+				.sortAscending(Car::setTitle)
 				.limit(2)
 				.execute().collect(Collectors.toList());
 
