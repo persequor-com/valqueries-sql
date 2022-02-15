@@ -302,6 +302,10 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		List<Car> carsFound = carRepository.query()
 				.withEager(Car::getDoors)
 				.withEager(Car::getWheels)
+				.gt(Car::getCreatedAt, ZonedDateTime.now().minusDays(5))
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
 				.limit(2)
 				.execute().collect(Collectors.toList());
 
