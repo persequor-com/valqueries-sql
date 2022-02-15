@@ -157,18 +157,23 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				appendJoin(relation, eagerJoin, eagerSelect, tableAlias, eagerCount);
 			}
 		}
-		String sql = "SELECT " + columnsSql + eagerSelect + " FROM (SELECT * FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias + " " + elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
+		String sql ="SELECT " + columnsSql + eagerSelect + " FROM ";
+		if (eagerJoin.length() > 0) {
+			sql += "(SELECT * FROM ";
+		}
+		sql += getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias + " " + elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
-		}
-		if (!sortElements.isEmpty()) {
-			sql += " ORDER BY " + sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
 		}
 		if (limit !=  null) {
 			sql += dialect.getLimitDefinition(offset, limit);
 		}
-		sql += ")" + tableAlias + " " + eagerJoin;
-
+		if (eagerJoin.length() > 0) {
+			sql += ") " + tableAlias + " " + eagerJoin;
+		}
+		if (!sortElements.isEmpty()) {
+			sql += " ORDER BY " + sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
+		}
 		return sql;
 	}
 
