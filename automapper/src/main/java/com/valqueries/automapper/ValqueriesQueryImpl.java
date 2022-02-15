@@ -157,7 +157,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 				appendJoin(relation, eagerJoin, eagerSelect, tableAlias, eagerCount);
 			}
 		}
-		String sql = "SELECT " + columnsSql + eagerSelect + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias + " " + eagerJoin + " " + elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
+		String sql = "SELECT " + columnsSql + eagerSelect + " FROM (SELECT * FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias + " " + elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
@@ -167,6 +167,8 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		if (limit !=  null) {
 			sql += dialect.getLimitDefinition(offset, limit);
 		}
+		sql += ")" + tableAlias + " " + eagerJoin;
+
 		return sql;
 	}
 
