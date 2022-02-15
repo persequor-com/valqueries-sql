@@ -282,7 +282,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 				.withEager(Car::getWheels)
 				.execute()
 				.findFirst();
-		if(!res.isPresent()) {
+		if (!res.isPresent()) {
 			fail();
 			return;
 		}
@@ -292,19 +292,21 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		assertEquals(2, car.getDoors().size());
 		assertEquals(2, car.getWheels().size());
 	}
+
 	@Test
 	@TestClasses({Car.class, Door.class, CarWheel.class})
 	public void eagerLoad_limits() throws Throwable {
 		carWithDoorsAndWheels();
 		carWithDoorsAndWheels();
 
-		Stream<Car> found = carRepository.query()
+		List<Car> carsFound = carRepository.query()
 				.withEager(Car::getDoors)
 				.withEager(Car::getWheels)
 				.limit(2)
-				.execute();
+				.execute().collect(Collectors.toList());
 
-		assertEquals(2, found.count());
+		assertEquals(2, carsFound.size());
+		assertEquals(2 * (2 + 2), (long)carsFound.stream().reduce(0, (accumulator, car) -> accumulator + car.getDoors().size() + car.getWheels().size(), Integer::sum));
 	}
 
 	private void carWithDoorsAndWheels() {
