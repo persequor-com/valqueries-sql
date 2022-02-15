@@ -3,7 +3,11 @@ package com.valqueries.automapper;
 import com.google.inject.Guice;
 import com.valqueries.Database;
 import com.valqueries.IOrm;
-import io.ran.*;
+import io.ran.CrudRepository;
+import io.ran.GenericFactory;
+import io.ran.Resolver;
+import io.ran.TypeDescriber;
+import io.ran.TypeDescriberImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -12,7 +16,12 @@ import org.junit.Test;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -265,6 +274,46 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	@Test
 	@TestClasses({Car.class, Door.class, CarWheel.class})
 	public void eagerLoad_getAllEager() throws Throwable {
+		carWithDoorsAndWheels();
+
+		Optional<Car> res = carRepository.query()
+				.withEager(Car::getDoors)
+				.withEager(Car::getWheels)
+				.execute()
+				.findFirst();
+		if (!res.isPresent()) {
+			fail();
+			return;
+		}
+
+		Car car = res.get();
+
+		assertEquals(2, car.getDoors().size());
+		assertEquals(2, car.getWheels().size());
+	}
+
+	@Test
+	@TestClasses({Car.class, Door.class, CarWheel.class})
+	public void eagerLoad_limits() throws Throwable {
+		carWithDoorsAndWheels();
+		carWithDoorsAndWheels();
+
+		List<Car> carsFound = carRepository.query()
+				.withEager(Car::getDoors)
+				.withEager(Car::getWheels)
+				.gt(Car::getCreatedAt, ZonedDateTime.now().minusDays(5))
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortAscending(Car::setTitle)
+				.limit(2)
+				.execute().collect(Collectors.toList());
+
+		assertEquals(2, carsFound.size());
+		assertEquals(2 * (2 + 2), (long)carsFound.stream().reduce(0, (accumulator, car) -> accumulator + car.getDoors().size() + car.getWheels().size(), Integer::sum));
+	}
+
+	private void carWithDoorsAndWheels() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle("Muh");
@@ -294,22 +343,6 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 
 		model.setWheels(Arrays.asList(wheel1, wheel2));
 		carRepository.save(model);
-
-
-		Optional<Car> res = carRepository.query()
-				.withEager(Car::getDoors)
-				.withEager(Car::getWheels)
-				.execute()
-				.findFirst();
-		if(!res.isPresent()) {
-			fail();
-			return;
-		}
-
-		Car car = res.get();
-
-		assertEquals(2, car.getDoors().size());
-		assertEquals(2, car.getWheels().size());
 	}
 
 	@Test
