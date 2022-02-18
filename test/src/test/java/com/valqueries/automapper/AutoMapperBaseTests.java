@@ -753,7 +753,7 @@ public abstract class AutoMapperBaseTests {
 	@TestClasses({AllFieldTypes.class})
 	public void allFieldTypes() {
 		AllFieldTypes obj = factory.get(AllFieldTypes.class);
-		obj.setUuid(UUID.randomUUID());
+		obj.setId(UUID.randomUUID());
 		obj.setString("string");
 		obj.setCharacter('c');
 		obj.setZonedDateTime(ZonedDateTime.parse("2021-01-01T00:00:00.000Z"));
@@ -781,9 +781,9 @@ public abstract class AutoMapperBaseTests {
 
 		allFieldTypesRepository.save(obj);
 
-		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getId()).get();
 
-		assertEquals(obj.getUuid(), actual.getUuid());
+		assertEquals(obj.getId(), actual.getId());
 		assertEquals(obj.getString(), actual.getString());
 		assertEquals(obj.getCharacter(), actual.getCharacter());
 		assertEquals(obj.getZonedDateTime(), actual.getZonedDateTime());
@@ -814,13 +814,13 @@ public abstract class AutoMapperBaseTests {
 	@TestClasses({AllFieldTypes.class})
 	public void allFieldTypes_nulls() {
 		AllFieldTypes obj = factory.get(AllFieldTypes.class);
-		obj.setUuid(UUID.randomUUID());
+		obj.setId(UUID.randomUUID());
 
 		allFieldTypesRepository.save(obj);
 
-		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getId()).get();
 
-		assertEquals(obj.getUuid(), actual.getUuid());
+		assertEquals(obj.getId(), actual.getId());
 		assertNull(actual.getString());
 		assertNull(actual.getCharacter());
 		assertNull(actual.getZonedDateTime());
@@ -836,6 +836,7 @@ public abstract class AutoMapperBaseTests {
 		assertNull(actual.getaFloat());
 		//assertFalse(actual.getaBoolean()); //edge case should we be able to save null booleans?
 		assertNull(actual.getaByte());
+		assertNull(actual.getUuid());
 
 		assertEquals(0, actual.getPrimitiveInteger());
 		assertEquals(0, actual.getPrimitiveShort());
@@ -850,7 +851,7 @@ public abstract class AutoMapperBaseTests {
 	@TestClasses({AllFieldTypes.class})
 	public void allFieldTypes_update() {
 		AllFieldTypes obj = factory.get(AllFieldTypes.class);
-		obj.setUuid(UUID.randomUUID());
+		obj.setId(UUID.randomUUID());
 		obj.setString("string");
 		obj.setCharacter('c');
 		obj.setZonedDateTime(ZonedDateTime.parse("2021-01-01T00:00:00.000Z"));
@@ -879,7 +880,7 @@ public abstract class AutoMapperBaseTests {
 		allFieldTypesRepository.save(obj);
 
 		allFieldTypesRepository.query()
-				.eq(AllFieldTypes::getUuid, obj.getUuid())
+				.eq(AllFieldTypes::getId, obj.getId())
 				.update(u -> {
 					u.set(AllFieldTypes::getString, "string2");
 					u.set(AllFieldTypes::getCharacter, 'a');
@@ -906,9 +907,9 @@ public abstract class AutoMapperBaseTests {
 					u.set(AllFieldTypes::isPrimitiveBoolean, false);
 					u.set(AllFieldTypes::getPrimitiveByte, (byte) 10);
 				});
-		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getId()).get();
 
-		assertEquals(obj.getUuid(), actual.getUuid());
+		assertEquals(obj.getId(), actual.getId());
 		assertEquals("string2", actual.getString());
 		assertEquals(Character.valueOf('a'), actual.getCharacter());
 		//Why do we still have this assertion?
