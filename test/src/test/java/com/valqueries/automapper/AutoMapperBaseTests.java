@@ -220,6 +220,24 @@ public abstract class AutoMapperBaseTests {
 				.collect(Collectors.toList());
 
 		assertEquals(0, cars.size());
+
+		cars = carRepository.query()
+				.withEager(Car::getDoors)
+				.subQueryList(Car::getDoors, sq -> sq.like(Door::getTitle, "% 1"))
+				.subQueryList(Car::getDoors, sq -> sq.like(Door::getTitle, "% 2"))
+				.execute()
+				.collect(Collectors.toList());
+		assertEquals(0, cars.size());
+
+		cars = carRepository.query()
+				.withEager(Car::getDoors)
+				.subQueryList(Car::getDoors, sq -> sq.lte(Door::getTitle, "Door of Muh 1"))
+				.subQueryList(Car::getDoors, sq -> sq.gte(Door::getTitle, "Door of Muh 2"))
+				.execute()
+				.collect(Collectors.toList());
+
+
+		assertEquals(0, cars.size());
 	}
 
 	@Test
