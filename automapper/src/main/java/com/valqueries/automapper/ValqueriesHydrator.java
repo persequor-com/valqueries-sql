@@ -57,7 +57,8 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	@Override
 	public Character getCharacter(Token token) {
 		try {
-			return row.getString(transformKey(token)).charAt(0);
+			String string = row.getString(transformKey(token));
+			return string == null ? null : string.charAt(0);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -194,7 +195,8 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	@Override
 	public Byte getByte(Token token) {
 		try {
-			return row.getInt(transformKey(token)).byteValue();
+			Integer anInt = row.getInt(transformKey(token));
+			return anInt == null ? null : anInt.byteValue();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

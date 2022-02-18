@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public class AllFieldTypes {
 	@PrimaryKey
+	private UUID id;
 	private UUID uuid;
 	private String string;
 	private Character character;
@@ -37,12 +38,12 @@ public class AllFieldTypes {
 	private boolean primitiveBoolean;
 	private byte primitiveByte;
 
-	public UUID getUuid() {
-		return uuid;
+	public UUID getId() {
+		return id;
 	}
 
-	public void setUuid(UUID uuid) {
-		this.uuid = uuid;
+	public void setId(UUID id) {
+		this.id = id;
 	}
 
 	public String getString() {
@@ -219,5 +220,13 @@ public class AllFieldTypes {
 
 	public void setPrimitiveByte(byte primitiveByte) {
 		this.primitiveByte = primitiveByte;
+	}
+
+	public UUID getUuid() {
+		return uuid;
+	}
+
+	public void setUuid(UUID uuid) {
+		this.uuid = uuid;
 	}
 }

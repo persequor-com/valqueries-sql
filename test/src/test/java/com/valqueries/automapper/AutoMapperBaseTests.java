@@ -1,6 +1,5 @@
 package com.valqueries.automapper;
 
-import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import com.valqueries.Database;
 import io.ran.CrudRepository;
@@ -8,6 +7,13 @@ import io.ran.GenericFactory;
 import io.ran.Resolver;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+import org.mockito.Mock;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -16,22 +22,19 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
-
-import org.junit.rules.TestName;
-import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -750,7 +753,7 @@ public abstract class AutoMapperBaseTests {
 	@TestClasses({AllFieldTypes.class})
 	public void allFieldTypes() {
 		AllFieldTypes obj = factory.get(AllFieldTypes.class);
-		obj.setUuid(UUID.randomUUID());
+		obj.setId(UUID.randomUUID());
 		obj.setString("string");
 		obj.setCharacter('c');
 		obj.setZonedDateTime(ZonedDateTime.parse("2021-01-01T00:00:00.000Z"));
@@ -778,9 +781,9 @@ public abstract class AutoMapperBaseTests {
 
 		allFieldTypesRepository.save(obj);
 
-		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getId()).get();
 
-		assertEquals(obj.getUuid(), actual.getUuid());
+		assertEquals(obj.getId(), actual.getId());
 		assertEquals(obj.getString(), actual.getString());
 		assertEquals(obj.getCharacter(), actual.getCharacter());
 		assertEquals(obj.getZonedDateTime(), actual.getZonedDateTime());
@@ -806,11 +809,49 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(obj.getPrimitiveByte(), actual.getPrimitiveByte());
 	}
 
+
+	@Test
+	@TestClasses({AllFieldTypes.class})
+	public void allFieldTypes_nulls() {
+		AllFieldTypes obj = factory.get(AllFieldTypes.class);
+		obj.setId(UUID.randomUUID());
+
+		allFieldTypesRepository.save(obj);
+
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getId()).get();
+
+		assertEquals(obj.getId(), actual.getId());
+		assertNull(actual.getString());
+		assertNull(actual.getCharacter());
+		assertNull(actual.getZonedDateTime());
+		assertNull(actual.getInstant());
+		assertNull(actual.getLocalDateTime());
+		assertNull(actual.getLocalDate());
+		assertNull(actual.getBigDecimal());
+
+		assertNull(actual.getInteger());
+		assertNull(actual.getaShort());
+		assertNull(actual.getaLong());
+		assertNull(actual.getaDouble());
+		assertNull(actual.getaFloat());
+		//assertFalse(actual.getaBoolean()); //edge case should we be able to save null booleans?
+		assertNull(actual.getaByte());
+		assertNull(actual.getUuid());
+
+		assertEquals(0, actual.getPrimitiveInteger());
+		assertEquals(0, actual.getPrimitiveShort());
+		assertEquals(0, actual.getPrimitiveLong());
+		assertEquals(0, actual.getPrimitiveDouble(),0.001);
+		assertEquals(0, actual.getPrimitiveFloat(), 0.001);
+		assertFalse(actual.isPrimitiveBoolean());
+		assertEquals(0, actual.getPrimitiveByte());
+	}
+
 	@Test
 	@TestClasses({AllFieldTypes.class})
 	public void allFieldTypes_update() {
 		AllFieldTypes obj = factory.get(AllFieldTypes.class);
-		obj.setUuid(UUID.randomUUID());
+		obj.setId(UUID.randomUUID());
 		obj.setString("string");
 		obj.setCharacter('c');
 		obj.setZonedDateTime(ZonedDateTime.parse("2021-01-01T00:00:00.000Z"));
@@ -839,7 +880,7 @@ public abstract class AutoMapperBaseTests {
 		allFieldTypesRepository.save(obj);
 
 		allFieldTypesRepository.query()
-				.eq(AllFieldTypes::getUuid, obj.getUuid())
+				.eq(AllFieldTypes::getId, obj.getId())
 				.update(u -> {
 					u.set(AllFieldTypes::getString, "string2");
 					u.set(AllFieldTypes::getCharacter, 'a');
@@ -866,9 +907,9 @@ public abstract class AutoMapperBaseTests {
 					u.set(AllFieldTypes::isPrimitiveBoolean, false);
 					u.set(AllFieldTypes::getPrimitiveByte, (byte) 10);
 				});
-		AllFieldTypes actual = allFieldTypesRepository.get(obj.getUuid()).get();
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getId()).get();
 
-		assertEquals(obj.getUuid(), actual.getUuid());
+		assertEquals(obj.getId(), actual.getId());
 		assertEquals("string2", actual.getString());
 		assertEquals(Character.valueOf('a'), actual.getCharacter());
 		//Why do we still have this assertion?
