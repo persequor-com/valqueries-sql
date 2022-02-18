@@ -181,6 +181,65 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1, cars.size());
 	}
 
+
+	@Test
+	@TestClasses({Car.class, Door.class})
+	public void queryBuilder_multipleRestrictionsOnSameRelationField() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh 1");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Door door = factory.get(Door.class);
+		door.setCarId(model.getId());
+		door.setTitle("Door of Muh 1");
+		door.setId(UUID.randomUUID());
+
+		doorRepository.save(door);
+		carRepository.save(model);
+
+		model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh 2");
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		door = factory.get(Door.class);
+		door.setCarId(model.getId());
+		door.setTitle("Door of Muh 2");
+		door.setId(UUID.randomUUID());
+
+		doorRepository.save(door);
+		carRepository.save(model);
+
+
+		Collection<Car> cars = carRepository.query()
+				.withEager(Car::getDoors)
+				.subQueryList(Car::getDoors, sq -> sq.eq(Door::getTitle, "Door of Muh 1"))
+				.subQueryList(Car::getDoors, sq -> sq.eq(Door::getTitle, "Door of Muh 2"))
+				.execute()
+				.collect(Collectors.toList());
+
+		assertEquals(0, cars.size());
+
+		cars = carRepository.query()
+				.withEager(Car::getDoors)
+				.subQueryList(Car::getDoors, sq -> sq.like(Door::getTitle, "% 1"))
+				.subQueryList(Car::getDoors, sq -> sq.like(Door::getTitle, "% 2"))
+				.execute()
+				.collect(Collectors.toList());
+		assertEquals(0, cars.size());
+
+		cars = carRepository.query()
+				.withEager(Car::getDoors)
+				.subQueryList(Car::getDoors, sq -> sq.lte(Door::getTitle, "Door of Muh 1"))
+				.subQueryList(Car::getDoors, sq -> sq.gte(Door::getTitle, "Door of Muh 2"))
+				.execute()
+				.collect(Collectors.toList());
+
+
+		assertEquals(0, cars.size());
+	}
+
 	@Test
 	@TestClasses({Car.class, Door.class})
 	public void queryBuilder_subQuery() {

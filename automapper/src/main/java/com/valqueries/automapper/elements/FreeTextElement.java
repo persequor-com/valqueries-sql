@@ -19,7 +19,7 @@ public class FreeTextElement implements Element {
 		this.propertyValue = propertyValue;
 		this.sqlNameFormatter = sqlNameFormatter;
 		this.dialect = dialect;
-		this.field = propertyValue.getProperty().getToken().snake_case()+fieldNum;
+		this.field = query.getTableAlias() + "_" + propertyValue.getProperty().getToken().snake_case() + fieldNum;
 	}
 
 	@Override
