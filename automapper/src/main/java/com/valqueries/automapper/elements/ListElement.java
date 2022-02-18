@@ -25,8 +25,9 @@ public class ListElement<T> implements Element {
 		this.fieldNum = fieldNum;
 		this.sqlNameFormatter = sqlNameFormatter;
 		this.dialect = dialect;
-		this.field = values.getProperty().getToken().snake_case()+fieldNum;
+		this.field = query.getTableAlias() + "_" + values.getProperty().getToken().snake_case() + fieldNum;
 	}
+
 	public String queryString() {
 		return query.getTableAlias()+"."+dialect.column(values.getProperty().getToken())+" "+operator+" (:"+field+")";
 	}
