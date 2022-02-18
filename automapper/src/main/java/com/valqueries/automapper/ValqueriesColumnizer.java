@@ -1,7 +1,7 @@
 /* Copyright (C) Persequor ApS - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
- * Written by Persequor Development Team <partnersupport@persequor.com>, 
+ * Written by Persequor Development Team <partnersupport@persequor.com>,
  */
 package com.valqueries.automapper;
 
@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +83,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 
 	@Override
 	public void set(Token token, Character character) {
-		add(token, s -> s.set(transformFieldPlaceholder(token), character.toString()));
+		add(token, s -> s.set(transformFieldPlaceholder(token), character == null ? null : character.toString()));
 	}
 
 	@Override
@@ -114,7 +113,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 
 	@Override
 	public void set(Token token, Short aShort) {
-		add(token, s -> s.set(transformFieldPlaceholder(token), aShort.intValue()));
+		add(token, s -> s.set(transformFieldPlaceholder(token), aShort == null ? null : aShort.intValue()));
 	}
 
 	@Override
@@ -134,7 +133,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 
 	@Override
 	public void set(Token key, BigDecimal value) {
-		add(key, s -> s.set(transformFieldPlaceholder(key), value.toString()));
+		add(key, s -> s.set(transformFieldPlaceholder(key), value == null ? null : value.toString()));
 	}
 
 	@Override
@@ -149,7 +148,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 
 	@Override
 	public void set(Token token, Byte aByte) {
-		add(token, s -> s.set(transformFieldPlaceholder(token), aByte.intValue()));
+		add(token, s -> s.set(transformFieldPlaceholder(token), aByte == null ? null : aByte.intValue()));
 	}
 
 	@Override
