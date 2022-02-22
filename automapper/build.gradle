@@ -1,7 +1,0 @@
-
-
-dependencies {
-    compile "io.ran:core:$ran_version"
-    api project(':core')
-}
-

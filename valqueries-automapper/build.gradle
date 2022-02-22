@@ -1,0 +1,7 @@
+
+
+dependencies {
+    compile "io.ran:ran-core:$ran_version"
+    api project(':valqueries-core')
+}
+
