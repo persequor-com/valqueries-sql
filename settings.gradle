@@ -1,7 +1,7 @@
 rootProject.name = 'valqueries'
-include(':core')
-include(':automapper')
-include(':test')
+include(':valqueries-core')
+include(':valqueries-automapper')
+include(':valqueries-test')
 include 'valqueries-mariadb'
 include 'valqueries-sqlserver'
 include 'valqueries-h2'
