@@ -38,10 +38,16 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 
 	@Override
 	public <X> ValqueriesQuery<T> in(Function<T, X> field, X... value) {
-		if (value != null && value.length == 1 && value[0] instanceof Collection) {
-			throw new IllegalArgumentException("The type of the values is most probably incorrectly inferred, please make sure field type matches the type of the values array");
-		}
 		field.apply(instance);
+		final Class<?> fieldType = this.typeDescriber.fields().get(queryWrapper.getCurrentProperty().getToken()).getType().clazz;
+
+		if (value != null && value.length > 0 && !fieldType.isAssignableFrom(value[0].getClass())) {
+			//it can happen for instance if we provide Collection of the type mismatching the field type then JVM would infer X as an object and make it the first element of the vararg array
+			throw new IllegalArgumentException("The type of the values is incorrectly inferred,"
+					+ " please make sure field type matches the type of the values array. "
+					+ String.format("Field type is '%s', value type is '%s'.", fieldType, value[0].getClass()));
+		}
+
 		in(queryWrapper.getCurrentProperty().values(value));
 		return this;
 	}

@@ -266,7 +266,7 @@ public abstract class AutoMapperBaseTests {
 
 
 	@Test(expected = IllegalArgumentException.class)
-	@TestClasses({Car.class, Door.class})
+	@TestClasses({Car.class})
 	public void queryBuilder_inCondition_typeMismatch() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
