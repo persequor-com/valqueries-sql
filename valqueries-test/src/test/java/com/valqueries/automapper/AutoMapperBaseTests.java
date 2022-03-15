@@ -264,6 +264,22 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1, doors.size());
 	}
 
+
+	@Test(expected = IllegalArgumentException.class)
+	@TestClasses({Car.class, Door.class})
+	public void queryBuilder_inCondition_typeMismatch() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Hyundai);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+		List<String> brands = Arrays.asList("Hyundai", "Porsche");
+		//Car::getBrand is an enum and brands Collection are strings
+		carRepository.query().in(Car::getBrand, brands).execute();
+	}
+
 	@Test
 	@TestClasses({Car.class, Door.class})
 	public void queryBuilder_subQuery_in() {

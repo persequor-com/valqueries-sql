@@ -192,6 +192,9 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 
 	@Override
 	public <X> ValqueriesQuery<T> in(Function<T, X> field, X... value) {
+		if (value != null && value.length == 1 && value[0] instanceof Collection) {
+			throw new IllegalArgumentException("The type of the values is most probably incorrectly inferred, please make sure field type matches the type of the values array");
+		}
 		field.apply(instance);
 		in(queryWrapper.getCurrentProperty().values(value));
 		return this;
