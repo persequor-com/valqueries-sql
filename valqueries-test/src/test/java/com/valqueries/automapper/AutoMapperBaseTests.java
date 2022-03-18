@@ -2,6 +2,7 @@ package com.valqueries.automapper;
 
 import com.google.inject.Injector;
 import com.valqueries.Database;
+import com.valqueries.OrmException;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.Resolver;
@@ -1222,6 +1223,55 @@ public abstract class AutoMapperBaseTests {
 
 		assertEquals(0, affectedRows);
 	}
+
+	@Test
+	@TestClasses(Car.class)
+	public void insert_happy() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+
+		Optional<Car> actualOptional = carRepository.get(model.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+		assertEquals(model.getTitle(), actual.getTitle());
+		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+	}
+
+	@Test
+	@TestClasses(Car.class)
+	public void insert_withPreviousRecord() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+
+		Car secondModel = factory.get(Car.class);
+		secondModel.setId(model.getId());
+		secondModel.setTitle("Muh number 2");
+		secondModel.setBrand(Brand.Porsche);
+		secondModel.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		try {
+			carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, secondModel));
+		} catch (Exception e){
+			assertTrue(e.getCause() instanceof ValqueriesDuplicateKeyException);
+		}
+		
+	}
+	
+	// TODO add much more tests, such as :
+	//  - test saving relations (happy path)
+	//  - test saving relation (relation already inserted) --> I think we should expect not to fail on this scenario
+	//  - test saving relation (another object with same PK exists for relation) --> we should definitely fail on this scenario
+	//  - test saving collection
+	//  - test saving null
+	//  - test saving 
 }
 
 

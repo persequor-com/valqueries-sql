@@ -57,20 +57,49 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
+	public CrudUpdateResult insert(ITransactionContext tx, T entity) throws ValqueriesDuplicateKeyException {
+		final ChangeMonitor changed = new ChangeMonitor();
+		changed.increment(entity, insertOther(tx, entity, modelType).affectedRows());
+		TypeDescriberImpl.getTypeDescriber(modelType).relations().forEach(relationDescriber -> {
+			internalInsertRelation(changed, tx, Collections.singletonList(entity), relationDescriber);
+		});
+		return changed::getNumberOfChangedRows;
+	}
+
+	@Override
 	public CrudUpdateResult save(ITransactionContext tx, Collection<T> entities) {
 		final ChangeMonitor changed = new ChangeMonitor();
 		saveIncludingRelationsInternal(changed, tx, entities, modelType);
 		return changed::getNumberOfChangedRows;
 	}
 
+	@Override
+	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> entities) {
+		return null;
+	}
+
 	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O t, Class<O> oClass) {
 		return baseRepo.saveOther(tx, t, oClass);
+	}
+
+	@Override
+	public <O> CrudUpdateResult insertOther(ITransactionContext tx, O t, Class<O> oClass) throws ValqueriesDuplicateKeyException {
+		return baseRepo.insertOther(tx, t, oClass);
 	}
 
 	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> t, Class<O> oClass) {
 		return baseRepo.saveOthers(tx, t, oClass);
 	}
 
+	@Override
+	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesDuplicateKeyException {
+		return baseRepo.insertOthers(tx, ts, oClass);
+	}
+	
+	/*
+		Save methods
+	 */
+	
 	private <O> void saveIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<O> ts, Class<O> xClass) {
 		Collection<O> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
 		changed.increment(notAlreadySaved, saveOthers(tx, notAlreadySaved, xClass).affectedRows());
@@ -78,7 +107,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 			internalSaveRelation(changed, tx, notAlreadySaved, relationDescriber);
 		});
 	}
-
+	
 	private <X> void saveIncludingRelationInternal(ChangeMonitor changed, ITransactionContext tx, X t, Class<X> xClass) {
 		if (changed.isAlreadySaved(t)) {
 			return;
@@ -121,6 +150,88 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 			saveIncludingRelationsInternal(changed, tx, manyToManyRelations, (Class<Object>) via);
 		}
 	}
+
+	/*
+		Insert methods
+	 */	
+	
+	private <O> void insertIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<O> ts, Class<O> xClass) {
+		Collection<O> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
+		changed.increment(notAlreadySaved, saveOthers(tx, notAlreadySaved, xClass).affectedRows());
+		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
+			internalInsertRelation(changed, tx, notAlreadySaved, relationDescriber);
+		});
+	}
+	
+	private <O> void internalInsertRelation(ChangeMonitor changed, ITransactionContext tx, Collection<O> ts, RelationDescriber relationDescriber) {
+		Class<?> via = relationDescriber.getRelationAnnotation().via();
+		Set<Object> objectsToSave = new HashSet<>();
+		Set<Object> manyToManyRelations = new HashSet<>();
+
+		for(O t : ts) {
+			if (!relationDescriber.getRelationAnnotation().autoSave()) {
+				return;
+			}
+			if (!(t instanceof Mapping)) {
+				throw new RuntimeException("Valqueries models should have a @Mapper annotation");
+			}
+			Mapping mapping = (Mapping) t;
+			Object relation = mapping._getRelation(relationDescriber);
+
+			if (relation != null) {
+				manyToManyRelations.addAll(getManyToManyRelations(relationDescriber, mapping, relation, via));
+				if(relationDescriber.isCollectionRelation()) {
+					objectsToSave.addAll((Collection<Object>) relation);
+				} else {
+					objectsToSave.add(relation);
+				}
+			}
+		}
+
+		if(!objectsToSave.isEmpty()) {
+			insertIncludingRelationsInternal(changed, tx, objectsToSave, (Class<Object>) relationDescriber.getToClass().clazz);
+		}
+		if (!manyToManyRelations.isEmpty()) {
+			insertIncludingRelationsInternal(changed, tx, manyToManyRelations, (Class<Object>) via);
+		}
+	}
+
+	// Attempt to generalize between save and insert
+//	private <O> Map<Class<Object>, Set<Object>> test(Collection<O> ts, RelationDescriber relationDescriber) {
+//		Class<?> via = relationDescriber.getRelationAnnotation().via();
+//		Set<Object> objectsToSave = new HashSet<>();
+//		Set<Object> manyToManyRelations = new HashSet<>();
+//
+//		for(O t : ts) {
+//			if (!relationDescriber.getRelationAnnotation().autoSave()) {
+//				return Collections.emptyMap();
+//			}
+//			if (!(t instanceof Mapping)) {
+//				throw new RuntimeException("Valqueries models should have a @Mapper annotation");
+//			}
+//			Mapping mapping = (Mapping) t;
+//			Object relation = mapping._getRelation(relationDescriber);
+//
+//			if (relation != null) {
+//				manyToManyRelations.addAll(getManyToManyRelations(relationDescriber, mapping, relation, via));
+//				if(relationDescriber.isCollectionRelation()) {
+//					objectsToSave.addAll((Collection<Object>) relation);
+//				} else {
+//					objectsToSave.add(relation);
+//				}
+//			}
+//		}
+//
+//		Map<Class<Object>, Set<Object>> objects = new HashMap<>();
+//		if(!objectsToSave.isEmpty()) {
+//			objects.put((Class<Object>) relationDescriber.getToClass().clazz, objectsToSave);
+//			saveIncludingRelationsInternal(changed, tx, objectsToSave, (Class<Object>) relationDescriber.getToClass().clazz);
+//		}
+//		if (!manyToManyRelations.isEmpty()) {
+//			objects.put((Class<Object>) via, manyToManyRelations);
+//			saveIncludingRelationsInternal(changed, tx, manyToManyRelations, (Class<Object>) via);
+//		}
+//	}
 
 	private Collection<Object> getManyToManyRelations(RelationDescriber relationDescriber, Mapping mapping, Object relation, Class<?> via) {
 		Collection<Object> manyToManyRelations = new ArrayList<>();
