@@ -186,6 +186,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		try {
 			result = tx.update(sql, columnizer); 
 		} catch (Exception e){
+			// TODo should we restrict the exceptions that we flag as duplicate key ?
 			throw new ValqueriesDuplicateKeyException(e);
 		}
 		

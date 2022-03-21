@@ -15,8 +15,10 @@ import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -133,11 +135,10 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 
 	private <Z> CrudUpdateResult insert(Z o, Class<Z> zClass) throws ValqueriesDuplicateKeyException {
 		Mapping mapping = (Mapping)o;
+		// for Insert, we ignore all relations on purpose
 		for (RelationDescriber relation : TypeDescriberImpl.getTypeDescriber(zClass).relations()) {
-			if (!relation.getRelationAnnotation().autoSave()) {
 				mapping._setRelation(relation, null);
 				mapping._setRelationNotLoaded(relation);
-			}
 		}
 
 		Object key = getGenericKey(o);
@@ -146,6 +147,11 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 		}
 		store.getStore(zClass).put((Object) key, o);
 		return () -> 1;
+	}
+	
+	private <Z> void delete(Z object, Class<Z> zClass){
+		Object key = getGenericKey(object);
+		store.getStore(zClass).remove(object);
 	}
 	
 	@Override
@@ -157,8 +163,16 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 	@Override
 	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> ts) throws ValqueriesDuplicateKeyException {
 		AtomicInteger affectedRows = new AtomicInteger();
-		for (T t : ts ){
-			affectedRows.addAndGet(insert(t, modelType).affectedRows());
+		final Set<T> insertedRows = new HashSet<>();
+		try{
+			for (T t : ts ){
+				affectedRows.addAndGet(insert(t, modelType).affectedRows());
+				insertedRows.add(t);
+			}
+		} catch (ValqueriesDuplicateKeyException e){
+			// mimic rollback mechanism
+			insertedRows.forEach(row -> delete(row, modelType));
+			throw e;
 		}
 		return affectedRows::get;
 	}
