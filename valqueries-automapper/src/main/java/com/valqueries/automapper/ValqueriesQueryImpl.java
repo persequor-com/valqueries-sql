@@ -161,15 +161,15 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
-		if (!sortElements.isEmpty()) {
-			sql += " ORDER BY " + sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
-		}
+
 		if (limit !=  null) {
 			sql += dialect.getLimitDefinition(offset, limit);
 		}
 
 		sql += ") " + tableAlias + " " + eagerJoin;
-
+		if (!sortElements.isEmpty()) {
+			sql += " ORDER BY " + sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
+		}
 		return sql;
 	}
 
