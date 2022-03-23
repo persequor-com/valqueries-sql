@@ -300,7 +300,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 				.subQueryList(Car::getDoors, sq -> {
 					sq.in(Door::getTitle, "Nissan door 1");
 				})
-				.sortDescending(Car::setTitle)
+				.sortAscending(Car::setTitle)
 				.limit(2)
 				.execute().collect(Collectors.toList());
 
