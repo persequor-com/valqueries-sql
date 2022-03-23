@@ -26,11 +26,21 @@ public class ValqueriesTestDoubleResolver implements DbResolver<Valqueries> {
 	}
 
 	private <FROM, TO> Stream<TO> getStream(RelationDescriber relationDescriber, FROM from) {
-		TestDoubleQuery q = new TestDoubleQuery((Class) relationDescriber.getToClass().clazz, genericFactory, mappingHelper, store);
-		for(int i=0;i<relationDescriber.getFromKeys().size();i++) {
-			Property fk = relationDescriber.getFromKeys().get(i).getProperty();
-			Property tk = relationDescriber.getToKeys().get(i).getProperty();
-			q.eq(tk.value(mappingHelper.getValue(from,fk)));
+		TestDoubleQuery<TO> q = new TestDoubleQuery((Class) relationDescriber.getToClass().clazz, genericFactory, mappingHelper, store);
+		if (!relationDescriber.getVia().isEmpty()) {
+			q.subQueryList(relationDescriber.inverse(), sq -> {
+				for (int i = 0; i < relationDescriber.getVia().get(0).getFromKeys().size(); i++) {
+					Property fk = relationDescriber.getVia().get(0).getFromKeys().get(i).getProperty();
+					Property tk = relationDescriber.getVia().get(0).getToKeys().get(i).getProperty();
+					sq.eq(tk.value(mappingHelper.getValue(from, fk)));
+				}
+			});
+		} else {
+			for (int i = 0; i < relationDescriber.getFromKeys().size(); i++) {
+				Property fk = relationDescriber.getFromKeys().get(i).getProperty();
+				Property tk = relationDescriber.getToKeys().get(i).getProperty();
+				q.eq(tk.value(mappingHelper.getValue(from, fk)));
+			}
 		}
 		return q.execute();
 	}

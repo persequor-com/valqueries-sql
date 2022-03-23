@@ -1245,7 +1245,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses(Car.class)
+	@TestClasses({Car.class,  Engine.class})
 	public void insert_withPreviousRecord() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -1267,7 +1267,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses(Car.class)
+	@TestClasses({Car.class,  Engine.class})
 	public void insert_collection_happy() {
 		Car model1 = factory.get(Car.class);
 		model1.setId(UUID.randomUUID());
@@ -1298,7 +1298,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses(Car.class)
+	@TestClasses({Car.class,  Door.class})
 	public void insert_collection_oneIsAlreadyPresent_throwsDuplicateKeyExceptionAndRollbackTransaction() {
 		Car model1 = factory.get(Car.class);
 		model1.setId(UUID.randomUUID());
