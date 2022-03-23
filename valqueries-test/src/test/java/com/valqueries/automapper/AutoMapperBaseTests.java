@@ -1332,7 +1332,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses(Car.class)
+	@TestClasses({Car.class, Exhaust.class})
 	public void insert_withRelation_ignoreRelation(){
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -1356,7 +1356,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses(Car.class)
+	@TestClasses({Car.class, Exhaust.class})
 	public void insert_onOneToOne_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery(){
 
 		Exhaust exhaust = factory.get(Exhaust.class);
@@ -1387,7 +1387,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses(Car.class)
+	@TestClasses({Car.class, Door.class})
 	public void insert_onOneToMany_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery(){
 
 		Door door1 = factory.get(Door.class);
@@ -1421,7 +1421,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses(Car.class)
+	@TestClasses({Car.class, Engine.class, EngineCar.class})
 	public void insert_onManyToMany_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery(){
 
 		Engine engine = factory.get(Engine.class);
@@ -1450,7 +1450,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses(Car.class)
+	@TestClasses({Car.class, Engine.class, EngineCar.class})
 	public void insert_onManyToMany_whenSettingKeysCorrectly_thenRelationIsRetrievedOnQuery(){
 
 		Engine engine = factory.get(Engine.class);
