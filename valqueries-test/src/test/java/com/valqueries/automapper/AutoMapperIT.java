@@ -310,7 +310,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Car.class, Door.class, CarWheel.class})
-	public void sortAscendingAndDescending() throws Throwable {
+	public void sorting_happy() throws Throwable {
 
 		List<String> carTitles = Arrays.asList("C","B","A");
 		carTitles.forEach(carTitle-> carWithDoorsAndWheels(carTitle));
