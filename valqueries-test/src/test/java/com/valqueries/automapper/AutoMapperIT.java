@@ -16,12 +16,7 @@ import org.junit.Test;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -274,7 +269,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	@Test
 	@TestClasses({Car.class, Door.class, CarWheel.class})
 	public void eagerLoad_getAllEager() throws Throwable {
-		carWithDoorsAndWheels();
+		carWithDoorsAndWheels("Muh");
 
 		Optional<Car> res = carRepository.query()
 				.withEager(Car::getDoors)
@@ -295,8 +290,8 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	@Test
 	@TestClasses({Car.class, Door.class, CarWheel.class})
 	public void eagerLoad_limits() throws Throwable {
-		carWithDoorsAndWheels();
-		carWithDoorsAndWheels();
+		carWithDoorsAndWheels("Muh");
+		carWithDoorsAndWheels("Muh");
 
 		List<Car> carsFound = carRepository.query()
 				.withEager(Car::getDoors)
@@ -305,7 +300,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 				.subQueryList(Car::getDoors, sq -> {
 					sq.in(Door::getTitle, "Nissan door 1");
 				})
-				.sortAscending(Car::setTitle)
+				.sortDescending(Car::setTitle)
 				.limit(2)
 				.execute().collect(Collectors.toList());
 
@@ -313,10 +308,32 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		assertEquals(2 * (2 + 2), (long)carsFound.stream().reduce(0, (accumulator, car) -> accumulator + car.getDoors().size() + car.getWheels().size(), Integer::sum));
 	}
 
-	private void carWithDoorsAndWheels() {
+	@Test
+	@TestClasses({Car.class, Door.class, CarWheel.class})
+	public void sortAscendingAndDescending() throws Throwable {
+
+		List<String> carTitles = Arrays.asList("C","B","A");
+		carTitles.forEach(carTitle-> carWithDoorsAndWheels(carTitle));
+
+		List<Car> carsFound = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortAscending(Car::setTitle)
+				.execute().collect(Collectors.toList());
+
+		Collections.sort(carTitles);
+
+		Iterator<Car> carsFoundIter = carsFound.iterator();
+
+		carTitles.forEach(carTitle-> assertEquals(carTitle,carsFoundIter.next().getTitle()));
+
+	}
+
+	private void carWithDoorsAndWheels(String carTitle) {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
-		model.setTitle("Muh");
+		model.setTitle(carTitle);
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 
 		Door door1 = factory.get(Door.class);
