@@ -22,7 +22,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1221,7 +1228,7 @@ public abstract class AutoMapperBaseTests {
 	@TestClasses({Car.class, Door.class})
 	public void sorting_happy() throws Throwable {
 		Arrays.asList("C","B","A")
-				.forEach(title->{carWithDoors(title,"Ford");});
+				.forEach(title->{carWithDoors(title, Brand.Porsche);});
 
 		List<String> ascendingTitles = carRepository.query()
 				.subQueryList(Car::getDoors, sq -> {
@@ -1246,34 +1253,46 @@ public abstract class AutoMapperBaseTests {
 	@TestClasses({Car.class, Door.class})
 	public void mixedMultiFieldSort_happy() throws Throwable {
 
-		carWithDoors("SUV","Porsche");
-		carWithDoors("Sedan","Porsche");
-		carWithDoors("Sedan", "Hyundai");
+		carWithDoors("SUV", Brand.Porsche);
+		carWithDoors("Sedan", Brand.Porsche);
+		carWithDoors("Sedan", Brand.Hyundai);
 
-		List<java.lang.String[]> expected = new ArrayList<>();
-		expected.add(new String[]{"Sedan","Porsche"});
-		expected.add(new String[]{"Sedan","Hyundai"});
-		expected.add(new String[]{"SUV","Porsche"});
-
-		List<String[]> actual = carRepository.query()
+		List<List<?>> actual = carRepository.query()
 				.subQueryList(Car::getDoors, sq -> {
 					sq.in(Door::getTitle, "Nissan door 1");
 				})
 				.sortAscending(Car::getTitle).sortDescending(Car::getBrand)
-				.execute().map(car -> new String[]{car.getTitle(),car.getBrand().toString()}).collect(Collectors.toList());
+				.execute().map(car -> Arrays.asList(car.getTitle(), car.getBrand())).collect(Collectors.toList());
 
-		int i=0;
-		for(String[] expectedArr : expected)
-			assertTrue(Arrays.equals(actual.get(i++), expectedArr));
+		assertEquals(Arrays.asList(
+				Arrays.asList("Sedan", Brand.Porsche)
+				, Arrays.asList("Sedan", Brand.Hyundai)
+				, Arrays.asList("SUV", Brand.Porsche))
+				, actual
+		);
 
+		List<List<?>> actualReverse = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortDescending(Car::getTitle).sortAscending(Car::getBrand)
+				.execute().map(car -> Arrays.asList(car.getTitle(), car.getBrand())).collect(Collectors.toList());
+
+		assertEquals(Arrays.asList(
+						Arrays.asList("SUV", Brand.Porsche)
+						, Arrays.asList("Sedan", Brand.Hyundai)
+						,Arrays.asList("Sedan", Brand.Porsche)
+				)
+				, actualReverse
+		);
 	}
 
-	private void carWithDoors(String carTitle, String brand) {
+	private void carWithDoors(String carTitle, Brand brand) {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle(carTitle);
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
-		model.setBrand(Brand.valueOf(brand));
+		model.setBrand(brand);
 		Door door1 = factory.get(Door.class);
 		door1.setId(UUID.randomUUID());
 		door1.setTitle("Nissan door 1");
