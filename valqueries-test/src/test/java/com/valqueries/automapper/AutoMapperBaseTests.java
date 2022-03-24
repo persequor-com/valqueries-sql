@@ -1,7 +1,6 @@
 package com.valqueries.automapper;
 
 import com.google.inject.Injector;
-import com.sun.tools.javac.util.Pair;
 import com.valqueries.Database;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
@@ -1251,19 +1250,21 @@ public abstract class AutoMapperBaseTests {
 		carWithDoors("Sedan","Porsche");
 		carWithDoors("Sedan", "Hyundai");
 
-		List<Pair> expected = new ArrayList<>();
-		expected.add(new Pair("Sedan","Porsche"));
-		expected.add(new Pair("Sedan","Hyundai"));
-		expected.add(new Pair("SUV","Porsche"));
+		List<java.lang.String[]> expected = new ArrayList<>();
+		expected.add(new String[]{"Sedan","Porsche"});
+		expected.add(new String[]{"Sedan","Hyundai"});
+		expected.add(new String[]{"SUV","Porsche"});
 
-		List<Pair> actual = carRepository.query()
+		List<String[]> actual = carRepository.query()
 				.subQueryList(Car::getDoors, sq -> {
 					sq.in(Door::getTitle, "Nissan door 1");
 				})
 				.sortAscending(Car::getTitle).sortDescending(Car::getBrand)
-				.execute().map(car -> new Pair(car.getTitle(),car.getBrand().toString())).collect(Collectors.toList());
+				.execute().map(car -> new String[]{car.getTitle(),car.getBrand().toString()}).collect(Collectors.toList());
 
-		assertEquals(expected,actual);
+		int i=0;
+		for(String[] expectedArr : expected)
+			assertTrue(Arrays.equals(actual.get(i++), expectedArr));
 
 	}
 
