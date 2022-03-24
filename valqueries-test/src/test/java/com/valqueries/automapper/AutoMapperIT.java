@@ -16,7 +16,12 @@ import org.junit.Test;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -269,7 +274,7 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	@Test
 	@TestClasses({Car.class, Door.class, CarWheel.class})
 	public void eagerLoad_getAllEager() throws Throwable {
-		carWithDoorsAndWheels("Muh");
+		carWithDoorsAndWheels();
 
 		Optional<Car> res = carRepository.query()
 				.withEager(Car::getDoors)
@@ -290,8 +295,8 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	@Test
 	@TestClasses({Car.class, Door.class, CarWheel.class})
 	public void eagerLoad_limits() throws Throwable {
-		carWithDoorsAndWheels("Muh");
-		carWithDoorsAndWheels("Muh");
+		carWithDoorsAndWheels();
+		carWithDoorsAndWheels();
 
 		List<Car> carsFound = carRepository.query()
 				.withEager(Car::getDoors)
@@ -308,10 +313,10 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		assertEquals(2 * (2 + 2), (long)carsFound.stream().reduce(0, (accumulator, car) -> accumulator + car.getDoors().size() + car.getWheels().size(), Integer::sum));
 	}
 
-	private void carWithDoorsAndWheels(String carTitle) {
+	private void carWithDoorsAndWheels() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
-		model.setTitle(carTitle);
+		model.setTitle("Muh");
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 
 		Door door1 = factory.get(Door.class);
