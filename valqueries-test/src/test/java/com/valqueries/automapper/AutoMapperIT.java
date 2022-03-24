@@ -315,19 +315,15 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		List<String> carTitles = Arrays.asList("C","B","A");
 		carTitles.forEach(carTitle-> carWithDoorsAndWheels(carTitle));
 
-		List<Car> carsFound = carRepository.query()
+		List<String> actualTitles = carRepository.query()
 				.subQueryList(Car::getDoors, sq -> {
 					sq.in(Door::getTitle, "Nissan door 1");
 				})
 				.sortAscending(Car::setTitle)
-				.execute().collect(Collectors.toList());
+				.execute().map(Car::getTitle).collect(Collectors.toList());
 
 		Collections.sort(carTitles);
-
-		Iterator<Car> carsFoundIter = carsFound.iterator();
-
-		carTitles.forEach(carTitle-> assertEquals(carTitle,carsFoundIter.next().getTitle()));
-
+		assertEquals(carTitles,actualTitles);
 	}
 
 	private void carWithDoorsAndWheels(String carTitle) {
