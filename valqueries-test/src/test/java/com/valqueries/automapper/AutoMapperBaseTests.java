@@ -1222,6 +1222,53 @@ public abstract class AutoMapperBaseTests {
 
 		assertEquals(0, affectedRows);
 	}
+
+
+	@Test
+	@TestClasses({Car.class, Door.class, CarWheel.class})
+	public void sorting_happy() throws Throwable {
+		Arrays.asList("C","B","A")
+				.forEach(this::carWithDoors);
+
+		List<String> ascendingTitles = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortAscending(Car::setTitle)
+				.execute().map(Car::getTitle).collect(Collectors.toList());
+
+		assertEquals(Arrays.asList("A", "B", "C"), ascendingTitles);
+
+		List<String> descendingTitles = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortDescending(Car::setTitle)
+				.execute().map(Car::getTitle).collect(Collectors.toList());
+
+		assertEquals(Arrays.asList("C", "B", "A"), descendingTitles);
+	}
+
+	private void carWithDoors(String carTitle) {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle(carTitle);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Door door1 = factory.get(Door.class);
+		door1.setId(UUID.randomUUID());
+		door1.setTitle("Nissan door 1");
+		door1.setCarId(model.getId());
+
+		Door door2 = factory.get(Door.class);
+		door2.setId(UUID.randomUUID());
+		door2.setTitle("Nissan door 1");
+		door2.setCarId(model.getId());
+
+		model.setDoors(Arrays.asList(door1, door2));
+		carRepository.save(model);
+	}
+
 }
 
 
