@@ -28,7 +28,7 @@ public class ValqueriesTestDoubleResolver implements DbResolver<Valqueries> {
 	private <FROM, TO> Stream<TO> getStream(RelationDescriber relationDescriber, FROM from) {
 		TestDoubleQuery<TO> q = new TestDoubleQuery((Class) relationDescriber.getToClass().clazz, genericFactory, mappingHelper, store);
 		if (!relationDescriber.getVia().isEmpty()) {
-			q.subQueryList(relationDescriber.inverse(), sq -> {
+			q.subQueryList(relationDescriber.inverse().getVia().get(0), sq -> {
 				for (int i = 0; i < relationDescriber.getVia().get(0).getFromKeys().size(); i++) {
 					Property fk = relationDescriber.getVia().get(0).getFromKeys().get(i).getProperty();
 					Property tk = relationDescriber.getVia().get(0).getToKeys().get(i).getProperty();
