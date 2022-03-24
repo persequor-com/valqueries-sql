@@ -1225,7 +1225,7 @@ public abstract class AutoMapperBaseTests {
 
 
 	@Test
-	@TestClasses({Car.class, Door.class, CarWheel.class})
+	@TestClasses({Car.class, Door.class})
 	public void sorting_happy() throws Throwable {
 		Arrays.asList("C","B","A")
 				.forEach(this::carWithDoors);
