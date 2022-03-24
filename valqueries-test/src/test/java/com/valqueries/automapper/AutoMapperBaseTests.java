@@ -801,7 +801,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses({Bike.class, BikeGear.class})
+	@TestClasses({Bike.class, BikeGear.class, BikeGearBike.class})
 	public void deleteOtherClass() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
