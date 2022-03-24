@@ -1,6 +1,7 @@
 package com.valqueries.automapper;
 
 import com.google.inject.Injector;
+import com.sun.tools.javac.util.Pair;
 import com.valqueries.Database;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
@@ -22,14 +23,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1228,13 +1222,13 @@ public abstract class AutoMapperBaseTests {
 	@TestClasses({Car.class, Door.class})
 	public void sorting_happy() throws Throwable {
 		Arrays.asList("C","B","A")
-				.forEach(this::carWithDoors);
+				.forEach(title->{carWithDoors(title,"Ford");});
 
 		List<String> ascendingTitles = carRepository.query()
 				.subQueryList(Car::getDoors, sq -> {
 					sq.in(Door::getTitle, "Nissan door 1");
 				})
-				.sortAscending(Car::setTitle)
+				.sortAscending(Car::getTitle)
 				.execute().map(Car::getTitle).collect(Collectors.toList());
 
 		assertEquals(Arrays.asList("A", "B", "C"), ascendingTitles);
@@ -1243,18 +1237,42 @@ public abstract class AutoMapperBaseTests {
 				.subQueryList(Car::getDoors, sq -> {
 					sq.in(Door::getTitle, "Nissan door 1");
 				})
-				.sortDescending(Car::setTitle)
+				.sortDescending(Car::getTitle)
 				.execute().map(Car::getTitle).collect(Collectors.toList());
 
 		assertEquals(Arrays.asList("C", "B", "A"), descendingTitles);
 	}
 
-	private void carWithDoors(String carTitle) {
+	@Test
+	@TestClasses({Car.class, Door.class})
+	public void mixedMultiFieldSort_happy() throws Throwable {
+
+		carWithDoors("SUV","Porsche");
+		carWithDoors("Sedan","Porsche");
+		carWithDoors("Sedan", "Hyundai");
+
+		List<Pair> expected = new ArrayList<>();
+		expected.add(new Pair("Sedan","Porsche"));
+		expected.add(new Pair("Sedan","Hyundai"));
+		expected.add(new Pair("SUV","Porsche"));
+
+		List<Pair> actual = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortAscending(Car::getTitle).sortDescending(Car::getBrand)
+				.execute().map(car -> new Pair(car.getTitle(),car.getBrand().toString())).collect(Collectors.toList());
+
+		assertEquals(expected,actual);
+
+	}
+
+	private void carWithDoors(String carTitle, String brand) {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle(carTitle);
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
-
+		model.setBrand(Brand.valueOf(brand));
 		Door door1 = factory.get(Door.class);
 		door1.setId(UUID.randomUUID());
 		door1.setTitle("Nissan door 1");
@@ -1262,7 +1280,7 @@ public abstract class AutoMapperBaseTests {
 
 		Door door2 = factory.get(Door.class);
 		door2.setId(UUID.randomUUID());
-		door2.setTitle("Nissan door 1");
+		door2.setTitle("Nissan door 2");
 		door2.setCarId(model.getId());
 
 		model.setDoors(Arrays.asList(door1, door2));
