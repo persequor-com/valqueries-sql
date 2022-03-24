@@ -311,19 +311,26 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	@Test
 	@TestClasses({Car.class, Door.class, CarWheel.class})
 	public void sorting_happy() throws Throwable {
+		Arrays.asList("C","B","A")
+				.forEach(this::carWithDoorsAndWheels);
 
-		List<String> carTitles = Arrays.asList("C","B","A");
-		carTitles.forEach(carTitle-> carWithDoorsAndWheels(carTitle));
-
-		List<String> actualTitles = carRepository.query()
+		List<String> ascendingTitles = carRepository.query()
 				.subQueryList(Car::getDoors, sq -> {
 					sq.in(Door::getTitle, "Nissan door 1");
 				})
 				.sortAscending(Car::setTitle)
 				.execute().map(Car::getTitle).collect(Collectors.toList());
 
-		Collections.sort(carTitles);
-		assertEquals(carTitles,actualTitles);
+		assertEquals(Arrays.asList("A", "B", "C"), ascendingTitles);
+
+		List<String> descendingTitles = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortDescending(Car::setTitle)
+				.execute().map(Car::getTitle).collect(Collectors.toList());
+
+		assertEquals(Arrays.asList("C", "B", "A"), descendingTitles);
 	}
 
 	private void carWithDoorsAndWheels(String carTitle) {
