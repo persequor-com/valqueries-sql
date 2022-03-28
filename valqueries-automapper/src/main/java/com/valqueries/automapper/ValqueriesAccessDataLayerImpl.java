@@ -19,8 +19,6 @@ import io.ran.MappingHelper;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
-import java.lang.reflect.InvocationTargetException;
-import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -176,7 +174,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		return getUpdateResult(tx.update(sql, columnizer));
 	}
 
-	private <O> CrudUpdateResult insertInternal(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesDuplicateKeyException {
+	private <O> CrudUpdateResult insertInternal(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesInsertFailedException {
 		if (ts.isEmpty()) {
 			return () -> 0;
 		}
@@ -186,8 +184,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		try {
 			result = tx.update(sql, columnizer); 
 		} catch (Exception e){
-			// TODo should we restrict the exceptions that we flag as duplicate key ?
-			throw new ValqueriesDuplicateKeyException(e);
+			throw new ValqueriesInsertFailedException(e);
 		}
 		
 		return getUpdateResult(result);
@@ -198,7 +195,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	@Override
-	public CrudUpdateResult insert(ITransactionContext tx, T t) throws ValqueriesDuplicateKeyException {
+	public CrudUpdateResult insert(ITransactionContext tx, T t) throws ValqueriesInsertFailedException {
 		return insertInternal(tx, Collections.singletonList(t), modelType);
 	}
 
@@ -208,7 +205,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	@Override
-	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> ts) throws ValqueriesDuplicateKeyException {
+	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> ts) throws ValqueriesInsertFailedException {
 		return insertInternal(tx, ts, modelType);
 	}
 
@@ -218,7 +215,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	@Override
-	public <O> CrudUpdateResult insertOther(ITransactionContext tx, O t, Class<O> oClass) throws ValqueriesDuplicateKeyException {
+	public <O> CrudUpdateResult insertOther(ITransactionContext tx, O t, Class<O> oClass) throws ValqueriesInsertFailedException {
 		return insertInternal(tx, Collections.singletonList(t), oClass);
 	}
 
@@ -228,7 +225,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	@Override
-	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesDuplicateKeyException {
+	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesInsertFailedException {
 		return insertInternal(tx, ts, oClass);
 	}
 

@@ -3,7 +3,6 @@ package com.valqueries.automapper;
 import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
-import com.valqueries.OrmException;
 import io.ran.CompoundKey;
 import io.ran.GenericFactory;
 import io.ran.Mapping;
@@ -129,11 +128,11 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 	}
 
 	@Override
-	public CrudUpdateResult insert(ITransactionContext tx, T t) throws ValqueriesDuplicateKeyException {
+	public CrudUpdateResult insert(ITransactionContext tx, T t) throws ValqueriesInsertFailedException {
 		return insert(t, modelType);
 	}
 
-	private <Z> CrudUpdateResult insert(Z o, Class<Z> zClass) throws ValqueriesDuplicateKeyException {
+	private <Z> CrudUpdateResult insert(Z o, Class<Z> zClass) throws ValqueriesInsertFailedException {
 		Mapping mapping = (Mapping)o;
 		// for Insert, we ignore all relations on purpose
 		for (RelationDescriber relation : TypeDescriberImpl.getTypeDescriber(zClass).relations()) {
@@ -143,7 +142,7 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 
 		Object key = getGenericKey(o);
 		if(store.getStore(zClass).get((Object) key) != null){
-			throw new ValqueriesDuplicateKeyException("Duplicate entry");
+			throw new ValqueriesInsertFailedException("Duplicate entry");
 		}
 		store.getStore(zClass).put((Object) key, o);
 		return () -> 1;
@@ -161,7 +160,7 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 	}
 
 	@Override
-	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> ts) throws ValqueriesDuplicateKeyException {
+	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> ts) throws ValqueriesInsertFailedException {
 		AtomicInteger affectedRows = new AtomicInteger();
 		final Set<T> insertedRows = new HashSet<>();
 		try{
@@ -169,7 +168,7 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 				affectedRows.addAndGet(insert(t, modelType).affectedRows());
 				insertedRows.add(t);
 			}
-		} catch (ValqueriesDuplicateKeyException e){
+		} catch (ValqueriesInsertFailedException e){
 			// mimic rollback mechanism
 			insertedRows.forEach(row -> delete(row, modelType));
 			throw e;
@@ -183,7 +182,7 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 	}
 
 	@Override
-	public <O> CrudUpdateResult insertOther(ITransactionContext tx, O t, Class<O> oClass) throws ValqueriesDuplicateKeyException {
+	public <O> CrudUpdateResult insertOther(ITransactionContext tx, O t, Class<O> oClass) throws ValqueriesInsertFailedException {
 		return this.insert(t, oClass);
 	}
 
@@ -194,7 +193,7 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 	}
 
 	@Override
-	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesDuplicateKeyException {
+	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesInsertFailedException {
 		AtomicInteger affectedRows = new AtomicInteger();
 		for (O t : ts ){
 			affectedRows.addAndGet(insert(t, oClass).affectedRows());

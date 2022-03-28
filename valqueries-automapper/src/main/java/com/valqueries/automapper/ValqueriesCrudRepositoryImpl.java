@@ -57,7 +57,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
-	public CrudUpdateResult insert(ITransactionContext tx, T entity) throws ValqueriesDuplicateKeyException {
+	public CrudUpdateResult insert(ITransactionContext tx, T entity) throws ValqueriesInsertFailedException {
 		final ChangeMonitor changed = new ChangeMonitor();
 		changed.increment(entity, insertOther(tx, entity, modelType).affectedRows());
 		return changed::getNumberOfChangedRows;
@@ -71,7 +71,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
-	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> entities) throws ValqueriesDuplicateKeyException {
+	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> entities) throws ValqueriesInsertFailedException {
 		final ChangeMonitor changed = new ChangeMonitor();
 		changed.increment(entities, insertOthers(tx, entities, modelType).affectedRows());
 		return changed::getNumberOfChangedRows;
@@ -82,7 +82,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
-	public <O> CrudUpdateResult insertOther(ITransactionContext tx, O t, Class<O> oClass) throws ValqueriesDuplicateKeyException {
+	public <O> CrudUpdateResult insertOther(ITransactionContext tx, O t, Class<O> oClass) throws ValqueriesInsertFailedException {
 		return baseRepo.insertOther(tx, t, oClass);
 	}
 
@@ -91,7 +91,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
-	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesDuplicateKeyException {
+	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesInsertFailedException {
 		return baseRepo.insertOthers(tx, ts, oClass);
 	}
 	

@@ -2,7 +2,6 @@ package com.valqueries.automapper;
 
 import com.google.inject.Injector;
 import com.valqueries.Database;
-import com.valqueries.OrmException;
 import io.ran.CrudRepository;
 import io.ran.GenericFactory;
 import io.ran.Resolver;
@@ -1262,7 +1261,7 @@ public abstract class AutoMapperBaseTests {
 		try {
 			carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, secondModel));
 		} catch (Exception e){
-			assertTrue(e.getCause() instanceof ValqueriesDuplicateKeyException);
+			assertTrue(e.getCause() instanceof ValqueriesInsertFailedException);
 		}
 	}
 
@@ -1318,7 +1317,7 @@ public abstract class AutoMapperBaseTests {
 			carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, Arrays.asList(model1, model2)));
 			fail("An exception of type ValqueriesDuplicateKeyException should have been thrown here");
 		} catch (Exception e){
-			assertTrue(e.getCause() instanceof ValqueriesDuplicateKeyException);
+			assertTrue(e.getCause() instanceof ValqueriesInsertFailedException);
 		}
 		
 		Optional<Car> actualOptional = carRepository.get(model1.getId());
