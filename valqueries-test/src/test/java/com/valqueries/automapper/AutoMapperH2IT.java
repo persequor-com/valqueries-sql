@@ -19,6 +19,6 @@ public class AutoMapperH2IT extends AutoMapperIT {
 	@Test
 	@Ignore
 	public void mixedMultiFieldSort_happy() throws Throwable {
-
+		//doesnt seem to be working in H2. Need's to be investigated further.
 	}
 }
