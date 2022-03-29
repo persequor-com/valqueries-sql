@@ -1278,16 +1278,16 @@ public abstract class AutoMapperBaseTests {
 				.sortDescending(Car::getTitle).sortAscending(Car::getBrand)
 				.execute().map(car -> Arrays.asList(car.getTitle(), car.getBrand())).collect(Collectors.toList());
 
-		assertEquals(Arrays.asList(
-						Arrays.asList("SUV", Brand.Porsche)
+		assertEquals(Arrays.asList(Arrays.asList("SUV", Brand.Porsche)
 						, Arrays.asList("Sedan", Brand.Hyundai)
-						,Arrays.asList("Sedan", Brand.Porsche)
+				        , Arrays.asList("Sedan", Brand.Porsche)
+
 				)
 				, actualReverse
 		);
 	}
 
-	private void carWithDoors(String carTitle, Brand brand) {
+	public void carWithDoors(String carTitle, Brand brand) {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle(carTitle);

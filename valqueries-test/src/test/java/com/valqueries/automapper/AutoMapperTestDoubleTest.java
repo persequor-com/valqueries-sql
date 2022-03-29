@@ -15,10 +15,4 @@ public class AutoMapperTestDoubleTest extends AutoMapperBaseTests {
 		injector = Guice.createInjector(module);
 		factory = injector.getInstance(GenericFactory.class);
 	}
-
-	@Test
-	@Ignore
-	public void mixedMultiFieldSort_happy() throws Throwable {
-		//doesnt work in testDoubleQuery. Ticket - OPEN-30.
-	}
 }
