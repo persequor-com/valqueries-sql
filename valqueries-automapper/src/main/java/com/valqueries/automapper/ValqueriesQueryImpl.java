@@ -167,12 +167,10 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			sql += " ORDER BY " + sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
 		}
 
-		if (limit !=  null) {
+		if (limit != null) {
 			sql += dialect.getLimitDefinition(offset, limit);
-		}
-
-		if(!sortElements.isEmpty() && limit ==null){
-			sql +=dialect.getLimitDefinition(0,Integer.MAX_VALUE);
+		} else if (!sortElements.isEmpty()) {
+			sql += dialect.getLimitDefinition(0, Integer.MAX_VALUE);
 		}
 
 		sql += ") " + tableAlias + " " + eagerJoin;
