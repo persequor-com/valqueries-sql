@@ -160,14 +160,19 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			}
 		}
 		String sql ="SELECT " + columnsSql + eagerSelect + " FROM (SELECT * FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias + " " + elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
+
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
+
 		if (!sortElements.isEmpty()) {
 			sql += " ORDER BY " + sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
 		}
-		if (limit !=  null) {
+
+		if (limit != null) {
 			sql += dialect.getLimitDefinition(offset, limit);
+		} else if (!sortElements.isEmpty()) {
+			sql += dialect.getLimitDefinition(0, Integer.MAX_VALUE);
 		}
 
 		sql += ") " + tableAlias + " " + eagerJoin;

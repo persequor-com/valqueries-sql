@@ -193,6 +193,15 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 	@Override
 	public <X> ValqueriesQuery<T> in(Function<T, X> field, X... value) {
 		field.apply(instance);
+		final Class<?> fieldType = this.typeDescriber.fields().get(queryWrapper.getCurrentProperty().getToken()).getType().clazz;
+
+		if (value != null && value.length > 0 && !fieldType.isAssignableFrom(value[0].getClass())) {
+			//it can happen for instance if we provide Collection of the type mismatching the field type then JVM would infer X as an object and make it the first element of the vararg array
+			throw new IllegalArgumentException("The type of the values is incorrectly inferred,"
+					+ " please make sure field type matches the type of the values array. "
+					+ String.format("Field type is '%s', value type is '%s'.", fieldType, value[0].getClass()));
+		}
+
 		in(queryWrapper.getCurrentProperty().values(value));
 		return this;
 	}
