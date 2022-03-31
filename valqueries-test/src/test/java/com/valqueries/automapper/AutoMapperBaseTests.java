@@ -1076,9 +1076,12 @@ public abstract class AutoMapperBaseTests {
 
 		bikeRepository.save(bike);
 
-		GroupStringResult result = bikeRepository.query().groupBy(Bike::getBikeType).concat(Bike::getId, ",");
+		String separator = ",";
+		GroupStringResult result = bikeRepository.query().groupBy(Bike::getBikeType).concat(Bike::getId, separator);
 		assertEquals(2, result.size());
-		assertEquals(mountainId1 + "," + mountainId2, result.get(BikeType.Mountain));
+		assertTrue(result.get(BikeType.Mountain).contains(mountainId1));
+		assertTrue(result.get(BikeType.Mountain).contains(mountainId2));
+		assertTrue(result.get(BikeType.Mountain).contains(separator));
 		assertEquals(racerId, result.get(BikeType.Racer));
 		assertEquals(2, result.keys().size());
 		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Mountain)).count());
