@@ -1483,6 +1483,91 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1, actualEngine.getCars().size());
 		assertEquals(model.getId(), actualEngine.getCars().get(0).getId());
 	}
+
+
+	@Test
+	@TestClasses({Car.class, Door.class})
+	public void sorting_happy() throws Throwable {
+		Arrays.asList("C","B","A")
+				.forEach(title->{carWithDoors(title, Brand.Porsche);});
+
+		List<String> ascendingTitles = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortAscending(Car::getTitle)
+				.execute().map(Car::getTitle).collect(Collectors.toList());
+
+		assertEquals(Arrays.asList("A", "B", "C"), ascendingTitles);
+
+		List<String> descendingTitles = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortDescending(Car::getTitle)
+				.execute().map(Car::getTitle).collect(Collectors.toList());
+
+		assertEquals(Arrays.asList("C", "B", "A"), descendingTitles);
+	}
+
+	@Test
+	@TestClasses({Car.class, Door.class})
+	public void mixedMultiFieldSort_happy() throws Throwable {
+
+		carWithDoors("SUV", Brand.Porsche);
+		carWithDoors("Sedan", Brand.Porsche);
+		carWithDoors("Sedan", Brand.Hyundai);
+
+		List<List<?>> actual = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortAscending(Car::getTitle).sortDescending(Car::getBrand)
+				.execute().map(car -> Arrays.asList(car.getTitle(), car.getBrand())).collect(Collectors.toList());
+
+		assertEquals(Arrays.asList(
+				Arrays.asList("Sedan", Brand.Porsche)
+				, Arrays.asList("Sedan", Brand.Hyundai)
+				, Arrays.asList("SUV", Brand.Porsche))
+				, actual
+		);
+
+		List<List<?>> actualReverse = carRepository.query()
+				.subQueryList(Car::getDoors, sq -> {
+					sq.in(Door::getTitle, "Nissan door 1");
+				})
+				.sortDescending(Car::getTitle).sortAscending(Car::getBrand)
+				.execute().map(car -> Arrays.asList(car.getTitle(), car.getBrand())).collect(Collectors.toList());
+
+		assertEquals(Arrays.asList(Arrays.asList("SUV", Brand.Porsche)
+						, Arrays.asList("Sedan", Brand.Hyundai)
+				        , Arrays.asList("Sedan", Brand.Porsche)
+
+				)
+				, actualReverse
+		);
+	}
+
+	public void carWithDoors(String carTitle, Brand brand) {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle(carTitle);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		model.setBrand(brand);
+		Door door1 = factory.get(Door.class);
+		door1.setId(UUID.randomUUID());
+		door1.setTitle("Nissan door 1");
+		door1.setCarId(model.getId());
+
+		Door door2 = factory.get(Door.class);
+		door2.setId(UUID.randomUUID());
+		door2.setTitle("Nissan door 2");
+		door2.setCarId(model.getId());
+
+		model.setDoors(Arrays.asList(door1, door2));
+		carRepository.save(model);
+	}
+
 }
 
 
