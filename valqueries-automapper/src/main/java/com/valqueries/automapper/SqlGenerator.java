@@ -51,7 +51,7 @@ public class SqlGenerator {
 						t.addColumn(property);
 					} else if (!table.getColumns().get(columnName.name()).matches(property, sqlType)) {
 						checkTypeCompatibiliy(property.getType(), table.getColumns().get(columnName.name()).getType());
-						t.modifyColumn(property.getToken(), property.getType().clazz);
+						t.modifyColumn(property);
 					}
 
 				});
