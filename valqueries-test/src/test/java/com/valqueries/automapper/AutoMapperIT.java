@@ -502,7 +502,6 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Car.class, Driver.class, DriverCar.class})
-	@Ignore
 	public void save_manyToMany_eagerWithSubquery_doesNotFilterResults() throws Throwable {
 		Car nissan = factory.get(Car.class);
 		nissan.setId(UUID.randomUUID());
@@ -548,7 +547,6 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Car.class, Driver.class, DriverCar.class})
-	@Ignore
 	public void save_manyToMany_lazyWithSubquery() throws Throwable {
 		Car nissan = factory.get(Car.class);
 		nissan.setId(UUID.randomUUID());

@@ -7,6 +7,8 @@ import com.valqueries.OrmException;
 import com.valqueries.automapper.GuiceModule;
 import com.valqueries.automapper.SqlNameFormatter;
 import com.valqueries.automapper.ValqueriesResolver;
+import io.ran.Clazz;
+import io.ran.Property;
 import io.ran.token.Token;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,8 +53,8 @@ public abstract class BaseSchemaBuilderIT {
 	@Test
 	public void buildSimpleSchema() {
 		builder.addTable(Token.get("TheTable"), tb -> {
-			tb.addColumn(Token.get("id"), UUID.class);
-			tb.addColumn(Token.get("title"), String.class);
+			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
+			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
 			tb.addPrimaryKey(Token.get("id"));
 		});
 		builder.build();
@@ -87,8 +89,8 @@ public abstract class BaseSchemaBuilderIT {
 	@Test
 	public void buildSimpleSchema_supportTemporal() {
 		builder.addTable(Token.get("TheTable"), tb -> {
-			tb.addColumn(Token.get("id"), UUID.class);
-			tb.addColumn(Token.get("timeField"), ZonedDateTime.class);
+			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
+			tb.addColumn(Property.get(Token.get("timeField"), Clazz.of(ZonedDateTime.class)));
 			tb.addPrimaryKey(Token.get("id"));
 		});
 		builder.build();
@@ -114,8 +116,8 @@ public abstract class BaseSchemaBuilderIT {
 	@Test
 	public void buildCompoundKeySchema() {
 		builder.addTable(Token.get("TheTable"), tb -> {
-			tb.addColumn(Token.get("id"), UUID.class);
-			tb.addColumn(Token.get("title"), String.class);
+			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
+			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
 			tb.addPrimaryKey(Token.get("id"), Token.get("title"));
 		});
 		builder.build();
@@ -146,14 +148,14 @@ public abstract class BaseSchemaBuilderIT {
 	@Test
 	public void modifyTable_dropColumn() {
 		builder.addTable(Token.get("TheTable"), tb -> {
-			tb.addColumn(Token.get("id"), UUID.class);
-			tb.addColumn(Token.get("title"), String.class);
+			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
+			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
 			tb.addPrimaryKey(Token.get("id"));
 		});
 
 		builder.modifyTable(Token.get("TheTable"), tb -> {
 			tb.dropPrimaryKey();
-			tb.modifyColumn(Token.get("id"), String.class);
+			tb.modifyColumn(Property.get(Token.get("id"), Clazz.of(String.class)));
 			tb.removeColumn(Token.get("title"));
 		});
 		builder.build();
@@ -192,15 +194,15 @@ public abstract class BaseSchemaBuilderIT {
 	@Test
 	public void modifyTable_addColumn() {
 		builder.addTable(Token.get("TheTable"), tb -> {
-			tb.addColumn(Token.get("id"), UUID.class);
-			tb.addColumn(Token.get("title"), String.class);
+			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
+			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
 			tb.addPrimaryKey(Token.get("id"));
 		});
 		builder.build();
 		builder = new ValqueriesSchemaBuilder(executor, sqlNameFormatter);
 
 		builder.modifyTable(Token.get("TheTable"), tb -> {
-			tb.addColumn(Token.get("CreatedAt"), ZonedDateTime.class);
+			tb.addColumn(Property.get(Token.get("CreatedAt"), Clazz.of(ZonedDateTime.class)));
 		});
 		builder.build();
 
@@ -226,8 +228,8 @@ public abstract class BaseSchemaBuilderIT {
 	@Test
 	public void modifyTable_addIndex() {
 		builder.addTable(Token.get("TheTable"), tb -> {
-			tb.addColumn(Token.get("id"), UUID.class);
-			tb.addColumn(Token.get("title"), String.class);
+			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
+			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
 			tb.addPrimaryKey(Token.get("id"));
 		});
 		builder.build();
@@ -260,8 +262,8 @@ public abstract class BaseSchemaBuilderIT {
 	@Test
 	public void modifyTable_addIndexWithCustomProperties() {
 		builder.addTable(Token.get("TheTable"), tb -> {
-			tb.addColumn(Token.get("id"), UUID.class);
-			tb.addColumn(Token.get("title"), String.class);
+			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
+			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
 			tb.addPrimaryKey(Token.get("id"));
 		});
 

@@ -2,8 +2,6 @@ package com.valqueries.automapper;
 
 import com.valqueries.Database;
 import com.valqueries.H2DataSourceProvider;
-import com.valqueries.SqlServerDataSourceProvider;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;

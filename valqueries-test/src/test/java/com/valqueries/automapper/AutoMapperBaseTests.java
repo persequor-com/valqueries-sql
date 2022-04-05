@@ -70,6 +70,7 @@ public abstract class AutoMapperBaseTests {
 	BikeRepository bikeRepository;
 	AllFieldTypesRepository allFieldTypesRepository;
 	PrimaryKeyModelRepository primayKeyModelRepository;
+	ObjectWithSerializedFieldRepository objectWithSerializedFieldRepository;
 	BipodRepository podRepository;
 
 
@@ -103,6 +104,7 @@ public abstract class AutoMapperBaseTests {
 		primayKeyModelRepository = injector.getInstance(PrimaryKeyModelRepository.class);
 		podRepository = injector.getInstance(BipodRepository.class);
 		allFieldTypesRepository = injector.getInstance(AllFieldTypesRepository.class);
+		objectWithSerializedFieldRepository = injector.getInstance(ObjectWithSerializedFieldRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -1568,6 +1570,22 @@ public abstract class AutoMapperBaseTests {
 		carRepository.save(model);
 	}
 
+	@Test
+	@TestClasses({ObjectWithSerializedField.class})
+	public void save_serializedField() throws Throwable {
+		ObjectWithSerializedField obj = factory.get(ObjectWithSerializedField.class);
+		obj.setId(UUID.randomUUID().toString());
+		obj.setSerialized(new SerializableObject());
+		obj.getSerialized().setDown("down");
+		obj.getSerialized().setUp(33);
+
+		objectWithSerializedFieldRepository.save(obj);
+
+		Optional<ObjectWithSerializedField> loadedObj = objectWithSerializedFieldRepository.get(obj.getId());
+		assertTrue(loadedObj.isPresent());
+		assertEquals("down", loadedObj.get().getSerialized().getDown());
+		assertEquals(33, loadedObj.get().getSerialized().getUp());
+	}
 }
 
 

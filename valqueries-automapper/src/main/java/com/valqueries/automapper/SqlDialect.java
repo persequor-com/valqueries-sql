@@ -4,11 +4,7 @@ import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
 import com.valqueries.automapper.schema.ValqueriesColumnToken;
 import com.valqueries.automapper.schema.ValqueriesTableToken;
-import io.ran.Clazz;
-import io.ran.DbName;
-import io.ran.KeySet;
-import io.ran.Property;
-import io.ran.TypeDescriber;
+import io.ran.*;
 import io.ran.token.ColumnToken;
 import io.ran.token.IndexToken;
 import io.ran.token.TableToken;
@@ -57,6 +53,10 @@ public interface SqlDialect {
 		Class type = property.getType().clazz;
 		if (mappedType != null) {
 			return mappedType.value();
+		}
+		Serialized serialized = property.getAnnotations().get(Serialized.class);
+		if (serialized != null) {
+			return "VARCHAR(4000)";
 		}
 		if (type == String.class) {
 			return "VARCHAR(255)";

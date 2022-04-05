@@ -155,7 +155,7 @@ public abstract class SqlGeneratorITBase {
 
 		SqlDescriber.DbTable table = describer.describe(dialect.table(Token.get("simple_test_table")), database);
 
-		assertNotEquals(textType(),table.columns.get("title").getType());
+		assertEquals(textType(),table.columns.get("title").getType());
 	}
 
 	@Test
