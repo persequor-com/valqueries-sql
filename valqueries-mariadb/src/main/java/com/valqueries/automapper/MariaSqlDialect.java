@@ -82,6 +82,19 @@ public class MariaSqlDialect implements SqlDialect {
 
 	}
 
+	@Override
+	public <O> String getInsert(CompoundColumnizer<O> columnizer, Class<O> oClass) {
+		return "INSERT INTO " +
+				getTableName(Clazz.of(oClass)) +
+				" (" +
+				columnizer.getColumns().stream().map(s -> "`" + s + "`").collect(Collectors.joining(", ")) +
+				") values " +
+				columnizer.getValueTokens().stream()
+						.map(tokens -> "(" + tokens.stream().map(t -> ":" + t).collect(Collectors.joining(", ")) + ")")
+						.collect(Collectors.joining(", "))
+				;
+	}
+
 	public String generateIndexOnCreateStatement(TableToken name, KeySet keyset, boolean isUnique) {
 		String indexType = "INDEX "+keyset.getName();
 		if (keyset.isPrimary()) {

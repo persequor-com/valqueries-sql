@@ -96,6 +96,19 @@ public class MssqlSqlDialect implements SqlDialect {
 		return updateStatement.toString();
 	}
 
+	@Override
+	public <O> String getInsert(CompoundColumnizer<O> columnizer, Class<O> oClass) {
+		return "INSERT INTO " +
+				getTableName(Clazz.of(oClass)) +
+				" (" +
+				columnizer.getColumns().stream().map(s -> "[" + s + "]").collect(Collectors.joining(", ")) +
+				") values " +
+				columnizer.getValueTokens().stream()
+						.map(tokens -> "(" + tokens.stream().map(t -> ":" + t).collect(Collectors.joining(", ")) + ")")
+						.collect(Collectors.joining(", "))
+				;
+	}
+
 	public String describe(TableToken tablename) {
 		return "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'"+tablename.unescaped()+"' ";
 	}

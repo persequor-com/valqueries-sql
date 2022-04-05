@@ -19,7 +19,6 @@ import io.ran.MappingHelper;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -175,8 +174,29 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		return getUpdateResult(tx.update(sql, columnizer));
 	}
 
+	private <O> CrudUpdateResult insertInternal(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesInsertFailedException {
+		if (ts.isEmpty()) {
+			return () -> 0;
+		}
+		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper, ts, sqlNameFormatter);
+		String sql = dialect.getInsert(columnizer, oClass);
+		UpdateResult result;
+		try {
+			result = tx.update(sql, columnizer); 
+		} catch (Exception e){
+			throw new ValqueriesInsertFailedException(e);
+		}
+		
+		return getUpdateResult(result);
+	}
+
 	public CrudUpdateResult save(ITransactionContext tx, T t) {
 		return saveInternal(tx, t, modelType);
+	}
+
+	@Override
+	public CrudUpdateResult insert(ITransactionContext tx, T t) throws ValqueriesInsertFailedException {
+		return insertInternal(tx, Collections.singletonList(t), modelType);
 	}
 
 	@Override
@@ -185,13 +205,28 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	}
 
 	@Override
+	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> ts) throws ValqueriesInsertFailedException {
+		return insertInternal(tx, ts, modelType);
+	}
+
+	@Override
 	public <O> CrudUpdateResult saveOther(ITransactionContext tx, O entity, Class<O> relationClass) {
 		return saveInternal(tx, entity, relationClass);
 	}
 
 	@Override
+	public <O> CrudUpdateResult insertOther(ITransactionContext tx, O t, Class<O> oClass) throws ValqueriesInsertFailedException {
+		return insertInternal(tx, Collections.singletonList(t), oClass);
+	}
+
+	@Override
 	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> entities, Class<O> relationClass) {
 		return saveInternal(tx, entities, relationClass);
+	}
+
+	@Override
+	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesInsertFailedException {
+		return insertInternal(tx, ts, oClass);
 	}
 
 	private CrudUpdateResult getUpdateResult(UpdateResult update) {
