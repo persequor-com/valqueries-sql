@@ -5,9 +5,7 @@ import com.valqueries.automapper.elements.*;
 import io.ran.*;
 import io.ran.token.Token;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -428,7 +426,8 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	}
 
 	private String buildGroupConcatAggregateSql(Property resultProperty, String separator) {
-		String sql = "SELECT GROUP_CONCAT " + "(" + dialect.column(resultProperty.getToken()) + " SEPARATOR '" + separator + "') as the_group_concat , " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
+
+		String sql = "SELECT "+dialect.groupConcat(resultProperty, separator)+" as the_group_concat , " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}

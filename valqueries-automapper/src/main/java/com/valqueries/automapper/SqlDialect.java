@@ -159,4 +159,8 @@ public interface SqlDialect {
 	}
 
 	boolean allowsConversion(Clazz sqlType, String type);
+
+    default String groupConcat(Property<Object> resultProperty, String separator) {
+		return "GROUP_CONCAT " + "(" + column(resultProperty.getToken()) + " SEPARATOR '" + separator + "')";
+	}
 }
