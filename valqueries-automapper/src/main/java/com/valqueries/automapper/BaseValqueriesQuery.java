@@ -214,4 +214,18 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 	}
 
 	protected abstract GroupNumericResult min(Property resultProperty);
+
+	@Override
+	public GroupStringResult concat(Function<T, ?> field, String separator) {
+		field.apply(instance);
+		return concat(queryWrapper.getCurrentProperty().copy(), separator);
+	}
+
+	@Override
+	public GroupStringResult concat(BiConsumer<T, ?> field, String separator) {
+		field.accept(instance, null);
+		return concat(queryWrapper.getCurrentProperty().copy(), separator);
+	}
+
+	protected abstract GroupStringResult concat(Property resultProperty, String separator);
 }

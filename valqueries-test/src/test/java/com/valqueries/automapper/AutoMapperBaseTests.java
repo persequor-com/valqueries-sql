@@ -1055,6 +1055,45 @@ public abstract class AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Bike.class})
+	public void groupByAggregate_concat() {
+		Bike bike = factory.get(Bike.class);
+		String mountainId1 = UUID.randomUUID().toString();
+		bike.setId(mountainId1);
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		String mountainId2 = UUID.randomUUID().toString();
+		bike.setId(mountainId2);
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		String racerId = UUID.randomUUID().toString();
+		bike.setId(racerId);
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		String separator = ",";
+		GroupStringResult result = bikeRepository.query().groupBy(Bike::getBikeType).concat(Bike::getId, separator);
+		assertEquals(2, result.size());
+		assertTrue(result.get(BikeType.Mountain).contains(mountainId1));
+		assertTrue(result.get(BikeType.Mountain).contains(mountainId2));
+		assertTrue(result.get(BikeType.Mountain).contains(separator));
+		assertEquals(racerId, result.get(BikeType.Racer));
+		assertEquals(2, result.keys().size());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Mountain)).count());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Racer)).count());
+	}
+
+	@Test
+	@TestClasses({Bike.class})
 	public void groupByAggregate_multipleFields_count() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());

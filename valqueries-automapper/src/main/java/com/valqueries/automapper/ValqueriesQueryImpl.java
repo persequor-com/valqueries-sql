@@ -339,6 +339,25 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		}
 	}
 
+	protected GroupStringResult aggregateString(Property resultProperty, String separator) {
+		try {
+			String sql = buildGroupConcatAggregateSql(resultProperty, separator);
+			Map<GroupStringResultImpl.Grouping, String> res = transactionContext.query(sql, this, row -> {
+				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter));
+				T t = genericFactory.get(modelType);
+				mappingHelper.hydrate(t, hydrator);
+				return new GroupStringResultImpl.Grouping(hydrator.getValues(), row.getString("the_group_concat"));
+			}).stream().collect(Collectors.toMap(g -> g, g -> g.getValue().toString()));
+			return new GroupStringResultImpl(res);
+		} finally {
+			try {
+				close();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
 	@Override
 	protected GroupNumericResult count(Property resultProperty) {
 		return aggregateMethod(resultProperty, "COUNT");
@@ -357,6 +376,11 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 	@Override
 	protected GroupNumericResult min(Property resultProperty) {
 		return aggregateMethod(resultProperty, "MIN");
+	}
+
+	@Override
+	protected GroupStringResult concat(Property resultProperty, String separator) {
+		return aggregateString(resultProperty, separator);
 	}
 
 	@Override
@@ -393,6 +417,17 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	private String buildGroupAggregateSql(Property resultProperty, String aggregateMethod) {
 		String sql = "SELECT " + aggregateMethod + "(" + dialect.column(resultProperty.getToken()) + ") as the_count , " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
+		if (!elements.isEmpty()) {
+			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
+		}
+		sql += " GROUP BY " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + "";
+//		System.out.println(sql);
+		return sql;
+	}
+
+	private String buildGroupConcatAggregateSql(Property resultProperty, String separator) {
+
+		String sql = "SELECT "+dialect.groupConcat(resultProperty, separator)+" as the_group_concat , " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}

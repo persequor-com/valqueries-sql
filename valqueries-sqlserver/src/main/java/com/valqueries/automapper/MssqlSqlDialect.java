@@ -223,4 +223,9 @@ public class MssqlSqlDialect implements SqlDialect {
 		}
 		return false;
 	}
+
+	@Override
+	public String groupConcat(Property<Object> resultProperty, String separator) {
+		return "STRING_AGG " + "(" + column(resultProperty.getToken()) + ", '" + separator + "')";
+	}
 }
