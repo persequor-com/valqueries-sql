@@ -4,6 +4,7 @@ import com.valqueries.IStatement;
 import com.valqueries.automapper.SqlDialect;
 import com.valqueries.automapper.SqlNameFormatter;
 import com.valqueries.automapper.ValqueriesQueryImpl;
+import io.ran.KeySet;
 import io.ran.RelationDescriber;
 
 import java.util.stream.Collectors;
@@ -26,9 +27,14 @@ public class RelationSubQueryElement implements Element {
 	}
 
 	public String queryString() {
-		return "(" + relation.getFromKeys().stream().map(key -> parentTableAlias + "." + dialect.escapeColumnOrTable(sqlNameFormatter.column(key.getToken()))).collect(Collectors.joining(", ")) + ")" +
-				" IN (" + otherQuery.buildSelectSql(tableAlias, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).toArray(String[]::new)) + ")";
+		String res = "";
+		for(int i=0;i<relation.getFromKeys().size();i++) {
+			KeySet.Field key = relation.getFromKeys().get(i);
+			KeySet.Field toKey = relation.getToKeys().get(i);
+			res += (res.length() > 0 ? " AND " : "")+tableAlias+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(toKey.getToken()))+ " = "+parentTableAlias + "." + dialect.escapeColumnOrTable(sqlNameFormatter.column(key.getToken()));
+		}
 
+		return "exists ("+otherQuery.buildSimpleSelectSql(tableAlias, res, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).collect(Collectors.toList()))+")";
 	}
 
 	@Override

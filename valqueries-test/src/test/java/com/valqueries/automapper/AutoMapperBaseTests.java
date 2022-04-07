@@ -62,6 +62,7 @@ public abstract class AutoMapperBaseTests {
 	DoorRepository doorRepository;
 	SqlGenerator sqlGenerator;
 	private EngineRepository engineRepository;
+	EngineCarRepository engineCarRepository;
 	TypeDescriber<Exhaust> exhaustDescriber;
 	ExhaustRepository exhaustRepository;
 	TireRepository tireRepository;
@@ -69,6 +70,7 @@ public abstract class AutoMapperBaseTests {
 	BikeRepository bikeRepository;
 	AllFieldTypesRepository allFieldTypesRepository;
 	PrimaryKeyModelRepository primayKeyModelRepository;
+	ObjectWithSerializedFieldRepository objectWithSerializedFieldRepository;
 	BipodRepository podRepository;
 
 
@@ -94,6 +96,7 @@ public abstract class AutoMapperBaseTests {
 		carRepository = injector.getInstance(CarRepository.class);
 		doorRepository = injector.getInstance(DoorRepository.class);
 		engineRepository = injector.getInstance(EngineRepository.class);
+		engineCarRepository = injector.getInstance(EngineCarRepository.class);
 		exhaustRepository = injector.getInstance(ExhaustRepository.class);
 		tireRepository = injector.getInstance(TireRepository.class);
 		withCollectionsRepository = injector.getInstance(WithCollectionsRepository.class);
@@ -101,6 +104,7 @@ public abstract class AutoMapperBaseTests {
 		primayKeyModelRepository = injector.getInstance(PrimaryKeyModelRepository.class);
 		podRepository = injector.getInstance(BipodRepository.class);
 		allFieldTypesRepository = injector.getInstance(AllFieldTypesRepository.class);
+		objectWithSerializedFieldRepository = injector.getInstance(ObjectWithSerializedFieldRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -798,7 +802,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses({Bike.class, BikeGear.class})
+	@TestClasses({Bike.class, BikeGear.class, BikeGearBike.class})
 	public void deleteOtherClass() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -1262,6 +1266,265 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(0, affectedRows);
 	}
 
+	@Test
+	@TestClasses(Car.class)
+	public void insert_happy() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+
+		Optional<Car> actualOptional = carRepository.get(model.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+		assertEquals(model.getTitle(), actual.getTitle());
+		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+	}
+
+	@Test
+	@TestClasses({Car.class,  Engine.class})
+	public void insert_withPreviousRecord() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+
+		Car secondModel = factory.get(Car.class);
+		secondModel.setId(model.getId());
+		secondModel.setTitle("Muh number 2");
+		secondModel.setBrand(Brand.Porsche);
+		secondModel.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		try {
+			carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, secondModel));
+		} catch (Exception e){
+			assertTrue(e.getCause() instanceof ValqueriesInsertFailedException);
+		}
+	}
+
+	@Test
+	@TestClasses({Car.class,  Engine.class})
+	public void insert_collection_happy() {
+		Car model1 = factory.get(Car.class);
+		model1.setId(UUID.randomUUID());
+		model1.setTitle("Muh");
+		model1.setBrand(Brand.Porsche);
+		model1.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		Car model2 = factory.get(Car.class);
+		model2.setId(UUID.randomUUID());
+		model2.setTitle("Muh");
+		model2.setBrand(Brand.Porsche);
+		model2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, Arrays.asList(model1, model2)));
+
+		Optional<Car> actualOptional = carRepository.get(model1.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model1.getId(), actual.getId());
+		assertEquals(model1.getTitle(), actual.getTitle());
+		assertEquals(model1.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+
+		actualOptional = carRepository.get(model2.getId());
+		Car actual2 = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model2.getId(), actual2.getId());
+		assertEquals(model2.getTitle(), actual2.getTitle());
+		assertEquals(model2.getCreatedAt(), actual2.getCreatedAt());
+		assertEquals(Brand.Porsche, actual2.getBrand());
+	}
+
+	@Test
+	@TestClasses({Car.class,  Door.class})
+	public void insert_collection_oneIsAlreadyPresent_throwsDuplicateKeyExceptionAndRollbackTransaction() {
+		Car model1 = factory.get(Car.class);
+		model1.setId(UUID.randomUUID());
+		model1.setTitle("Muh");
+		model1.setBrand(Brand.Porsche);
+		model1.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		// insert model1 already
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model1));
+
+		Car model2 = factory.get(Car.class);
+		model2.setId(UUID.randomUUID());
+		model2.setTitle("Muh");
+		model2.setBrand(Brand.Porsche);
+		model2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		try {
+			carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, Arrays.asList(model1, model2)));
+			fail("An exception of type ValqueriesDuplicateKeyException should have been thrown here");
+		} catch (Exception e){
+			assertTrue(e.getCause() instanceof ValqueriesInsertFailedException);
+		}
+		
+		Optional<Car> actualOptional = carRepository.get(model1.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model1.getId(), actual.getId());
+		assertEquals(model1.getTitle(), actual.getTitle());
+		assertEquals(model1.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+
+		assertFalse(carRepository.get(model2.getId()).isPresent());
+	}
+
+	@Test
+	@TestClasses({Car.class, Exhaust.class})
+	public void insert_withRelation_ignoreRelation(){
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		Exhaust exhaust = new Exhaust();
+		exhaust.setId(UUID.randomUUID());
+		exhaust.setBrand(Brand.Porsche);
+		model.setExhaust(exhaust);
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+
+		Optional<Car> actualOptional = carRepository.get(model.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+		assertEquals(model.getTitle(), actual.getTitle());
+		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+		assertEquals(exhaust.getId(), actual.getExhaustId());
+		assertNull(actual.getExhaust());
+	}
+
+	@Test
+	@TestClasses({Car.class, Exhaust.class})
+	public void insert_onOneToOne_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery(){
+
+		Exhaust exhaust = factory.get(Exhaust.class);
+		exhaust.setId(UUID.randomUUID());
+		exhaust.setBrand(Brand.Porsche);
+		
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		model.setExhaust(exhaust);
+
+		// manually set exhaustId to null because the exhaust setter also sets it  
+		model.setExhaustId(null);
+		
+		//manual inserts
+		exhaustRepository.doRetryableInTransaction(tx -> exhaustRepository.insert(tx, exhaust));
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+
+		Optional<Car> actualOptional = carRepository.get(model.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+		assertEquals(model.getTitle(), actual.getTitle());
+		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+		assertNull(actual.getExhaust());
+	}
+
+	@Test
+	@TestClasses({Car.class, Door.class})
+	public void insert_onOneToMany_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery(){
+
+		Door door1 = factory.get(Door.class);
+		door1.setTitle("front-left");
+		door1.setId(UUID.randomUUID());
+
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		// set relations
+		model.setDoors(Collections.singletonList(door1));
+		door1.setCar(model);
+		// manually set carId to null because the car setter also sets it  
+		door1.setCarId(null);
+		doorRepository.doRetryableInTransaction(tx -> doorRepository.insert(tx, door1));
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+
+		Optional<Car> actualOptional = carRepository.get(model.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+		assertEquals(model.getTitle(), actual.getTitle());
+		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+		assertEquals(0, actual.getDoors().size());
+		
+		Optional<Door> actualDoor = doorRepository.get(door1.getId());
+		assertNull(actualDoor.get().getCarId());
+	}
+
+	@Test
+	@TestClasses({Car.class, Engine.class, EngineCar.class})
+	public void insert_onManyToMany_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery(){
+
+		Engine engine = factory.get(Engine.class);
+		engine.setId(UUID.randomUUID());
+
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		// set relations
+		model.setEngines(Collections.singletonList(engine));
+		engine.setCars(Collections.singletonList(model));
+
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+		engineRepository.doRetryableInTransaction(tx -> engineRepository.insert(tx, engine));
+
+		Optional<Car> actualOptional = carRepository.get(model.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+		assertEquals(model.getTitle(), actual.getTitle());
+		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+		assertEquals(0, actual.getEngines().size());
+	}
+
+	@Test
+	@TestClasses({Car.class, Engine.class, EngineCar.class})
+	public void insert_onManyToMany_whenSettingKeysCorrectly_thenRelationIsRetrievedOnQuery(){
+
+		Engine engine = factory.get(Engine.class);
+		engine.setId(UUID.randomUUID());
+
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		// set relations
+		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+		engineRepository.doRetryableInTransaction(tx -> engineRepository.insert(tx, engine));
+		EngineCar engineCar = factory.get(EngineCar.class);
+		engineCar.setCarId(model.getId());
+		engineCar.setEngineId(engine.getId());
+		engineCarRepository.doRetryableInTransaction(tx -> engineCarRepository.insert(tx, engineCar));
+
+		Optional<Car> actualOptional = carRepository.get(model.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+		assertEquals(model.getTitle(), actual.getTitle());
+		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+		assertEquals(1, actual.getEngines().size());
+		assertEquals(engine.getId(), actual.getEngines().get(0).getId());
+		
+		Optional<Engine> optionalEngine = engineRepository.get(engine.getId());
+		Engine actualEngine = optionalEngine.orElseThrow(RuntimeException::new);
+		assertEquals(1, actualEngine.getCars().size());
+		assertEquals(model.getId(), actualEngine.getCars().get(0).getId());
+	}
+
 
 	@Test
 	@TestClasses({Car.class, Door.class})
@@ -1346,6 +1609,22 @@ public abstract class AutoMapperBaseTests {
 		carRepository.save(model);
 	}
 
+	@Test
+	@TestClasses({ObjectWithSerializedField.class})
+	public void save_serializedField() throws Throwable {
+		ObjectWithSerializedField obj = factory.get(ObjectWithSerializedField.class);
+		obj.setId(UUID.randomUUID().toString());
+		obj.setSerialized(new SerializableObject());
+		obj.getSerialized().setDown("down");
+		obj.getSerialized().setUp(33);
+
+		objectWithSerializedFieldRepository.save(obj);
+
+		Optional<ObjectWithSerializedField> loadedObj = objectWithSerializedFieldRepository.get(obj.getId());
+		assertTrue(loadedObj.isPresent());
+		assertEquals("down", loadedObj.get().getSerialized().getDown());
+		assertEquals(33, loadedObj.get().getSerialized().getUp());
+	}
 }
 
 

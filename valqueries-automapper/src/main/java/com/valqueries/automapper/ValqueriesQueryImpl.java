@@ -129,6 +129,39 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		return this;
 	}
 
+	public String buildSimpleSelectSql(String tableAlias, String where, Collection<String> columns) {
+		T t = genericFactory.get(modelType);
+		String columnsSql;
+		if (columns.size() == 0) {
+			ValqueriesColumnBuilder columnBuilder = new ValqueriesColumnBuilder(tableAlias, sqlNameFormatter, dialect);
+			mappingHelper.hydrate(t, columnBuilder);
+			columnsSql = columnBuilder.getSql();
+		} else {
+			columnsSql = String.join(", ", columns);
+		}
+
+		String sql ="SELECT "+columnsSql+" FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias + " " + elements.stream().map(Element::fromString).filter(Objects::nonNull).collect(Collectors.joining(", "));
+
+		if (!elements.isEmpty()) {
+			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
+			sql += " AND "+where;
+		} else {
+			sql += " WHERE "+where;
+		}
+
+		if (!sortElements.isEmpty()) {
+			sql += " ORDER BY " + sortElements.stream().map(Element::queryString).collect(Collectors.joining(", "));
+		}
+
+		if (limit != null) {
+			sql += dialect.getLimitDefinition(offset, limit);
+		} else if (!sortElements.isEmpty()) {
+			sql += dialect.getLimitDefinition(0, Integer.MAX_VALUE);
+		}
+
+
+		return sql;
+	}
 
 	public String buildSelectSql(String tableAlias, String... columns) {
 		T t = genericFactory.get(modelType);

@@ -57,9 +57,23 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
+	public CrudUpdateResult insert(ITransactionContext tx, T entity) throws ValqueriesInsertFailedException {
+		final ChangeMonitor changed = new ChangeMonitor();
+		changed.increment(entity, insertOther(tx, entity, modelType).affectedRows());
+		return changed::getNumberOfChangedRows;
+	}
+
+	@Override
 	public CrudUpdateResult save(ITransactionContext tx, Collection<T> entities) {
 		final ChangeMonitor changed = new ChangeMonitor();
 		saveIncludingRelationsInternal(changed, tx, entities, modelType);
+		return changed::getNumberOfChangedRows;
+	}
+
+	@Override
+	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> entities) throws ValqueriesInsertFailedException {
+		final ChangeMonitor changed = new ChangeMonitor();
+		changed.increment(entities, insertOthers(tx, entities, modelType).affectedRows());
 		return changed::getNumberOfChangedRows;
 	}
 
@@ -67,10 +81,24 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		return baseRepo.saveOther(tx, t, oClass);
 	}
 
+	@Override
+	public <O> CrudUpdateResult insertOther(ITransactionContext tx, O t, Class<O> oClass) throws ValqueriesInsertFailedException {
+		return baseRepo.insertOther(tx, t, oClass);
+	}
+
 	public <O> CrudUpdateResult saveOthers(ITransactionContext tx, Collection<O> t, Class<O> oClass) {
 		return baseRepo.saveOthers(tx, t, oClass);
 	}
 
+	@Override
+	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesInsertFailedException {
+		return baseRepo.insertOthers(tx, ts, oClass);
+	}
+	
+	/*
+		Save methods
+	 */
+	
 	private <O> void saveIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<O> ts, Class<O> xClass) {
 		Collection<O> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
 		changed.increment(notAlreadySaved, saveOthers(tx, notAlreadySaved, xClass).affectedRows());
@@ -78,7 +106,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 			internalSaveRelation(changed, tx, notAlreadySaved, relationDescriber);
 		});
 	}
-
+	
 	private <X> void saveIncludingRelationInternal(ChangeMonitor changed, ITransactionContext tx, X t, Class<X> xClass) {
 		if (changed.isAlreadySaved(t)) {
 			return;
