@@ -113,7 +113,7 @@ public class H2SqlDialect implements SqlDialect {
 		return "INSERT INTO " +
 				getTableName(Clazz.of(oClass)) +
 				" (" +
-				columnizer.getColumns().stream().map(s -> "`" + s + "`").collect(Collectors.joining(", ")) +
+				columnizer.getColumns().stream().map(s -> s ).collect(Collectors.joining(", ")) +
 				") values " +
 				columnizer.getValueTokens().stream()
 						.map(tokens -> "(" + tokens.stream().map(t -> ":" + t).collect(Collectors.joining(", ")) + ")")

@@ -38,7 +38,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	protected SqlNameFormatter sqlNameFormatter;
 
 
-	public ValqueriesColumnizer(GenericFactory factory, MappingHelper mappingHelper, T t, SqlNameFormatter columnFormatter) {
+	public ValqueriesColumnizer(GenericFactory factory, MappingHelper mappingHelper, T t, SqlNameFormatter columnFormatter,SqlDialect dialect) {
 		this.sqlNameFormatter = columnFormatter;
 		this.dialect = dialect;
 		key = mappingHelper.getKey(t);

@@ -20,14 +20,14 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 	private List<String> valueTokensCurrent = new ArrayList<>();
 	private Token.TokenList keyFields;
 	private int index = 0;
-	private TypeDescriber ts;
 
-	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> ts, SqlNameFormatter sqlNameFormatter, SqlDialect dialect,TypeDescriber<T> typeDescriber) {
+
+	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> type, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber<T> typeDescriber) {
 		this.ts = typeDescriber;
 		this.dialect = dialect;
 		this.sqlNameFormatter = sqlNameFormatter;
-		this.key = mappingHelper.getKey(ts.stream().findFirst().get());
-		for (T t : ts) {
+		this.key = mappingHelper.getKey(type.stream().findFirst().get());
+		for (T t : type) {
 			if (keyFields == null) {
 				keyFields = new Token.TokenList();
 				for(Object propertyValue : mappingHelper.getKey(t).getValues()) {

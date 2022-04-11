@@ -1,6 +1,9 @@
 package com.valqueries.automapper;
 
+import io.ran.DbName;
 import io.ran.ObjectMapHydrator;
+import io.ran.Property;
+import io.ran.TypeDescriber;
 import io.ran.token.Token;
 
 import java.math.BigDecimal;
@@ -19,11 +22,13 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	private String prefix;
 	private SqlNameFormatter sqlNameFormatter;
 	private SqlDialect dialect;
+	private TypeDescriber typeDescriber;
 
-	public ValqueriesColumnBuilder(String prefix, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
+	public ValqueriesColumnBuilder(String prefix, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber typeDescriber) {
 		this.prefix = prefix;
 		this.sqlNameFormatter = sqlNameFormatter;
 		this.dialect = dialect;
+		this.typeDescriber = typeDescriber;
 	}
 
 	@Override
@@ -135,6 +140,14 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	}
 
 	public String getSql() {
-		return columns.stream().map(t -> prefix+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(t))+" "+prefix+"_"+sqlNameFormatter.column(t)).collect(Collectors.joining(", "));
+		return columns.stream().map(t -> {
+			List<Property> collect = typeDescriber.fields().stream().filter(field -> field.getToken().equals(t)).collect(Collectors.toList());
+			DbName dbName = collect.get(0).getAnnotations().get(DbName.class);
+			if (dbName != null) {
+				return prefix + "." + dialect.escapeColumnOrTable(dbName.value()) + " " + prefix + "_" + dbName.value();
+			} else {
+				return prefix + "." + dialect.escapeColumnOrTable(sqlNameFormatter.column(t)) + " " + prefix + "_" + sqlNameFormatter.column(t);
+			}
+		}).collect(Collectors.joining(", "));
 	}
 }

@@ -65,7 +65,7 @@ public class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder
 	@Override
 	protected ColumnActionDelegate remove() {
 		return (t,ca) -> {
-			return "ALTER TABLE "+t.getName()+" DROP COLUMN "+dialect.column(ca.getProperty()).toString();
+			return "ALTER TABLE "+t.getName()+" DROP COLUMN "+ca.getName();
 		};
 	}
 

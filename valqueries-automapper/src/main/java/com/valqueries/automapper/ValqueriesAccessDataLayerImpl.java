@@ -79,7 +79,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 
 	protected T hydrate(OrmResultSet row) {
 		T t = genericFactory.get(modelType);
-		mappingHelper.hydrate(t, new ValqueriesHydrator(row, sqlNameFormatter));
+		mappingHelper.hydrate(t, new ValqueriesHydrator(row, sqlNameFormatter, dialect, typeDescriber));
 		return t;
 	}
 
@@ -166,7 +166,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		if (ts.isEmpty()) {
 			return () -> 0;
 		}
-		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper,ts, sqlNameFormatter,dialect, (TypeDescriber<O>) typeDescriber);
+		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper,ts, sqlNameFormatter,dialect, TypeDescriberImpl.getTypeDescriber(oClass));
 
 
 		String sql = dialect.getUpsert(columnizer, oClass);
@@ -178,7 +178,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		if (ts.isEmpty()) {
 			return () -> 0;
 		}
-		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper, ts, sqlNameFormatter,dialect, (TypeDescriber<O>) typeDescriber);
+		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper, ts, sqlNameFormatter,dialect,TypeDescriberImpl.getTypeDescriber(oClass));
 		String sql = dialect.getInsert(columnizer, oClass);
 		UpdateResult result;
 		try {

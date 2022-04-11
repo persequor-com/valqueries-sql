@@ -6,15 +6,19 @@
 package com.valqueries.automapper;
 
 import com.valqueries.OrmResultSet;
+import com.valqueries.automapper.schema.ValqueriesColumnToken;
+import io.ran.DbName;
 import io.ran.ObjectMapHydrator;
+import io.ran.Property;
+import io.ran.TypeDescriber;
 import io.ran.token.Token;
+import sun.awt.X11.XPropertyCache;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,21 +32,33 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	private String prefix;
 	private OrmResultSet row;
 	private SqlNameFormatter sqlNameFormatter;
+	private SqlDialect dialect;
+	private TypeDescriber typeDescriber;
 
-	public ValqueriesHydrator(OrmResultSet row, SqlNameFormatter sqlNameFormatter) {
+	private String transformKey(Token key) {
+		List<Property> collect = typeDescriber.fields().stream().filter(field -> field.getToken().equals(key)).collect(Collectors.toList());
+		DbName dbName = collect.get(0).getAnnotations().get(DbName.class);
+		if (dbName != null) {
+			return prefix+dbName.value();
+		} else {
+			return prefix+sqlNameFormatter.column(key);
+		}
+	}
+
+	public ValqueriesHydrator(OrmResultSet row, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber typeDescriber) {
 		this.sqlNameFormatter = sqlNameFormatter;
+		this.dialect = dialect;
+		this.typeDescriber = typeDescriber;
 		this.prefix = "";
 		this.row = row;
 	}
 
-	public ValqueriesHydrator(String prefix, OrmResultSet row, SqlNameFormatter sqlNameFormatter) {
+	public ValqueriesHydrator(String prefix, OrmResultSet row, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber typeDescriber) {
 		this.prefix = prefix;
 		this.row = row;
+		this.typeDescriber = typeDescriber;
 		this.sqlNameFormatter = sqlNameFormatter;
-	}
-
-	private String transformKey(Token key) {
-		return prefix+sqlNameFormatter.column(key);
+		this.dialect = dialect;
 	}
 
 	@Override
