@@ -416,7 +416,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 
 	private String buildGroupAggregateSql(Property resultProperty, String aggregateMethod) {
-		String sql = "SELECT " + aggregateMethod + "(" + dialect.column(resultProperty.getToken()) + ") as the_count , " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
+		String sql = "SELECT " + aggregateMethod + "(" + dialect.column(resultProperty) + ") as the_count , " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}

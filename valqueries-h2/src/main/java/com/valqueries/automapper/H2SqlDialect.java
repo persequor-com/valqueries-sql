@@ -40,10 +40,10 @@ public class H2SqlDialect implements SqlDialect {
 	public <O> String getUpsert(CompoundColumnizer<O> columnizer, Class<O> oClass) {
 		String sql =  "MERGE INTO "+getTableName(Clazz.of(oClass))+" as target USING " +
 				"(VALUES "+columnizer.getValueTokens().stream().map((l) -> "("+l.stream().map(e -> ":"+e).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", "))+
-				") incoming ("+columnizer.getFields().entrySet().stream().map((e) -> escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", "))+") on "+columnizer.getKeys().stream().map(k -> "target."+escapeColumnOrTable(k)+" = incoming."+escapeColumnOrTable(k)).collect(Collectors.joining(" AND "))+
-				(columnizer.getFieldsWithoutKeys().size() > 0 ? " WHEN MATCHED THEN UPDATE SET "+columnizer.getFieldsWithoutKeys().entrySet().stream().map(e -> escapeColumnOrTable(e.getValue())+" = incoming."+escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", ")):"")+
-				" WHEN NOT MATCHED THEN INSERT ("+columnizer.getFields().entrySet().stream().map(e -> escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", "))+") " +
-				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming."+escapeColumnOrTable(e.getValue())).collect(Collectors.joining(", "))+");";
+				") incoming ("+columnizer.getFields().entrySet().stream().map((e) -> (e.getValue())).collect(Collectors.joining(", "))+") on "+columnizer.getKeys().stream().map(k -> "target."+(k)+" = incoming."+(k)).collect(Collectors.joining(" AND "))+
+				(columnizer.getFieldsWithoutKeys().size() > 0 ? " WHEN MATCHED THEN UPDATE SET "+columnizer.getFieldsWithoutKeys().entrySet().stream().map(e -> (e.getValue())+" = incoming."+(e.getValue())).collect(Collectors.joining(", ")):"")+
+				" WHEN NOT MATCHED THEN INSERT ("+columnizer.getFields().entrySet().stream().map(e -> (e.getValue())).collect(Collectors.joining(", "))+") " +
+				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming."+(e.getValue())).collect(Collectors.joining(", "))+");";
 
 		return sql;
 	}
@@ -175,17 +175,17 @@ public class H2SqlDialect implements SqlDialect {
 
 	@Override
 	public String generatePrimaryKeyStatement(TableToken name, KeySet key, boolean isUnique) {
-		return  "PRIMARY KEY (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
+		return  "PRIMARY KEY (" + key.stream().map(f -> column(f.getProperty())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 	}
 
 	@Override
 	public String generateIndexStatement(TableToken tablename, KeySet key, boolean isUnique) {
 
-		return "CREATE INDEX "+escapeColumnOrTable(key.getName())+" ON " + tablename + " (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")" + ";";
+		return "CREATE INDEX "+escapeColumnOrTable(key.getName())+" ON " + tablename + " (" + key.stream().map(f -> column(f.getProperty())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")" + ";";
 	}
 	public String generateDeleteStatement(String tableAlias, TypeDescriber<?> typeDescriber, List<Element> elements, int offset, Integer limit) {
 		String sql = "DELETE FROM " + getTableName(Clazz.of(typeDescriber.clazz()))+ " AS del";
-		sql += " WHERE exists (SELECT * FROM "+getTableName(Clazz.of(typeDescriber.clazz()))+" AS "+tableAlias+ " WHERE "+typeDescriber.primaryKeys().stream().map(f -> "del."+column(f.getToken())+" = main."+column(f.getToken())).collect(Collectors.joining(" AND "));
+		sql += " WHERE exists (SELECT * FROM "+getTableName(Clazz.of(typeDescriber.clazz()))+" AS "+tableAlias+ " WHERE "+typeDescriber.primaryKeys().stream().map(f -> "del."+column(f.getProperty())+" = main."+column(f.getProperty())).collect(Collectors.joining(" AND "));
 		if (!elements.isEmpty()) {
 			sql += " AND "+elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}

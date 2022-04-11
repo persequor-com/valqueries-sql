@@ -45,7 +45,7 @@ public class SqlGenerator {
 			ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
 			schemaBuilder.modifyTable(tablename, t -> {
 				typeDescriber.fields().forEach(property -> {
-					ColumnToken columnName = dialect.column(property.getToken());
+					ColumnToken columnName = dialect.column(property);
 					String sqlType = dialect.getSqlType(property);
 					if (!table.getColumns().containsKey(columnName.name())) {
 						t.addColumn(property);

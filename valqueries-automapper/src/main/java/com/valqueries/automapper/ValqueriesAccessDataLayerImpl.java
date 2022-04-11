@@ -166,7 +166,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		if (ts.isEmpty()) {
 			return () -> 0;
 		}
-		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper,ts, sqlNameFormatter);
+		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper,ts, sqlNameFormatter,dialect, (TypeDescriber<O>) typeDescriber);
 
 
 		String sql = dialect.getUpsert(columnizer, oClass);
@@ -178,7 +178,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		if (ts.isEmpty()) {
 			return () -> 0;
 		}
-		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper, ts, sqlNameFormatter);
+		CompoundColumnizer<O> columnizer = new CompoundColumnizer<O>(genericFactory, mappingHelper, ts, sqlNameFormatter,dialect, (TypeDescriber<O>) typeDescriber);
 		String sql = dialect.getInsert(columnizer, oClass);
 		UpdateResult result;
 		try {

@@ -33,12 +33,12 @@ public class MariaSqlDialect implements SqlDialect {
 
 	@Override
 	public <O> String getUpsert(CompoundColumnizer<O> columnizer, Class<O> oClass) {
-		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" ("+columnizer.getColumns().stream().map(s -> "`"+s+"`").collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
+		String sql = "INSERT INTO "+getTableName(Clazz.of(oClass))+" ("+columnizer.getColumns().stream().map(s -> s).collect(Collectors.joining(", "))+") values "+(columnizer.getValueTokens().stream().map(tokens -> "("+tokens.stream().map(t -> ":"+t).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", ")));
 
 		if (!columnizer.getColumnsWithoutKey().isEmpty()) {
-			sql += " on duplicate key update "+columnizer.getColumnsWithoutKey().stream().distinct().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
+			sql += " on duplicate key update "+columnizer.getColumnsWithoutKey().stream().distinct().map(column -> column+" = VALUES("+column+")").collect(Collectors.joining(", "));
 		} else {
-			sql += " on duplicate key update "+columnizer.getColumns().stream().distinct().map(column -> "`"+column+"` = VALUES(`"+column+"`)").collect(Collectors.joining(", "));
+			sql += " on duplicate key update "+columnizer.getColumns().stream().distinct().map(column -> column+" = VALUES("+column+")").collect(Collectors.joining(", "));
 		}
 		return sql;
 	}
@@ -102,7 +102,7 @@ public class MariaSqlDialect implements SqlDialect {
 		} else if (isUnique) {
 			indexType = "UNIQUE "+ keyset.getName();
 		}
-		return indexType+" "+"("+keyset.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
+		return indexType+" "+"("+keyset.stream().map(f -> column(f.getProperty())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 	}
 
 	@Override
@@ -122,7 +122,7 @@ public class MariaSqlDialect implements SqlDialect {
 
 	@Override
 	public String generatePrimaryKeyStatement(TableToken name, KeySet key, boolean isUnique) {
-		return "PRIMARY KEY ("+key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
+		return "PRIMARY KEY ("+key.stream().map(f -> column(f.getProperty())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 	}
 
 	public String generateDropIndexStatement(TableToken tableName, IndexToken index, boolean isPrimary) {
@@ -142,7 +142,7 @@ public class MariaSqlDialect implements SqlDialect {
 		if (key.isPrimary()) {
 			keyName = "PRIMARY KEY";
 		}
-		String index = keyName+" ("+key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
+		String index = keyName+" ("+key.stream().map(f -> column(f.getProperty())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 		return "ALTER TABLE " + tablename + " ADD " + index + ";";
 	}
 

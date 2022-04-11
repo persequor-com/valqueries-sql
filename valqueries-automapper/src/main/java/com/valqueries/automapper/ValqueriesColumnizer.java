@@ -7,11 +7,7 @@ package com.valqueries.automapper;
 
 import com.valqueries.IStatement;
 import com.valqueries.Setter;
-import io.ran.CompoundKey;
-import io.ran.GenericFactory;
-import io.ran.MappingHelper;
-import io.ran.ObjectMapColumnizer;
-import io.ran.Property;
+import io.ran.*;
 import io.ran.token.Token;
 
 import java.math.BigDecimal;
@@ -36,12 +32,17 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	protected final Map<String, String> fieldsWithoutKeys = new LinkedHashMap<>();
 	protected final List<String> placeholders = new ArrayList<>();
 	protected final List<String> keys = new ArrayList<>();
+	protected TypeDescriber<? extends Object> ts;
 	CompoundKey key;
+	protected SqlDialect dialect;
 	protected SqlNameFormatter sqlNameFormatter;
+
 
 	public ValqueriesColumnizer(GenericFactory factory, MappingHelper mappingHelper, T t, SqlNameFormatter columnFormatter) {
 		this.sqlNameFormatter = columnFormatter;
+		this.dialect = dialect;
 		key = mappingHelper.getKey(t);
+		ts = TypeDescriberImpl.getTypeDescriber(t.getClass());
 		mappingHelper.columnize(t, this);
 	}
 
@@ -69,7 +70,8 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	}
 
 	protected String transformKey(Token key) {
-		return sqlNameFormatter.column(key);
+		Property<?> property = ts.fields().get(key);
+		return dialect.column(property).toSql();
 	}
 
 	protected String transformFieldPlaceholder(Token key) {

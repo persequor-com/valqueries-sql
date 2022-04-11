@@ -55,7 +55,8 @@ public abstract class AutoMapperBaseTests {
 	static TypeDescriber<BikeGearBike> bikeGearBikeDescriber;
 	static TypeDescriber<BikeWheel> bikeWheelDescriber;
 	static TypeDescriber<PrimaryKeyModel> primaryKeyDescriber;
-
+	static TypeDescriber<Bipod> bipodDescriber;
+	static TypeDescriber<Pod> podDescriber;
 	@Mock
 	Resolver resolver;
 	CarRepository carRepository;
@@ -91,8 +92,8 @@ public abstract class AutoMapperBaseTests {
 		bikeGearBikeDescriber = TypeDescriberImpl.getTypeDescriber(BikeGearBike.class);
 		bikeWheelDescriber = TypeDescriberImpl.getTypeDescriber(BikeWheel.class);
 		withCollectionsDescriber = TypeDescriberImpl.getTypeDescriber(WithCollections.class);
-
-
+		bipodDescriber = TypeDescriberImpl.getTypeDescriber(Bipod.class);
+		podDescriber = TypeDescriberImpl.getTypeDescriber(Pod.class);
 		carRepository = injector.getInstance(CarRepository.class);
 		doorRepository = injector.getInstance(DoorRepository.class);
 		engineRepository = injector.getInstance(EngineRepository.class);

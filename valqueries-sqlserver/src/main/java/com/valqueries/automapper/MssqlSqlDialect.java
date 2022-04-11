@@ -32,12 +32,13 @@ public class MssqlSqlDialect implements SqlDialect {
 
 	@Override
 	public <O> String getUpsert(CompoundColumnizer<O> columnizer, Class<O> oClass) {
-		return "MERGE "+getTableName(Clazz.of(oClass))+" as target USING " +
-				"(VALUES "+columnizer.getValueTokens().stream().map((l) -> "("+l.stream().map(e -> ":"+e).collect(Collectors.joining(", "))+")").collect(Collectors.joining(", "))+
-				") incoming ("+columnizer.getFields().entrySet().stream().map((e) -> "["+e.getValue()+"]").collect(Collectors.joining(", "))+") on "+columnizer.getKeys().stream().map(k -> "target.["+k+"] = incoming.["+k+"]").collect(Collectors.joining(" AND "))+
-				(columnizer.getFieldsWithoutKeys().size() > 0 ? " WHEN MATCHED THEN UPDATE SET "+columnizer.getFieldsWithoutKeys().entrySet().stream().map(e -> "["+e.getValue()+"] = incoming.["+e.getValue()+"]").collect(Collectors.joining(", ")):"")+
-				" WHEN NOT MATCHED THEN INSERT ("+columnizer.getFields().entrySet().stream().map(e -> "["+e.getValue()+"]").collect(Collectors.joining(", "))+") " +
-				"VALUES ("+columnizer.getFields().entrySet().stream().map(e -> "incoming.["+e.getValue()+"]").collect(Collectors.joining(", "))+");";
+		String s = "MERGE " + getTableName(Clazz.of(oClass)) + " as target USING " +
+				"(VALUES " + columnizer.getValueTokens().stream().map((l) -> "(" + l.stream().map(e -> ":" + e).collect(Collectors.joining(", ")) + ")").collect(Collectors.joining(", ")) +
+				") incoming (" + columnizer.getFields().entrySet().stream().map((e) -> e.getValue() ).collect(Collectors.joining(", ")) + ") on " + columnizer.getKeys().stream().map(k -> "target." + k + " = incoming." + k ).collect(Collectors.joining(" AND ")) +
+				(columnizer.getFieldsWithoutKeys().size() > 0 ? " WHEN MATCHED THEN UPDATE SET " + columnizer.getFieldsWithoutKeys().entrySet().stream().map(e ->  e.getValue() + " = incoming." + e.getValue() ).collect(Collectors.joining(", ")) : "") +
+				" WHEN NOT MATCHED THEN INSERT (" + columnizer.getFields().entrySet().stream().map(e ->  e.getValue() ).collect(Collectors.joining(", ")) + ") " +
+				"VALUES (" + columnizer.getFields().entrySet().stream().map(e -> "incoming." + e.getValue() ).collect(Collectors.joining(", ")) + ");";
+		return s;
 	}
 
 	public String getSqlType(Property property) {
@@ -83,7 +84,7 @@ public class MssqlSqlDialect implements SqlDialect {
 		updateStatement.append("UPDATE main SET ");
 
 		String columnsToUpdate = newPropertyValues.stream()
-				.map(pv -> "main." + column(pv.getProperty().getToken()) + " = :" + pv.getProperty().getToken().snake_case())
+				.map(pv -> "main." + column(pv.getProperty()) + " = :" + pv.getProperty().getToken().snake_case())
 				.collect(Collectors.joining(", "));
 		updateStatement.append(columnsToUpdate);
 
@@ -170,7 +171,7 @@ public class MssqlSqlDialect implements SqlDialect {
 	@Override
 	public String generatePrimaryKeyStatement(TableToken name, KeySet key, boolean isUnique) {
 		String indexType = "CONSTRAINT " + escapeColumnOrTable(name.unescaped() + "_" + key.getName()) + " PRIMARY KEY ";
-		return ""+indexType+" (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ") + ")";
+		return ""+indexType+" (" + key.stream().map(f -> column(f.getProperty())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ") + ")";
 	}
 
 	@Override
@@ -180,7 +181,7 @@ public class MssqlSqlDialect implements SqlDialect {
 		if (key.isPrimary()) {
 			keyType = "PRIMARY KEY ";
 		}
-		return "CREATE "+keyType+" "+name+" ON " + tablename + " (" + key.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ") + ")";
+		return "CREATE "+keyType+" "+name+" ON " + tablename + " (" + key.stream().map(f -> column(f.getProperty())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ") + ")";
 	}
 
 	public String addColumn(TableToken tablename, ColumnToken columnName, String sqlType) {
@@ -203,7 +204,7 @@ public class MssqlSqlDialect implements SqlDialect {
 			indexType = "UNIQUE "+escapeColumnOrTable(keyset.getName())+" ";
 		}
 
-		return indexType+"("+keyset.stream().map(f -> column(f.getToken())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
+		return indexType+"("+keyset.stream().map(f -> column(f.getProperty())).collect(Collectors.toCollection(FormattingTokenList::new)).join(", ")+")";
 	}
 
 	public String generateDropIndexStatement(TableToken tableName, IndexToken index, boolean isPrimary) {
@@ -226,6 +227,6 @@ public class MssqlSqlDialect implements SqlDialect {
 
 	@Override
 	public String groupConcat(Property<Object> resultProperty, String separator) {
-		return "STRING_AGG " + "(" + column(resultProperty.getToken()) + ", '" + separator + "')";
+		return "STRING_AGG " + "(" + column(resultProperty) + ", '" + separator + "')";
 	}
 }

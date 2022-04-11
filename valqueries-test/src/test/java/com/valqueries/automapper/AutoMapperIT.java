@@ -584,4 +584,20 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		Car car = cars.stream().findAny().get();
 		assertNull(car.drivers);
 	}
+
+	@Test
+	@TestClasses(Door.class)
+	public void someTest(){
+
+		Door door = factory.get(Door.class);
+		door.setId(UUID.randomUUID());
+		door.setMaterial("Carbon");
+		doorRepository.save(door);
+		doorRepository.query().in(Door::getMaterial,"Carbon").update(u->{u.set(Door::getTitle,"my_title");});
+		assertEquals(door.getId(), doorRepository.getDoorByMaterial("Carbon"));
+
+		doorRepository.query().in(Door::getMaterial,"Carbon").delete();
+
+
+	}
 }
