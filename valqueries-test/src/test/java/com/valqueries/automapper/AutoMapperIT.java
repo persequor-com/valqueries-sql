@@ -587,17 +587,20 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 
 	@Test
 	@TestClasses(Door.class)
-	public void someTest(){
+	public void dbName_CRUD_happy(){
 
 		Door door = factory.get(Door.class);
 		door.setId(UUID.randomUUID());
 		door.setMaterial("Carbon");
+
 		doorRepository.save(door);
-		doorRepository.query().in(Door::getMaterial,"Carbon").update(u->{u.set(Door::getTitle,"my_title");});
 		assertEquals(door.getId(), doorRepository.getDoorByMaterial("Carbon"));
 
-		doorRepository.query().in(Door::getMaterial,"Carbon").delete();
+		doorRepository.query().in(Door::getMaterial,"Carbon").update(u->{u.set(Door::getTitle,"my_title");});
+		assertEquals("my_title", doorRepository.get(door.getId()).get().getTitle());
 
+		doorRepository.query().in(Door::getMaterial,"Carbon").delete();
+		assertEquals(0,doorRepository.getAll().collect(Collectors.toList()).size());
 
 	}
 }
