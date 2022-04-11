@@ -29,7 +29,11 @@ public class DatabaseConfig {
 		return Duration.ofMillis(defaultRetryWaitMillis);
 	}
 
-	public void setDefaultRetryWait(int defaultRetryWaitMillis) {
+	public int getDefaultRetryWaitMillis() {
+		return defaultRetryWaitMillis;
+	}
+
+	public void setDefaultRetryWaitMillis(int defaultRetryWaitMillis) {
 		this.defaultRetryWaitMillis = defaultRetryWaitMillis;
 	}
 }
