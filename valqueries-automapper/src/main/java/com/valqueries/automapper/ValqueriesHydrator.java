@@ -45,20 +45,18 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 		}
 	}
 
-	public ValqueriesHydrator(OrmResultSet row, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber typeDescriber) {
+	public ValqueriesHydrator(OrmResultSet row, SqlNameFormatter sqlNameFormatter, TypeDescriber typeDescriber) {
 		this.sqlNameFormatter = sqlNameFormatter;
-		this.dialect = dialect;
 		this.typeDescriber = typeDescriber;
 		this.prefix = "";
 		this.row = row;
 	}
 
-	public ValqueriesHydrator(String prefix, OrmResultSet row, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber typeDescriber) {
+	public ValqueriesHydrator(String prefix, OrmResultSet row, SqlNameFormatter sqlNameFormatter, TypeDescriber typeDescriber) {
 		this.prefix = prefix;
 		this.row = row;
 		this.typeDescriber = typeDescriber;
 		this.sqlNameFormatter = sqlNameFormatter;
-		this.dialect = dialect;
 	}
 
 	@Override

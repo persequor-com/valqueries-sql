@@ -9,7 +9,6 @@ public class BikeWheel {
 	private BikeType bikeType;
 	@PrimaryKey
 	private int size;
-
 	private String color;
 
 	public BikeType getBikeType() {

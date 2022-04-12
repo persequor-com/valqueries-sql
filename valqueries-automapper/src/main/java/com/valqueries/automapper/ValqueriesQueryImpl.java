@@ -258,7 +258,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			Map<Token, Map<CompoundKey, List>> eagerModels = new HashMap<>();
 			transactionContext.query(buildSelectSql("main"), this, row -> {
 				T t2 = genericFactory.get(modelType);
-				mappingHelper.hydrate(t2, new ValqueriesHydrator("main_", row, sqlNameFormatter, dialect,typeDescriber));
+				mappingHelper.hydrate(t2, new ValqueriesHydrator("main_", row, sqlNameFormatter,typeDescriber));
 				CompoundKey key = mappingHelper.getKey(t2);
 				if (alreadyLoaded.containsKey(key)) {
 					t2 = alreadyLoaded.get(key);
@@ -324,7 +324,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		try {
 			String sql = buildGroupAggregateSql(resultProperty, aggregateMethod);
 			Map<GroupNumericResultImpl.Grouping, Long> res = transactionContext.query(sql, this, row -> {
-				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter, dialect, typeDescriber));
+				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter, typeDescriber));
 				T t = genericFactory.get(modelType);
 				mappingHelper.hydrate(t, hydrator);
 				return new GroupNumericResultImpl.Grouping(hydrator.getValues(), row.getLong("the_count"));
@@ -343,7 +343,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		try {
 			String sql = buildGroupConcatAggregateSql(resultProperty, separator);
 			Map<GroupStringResultImpl.Grouping, String> res = transactionContext.query(sql, this, row -> {
-				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter, dialect, typeDescriber));
+				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter, typeDescriber));
 				T t = genericFactory.get(modelType);
 				mappingHelper.hydrate(t, hydrator);
 				return new GroupStringResultImpl.Grouping(hydrator.getValues(), row.getString("the_group_concat"));
@@ -440,7 +440,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		X otherModel = (X) genericFactory.get(relationDescriber.getToClass().clazz);
 		TypeDescriber<?> eagerRelationTypeDescriber = TypeDescriberImpl.getTypeDescriber(relationDescriber.getToClass().clazz);
 
-		mapping(otherModel).hydrate(new ValqueriesHydrator("eager" + (i) + "_", row, sqlNameFormatter, dialect,eagerRelationTypeDescriber));
+		mapping(otherModel).hydrate(new ValqueriesHydrator("eager" + (i) + "_", row, sqlNameFormatter,eagerRelationTypeDescriber));
 		if (((Property.PropertyValueList<?>) mapping(otherModel)._getKey().getValues()).get(0).getValue() == null) {
 			return null;
 		}

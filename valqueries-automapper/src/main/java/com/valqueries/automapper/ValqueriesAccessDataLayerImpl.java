@@ -79,7 +79,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 
 	protected T hydrate(OrmResultSet row) {
 		T t = genericFactory.get(modelType);
-		mappingHelper.hydrate(t, new ValqueriesHydrator(row, sqlNameFormatter, dialect, typeDescriber));
+		mappingHelper.hydrate(t, new ValqueriesHydrator(row, sqlNameFormatter, typeDescriber));
 		return t;
 	}
 
