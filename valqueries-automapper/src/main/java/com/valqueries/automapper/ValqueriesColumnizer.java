@@ -32,7 +32,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	protected final Map<String, String> fieldsWithoutKeys = new LinkedHashMap<>();
 	protected final List<String> placeholders = new ArrayList<>();
 	protected final List<String> keys = new ArrayList<>();
-	protected TypeDescriber<? extends Object> ts;
+	protected TypeDescriber<? extends Object> typeDescriber;
 	CompoundKey key;
 	protected SqlDialect dialect;
 	protected SqlNameFormatter sqlNameFormatter;
@@ -42,7 +42,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 		this.sqlNameFormatter = columnFormatter;
 		this.dialect = dialect;
 		key = mappingHelper.getKey(t);
-		ts = TypeDescriberImpl.getTypeDescriber(t.getClass());
+		typeDescriber = TypeDescriberImpl.getTypeDescriber(t.getClass());
 		mappingHelper.columnize(t, this);
 	}
 
@@ -70,7 +70,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	}
 
 	protected String transformKey(Token key) {
-		Property<?> property = ts.fields().get(key);
+		Property<?> property = typeDescriber.fields().get(key);
 		return dialect.column(property).toSql();
 	}
 

@@ -22,12 +22,12 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 	private int index = 0;
 
 
-	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> type, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber<T> typeDescriber) {
-		this.ts = typeDescriber;
+	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> ts, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber<T> typeDescriber) {
+		this.typeDescriber = typeDescriber;
 		this.dialect = dialect;
 		this.sqlNameFormatter = sqlNameFormatter;
-		this.key = mappingHelper.getKey(type.stream().findFirst().get());
-		for (T t : type) {
+		this.key = mappingHelper.getKey(ts.stream().findFirst().get());
+		for (T t : ts) {
 			if (keyFields == null) {
 				keyFields = new Token.TokenList();
 				for(Object propertyValue : mappingHelper.getKey(t).getValues()) {

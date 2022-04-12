@@ -141,8 +141,8 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 
 	public String getSql() {
 		return columns.stream().map(t -> {
-			List<Property> collect = typeDescriber.fields().stream().filter(field -> field.getToken().equals(t)).collect(Collectors.toList());
-			DbName dbName = collect.get(0).getAnnotations().get(DbName.class);
+			List<Property> column = typeDescriber.fields().stream().filter(field -> field.getToken().equals(t)).collect(Collectors.toList());
+			DbName dbName = column.get(0).getAnnotations().get(DbName.class);
 			if (dbName != null) {
 				return prefix + "." + dialect.escapeColumnOrTable(dbName.value()) + " " + prefix + "_" + dbName.value();
 			} else {
