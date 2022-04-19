@@ -51,14 +51,14 @@ public class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder
 	@Override
 	protected ColumnActionDelegate create() {
 		return (t,ca) -> {
-			return (t.getType() == TableActionType.MODIFY ? "ALTER TABLE "+t.getName()+" "+dialect.getAddColumnStatement() : "")+ca.getName()+" "+dialect.getSqlType(ca.getProperty());
+			return (t.getType() == TableActionType.MODIFY ? "ALTER TABLE "+t.getName()+" "+dialect.getAddColumnStatement() : "")+dialect.column(ca.getProperty()).toString()+" "+dialect.getSqlType(ca.getProperty());
 		};
 	}
 
 	@Override
 	protected ColumnActionDelegate modify() {
 		return (t,ca) -> {
-			return "ALTER TABLE "+t.getName()+" "+dialect.generateAlterColumnPartStatement(ca.getName())+" "+dialect.getSqlType(ca.getProperty());
+			return "ALTER TABLE "+t.getName()+" "+dialect.generateAlterColumnPartStatement(dialect.column(ca.getProperty()))+" "+dialect.getSqlType(ca.getProperty());
 		};
 	}
 

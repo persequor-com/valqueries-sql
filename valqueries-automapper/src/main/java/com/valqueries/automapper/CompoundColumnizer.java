@@ -2,10 +2,7 @@ package com.valqueries.automapper;
 
 import com.valqueries.IStatement;
 import com.valqueries.Setter;
-import io.ran.GenericFactory;
-import io.ran.MappingHelper;
-import io.ran.ObjectMapColumnizer;
-import io.ran.Property;
+import io.ran.*;
 import io.ran.token.Token;
 
 import java.util.ArrayList;
@@ -24,7 +21,10 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 	private Token.TokenList keyFields;
 	private int index = 0;
 
-	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> ts, SqlNameFormatter sqlNameFormatter) {
+
+	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> ts, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber<T> typeDescriber) {
+		this.typeDescriber = typeDescriber;
+		this.dialect = dialect;
 		this.sqlNameFormatter = sqlNameFormatter;
 		this.key = mappingHelper.getKey(ts.stream().findFirst().get());
 		for (T t : ts) {
@@ -45,6 +45,7 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		}
 		index = 0;
 	}
+
 	@Override
 	public void set(IStatement statement) {
 		for (List<Consumer<IStatement>> ss : statements) {

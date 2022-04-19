@@ -131,7 +131,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		T t = genericFactory.get(modelType);
 		String columnsSql;
 		if (columns.size() == 0) {
-			ValqueriesColumnBuilder columnBuilder = new ValqueriesColumnBuilder(tableAlias, sqlNameFormatter, dialect);
+			ValqueriesColumnBuilder columnBuilder = new ValqueriesColumnBuilder(tableAlias, sqlNameFormatter, dialect,typeDescriber);
 			mappingHelper.hydrate(t, columnBuilder);
 			columnsSql = columnBuilder.getSql();
 		} else {
@@ -165,7 +165,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		T t = genericFactory.get(modelType);
 		String columnsSql;
 		if (columns.length == 0) {
-			ValqueriesColumnBuilder columnBuilder = new ValqueriesColumnBuilder(tableAlias, sqlNameFormatter, dialect);
+			ValqueriesColumnBuilder columnBuilder = new ValqueriesColumnBuilder(tableAlias, sqlNameFormatter, dialect,typeDescriber);
 			mappingHelper.hydrate(t, columnBuilder);
 			columnsSql = columnBuilder.getSql();
 		} else {
@@ -258,7 +258,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 			Map<Token, Map<CompoundKey, List>> eagerModels = new HashMap<>();
 			transactionContext.query(buildSelectSql("main"), this, row -> {
 				T t2 = genericFactory.get(modelType);
-				mappingHelper.hydrate(t2, new ValqueriesHydrator("main_", row, sqlNameFormatter));
+				mappingHelper.hydrate(t2, new ValqueriesHydrator("main_", row, sqlNameFormatter,typeDescriber));
 				CompoundKey key = mappingHelper.getKey(t2);
 				if (alreadyLoaded.containsKey(key)) {
 					t2 = alreadyLoaded.get(key);
@@ -324,7 +324,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		try {
 			String sql = buildGroupAggregateSql(resultProperty, aggregateMethod);
 			Map<GroupNumericResultImpl.Grouping, Long> res = transactionContext.query(sql, this, row -> {
-				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter));
+				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter, typeDescriber));
 				T t = genericFactory.get(modelType);
 				mappingHelper.hydrate(t, hydrator);
 				return new GroupNumericResultImpl.Grouping(hydrator.getValues(), row.getLong("the_count"));
@@ -343,7 +343,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		try {
 			String sql = buildGroupConcatAggregateSql(resultProperty, separator);
 			Map<GroupStringResultImpl.Grouping, String> res = transactionContext.query(sql, this, row -> {
-				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter));
+				CapturingHydrator hydrator = new CapturingHydrator(new ValqueriesHydrator(row, sqlNameFormatter, typeDescriber));
 				T t = genericFactory.get(modelType);
 				mappingHelper.hydrate(t, hydrator);
 				return new GroupStringResultImpl.Grouping(hydrator.getValues(), row.getString("the_group_concat"));
@@ -416,7 +416,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 
 	private String buildGroupAggregateSql(Property resultProperty, String aggregateMethod) {
-		String sql = "SELECT " + aggregateMethod + "(" + dialect.column(resultProperty.getToken()) + ") as the_count , " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
+		String sql = "SELECT " + aggregateMethod + "(" + dialect.column(resultProperty) + ") as the_count , " + groupByProperties.stream().map(p -> sqlNameFormatter.column(p.getToken())).collect(Collectors.joining(", ")) + " FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " " + tableAlias;
 		if (!elements.isEmpty()) {
 			sql += " WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND "));
 		}
@@ -438,7 +438,9 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	private <X> X hydrateEager(T rootObject, RelationDescriber relationDescriber, OrmResultSet row, int i) {
 		X otherModel = (X) genericFactory.get(relationDescriber.getToClass().clazz);
-		mapping(otherModel).hydrate(new ValqueriesHydrator("eager" + (i) + "_", row, sqlNameFormatter));
+		TypeDescriber<?> eagerRelationTypeDescriber = TypeDescriberImpl.getTypeDescriber(relationDescriber.getToClass().clazz);
+
+		mapping(otherModel).hydrate(new ValqueriesHydrator("eager" + (i) + "_", row, sqlNameFormatter,eagerRelationTypeDescriber));
 		if (((Property.PropertyValueList<?>) mapping(otherModel)._getKey().getValues()).get(0).getValue() == null) {
 			return null;
 		}
@@ -583,6 +585,6 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		}
 		joinSql.append(String.join(" AND ", onParams));
 		TypeDescriber<?> eagerRelationTypeDescriber = TypeDescriberImpl.getTypeDescriber(relation.getToClass().clazz);
-		selectSql.append(", ").append(eagerRelationTypeDescriber.fields().stream().map(property -> toTableAlias + "." + dialect.escapeColumnOrTable(sqlNameFormatter.column(property.getToken())) + " " + toTableAlias + "_" + sqlNameFormatter.column(property.getToken())).collect(Collectors.joining(", ")));
+		selectSql.append(", ").append(eagerRelationTypeDescriber.fields().stream().map(property -> toTableAlias + "." + dialect.column(property).toSql() + " " + toTableAlias + "_" + dialect.column(property).unescaped()).collect(Collectors.joining(", ")));
 	}
 }

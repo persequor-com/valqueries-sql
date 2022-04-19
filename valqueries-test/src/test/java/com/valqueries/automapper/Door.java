@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import io.ran.DbName;
 import io.ran.Mapper;
 import io.ran.PrimaryKey;
 import io.ran.Relation;
@@ -14,6 +15,17 @@ public class Door {
 	@Relation(fields = "carId", relationFields = "id")
 	private Car car;
 	private UUID carId;
+
+	public String getMaterial() {
+		return material;
+	}
+
+	public void setMaterial(String material) {
+		this.material = material;
+	}
+
+	@DbName("my_material")
+	private String material;
 
 	public UUID getId() {
 		return id;
