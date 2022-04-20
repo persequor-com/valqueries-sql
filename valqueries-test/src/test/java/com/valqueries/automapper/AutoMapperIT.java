@@ -586,6 +586,22 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 	}
 
 	@Test
+	@TestClasses({Car.class})
+	public void empmtyManyToMany_returnsEmptyList_notNull() throws Throwable {
+		Car nissan = factory.get(Car.class);
+		nissan.setId(UUID.randomUUID());
+		nissan.setTitle("Nissan");
+		nissan.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		carRepository.save(nissan);
+
+		Optional<Car> car = carRepository.get(nissan.getId());
+		assertTrue(car.isPresent());
+		assertEquals(0,car.get().getDrivers().size());
+	}
+
+
+	@Test
 	@TestClasses(Door.class)
 	public void dbName_CRUD_happy(){
 

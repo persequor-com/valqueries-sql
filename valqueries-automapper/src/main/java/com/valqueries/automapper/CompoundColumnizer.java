@@ -60,18 +60,18 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		return key.getSnakeCase()+"_"+index;
 	}
 
-	protected void add(Property token, Consumer<IStatement> consumer) {
-		fields.put(token.getSnakeCase(),transformKey(token));
-		placeholders.add(token.getSnakeCase());
+	protected void add(Property property, Consumer<IStatement> consumer) {
+		fields.put(property.getSnakeCase(),transformKey(property));
+		placeholders.add(property.getSnakeCase());
 		if (index == 0) {
-			columns.add(transformKey(token));
+			columns.add(transformKey(property));
 		}
-		valueTokensCurrent.add(transformFieldPlaceholder(token));
-		if (keyFields.contains(token.getSnakeCase())) {
-			keys.add(transformKey(token));
+		valueTokensCurrent.add(transformFieldPlaceholder(property));
+		if (keyFields.contains(property.getSnakeCase())) {
+			keys.add(transformKey(property));
 		} else {
-			fieldsWithoutKeys.put(token.getSnakeCase(),transformKey(token));
-			columnsWithoutKey.add(transformKey(token));
+			fieldsWithoutKeys.put(property.getSnakeCase(),transformKey(property));
+			columnsWithoutKey.add(transformKey(property));
 		}
 		currentStatements.add(consumer);
 	}

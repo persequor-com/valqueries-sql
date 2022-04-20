@@ -20,96 +20,96 @@ public class PropertyValueHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public String getString(Property token) {
-		return (String) getValue(token);
+	public String getString(Property property) {
+		return (String) getValue(property);
 	}
 
-	private Object getValue(Property token) {
-		return newValues.stream().filter(p -> p.getProperty().matchesSnakeCase(token.getSnakeCase())).findFirst().get().getValue();
-	}
-
-	@Override
-	public Character getCharacter(Property token) {
-		return (Character) getValue(token);
+	private Object getValue(Property property) {
+		return newValues.stream().filter(p -> p.getProperty().matchesSnakeCase(property.getSnakeCase())).findFirst().get().getValue();
 	}
 
 	@Override
-	public ZonedDateTime getZonedDateTime(Property token) {
-		return (ZonedDateTime) getValue(token);
+	public Character getCharacter(Property property) {
+		return (Character) getValue(property);
 	}
 
 	@Override
-	public Instant getInstant(Property token) {
-		return (Instant) getValue(token);
+	public ZonedDateTime getZonedDateTime(Property property) {
+		return (ZonedDateTime) getValue(property);
 	}
 
 	@Override
-	public LocalDateTime getLocalDateTime(Property token) {
-		return (LocalDateTime) getValue(token);
+	public Instant getInstant(Property property) {
+		return (Instant) getValue(property);
 	}
 
 	@Override
-	public LocalDate getLocalDate(Property token) {
-		return (LocalDate) getValue(token);
+	public LocalDateTime getLocalDateTime(Property property) {
+		return (LocalDateTime) getValue(property);
 	}
 
 	@Override
-	public Integer getInteger(Property token) {
-		return (Integer) getValue(token);
+	public LocalDate getLocalDate(Property property) {
+		return (LocalDate) getValue(property);
 	}
 
 	@Override
-	public Short getShort(Property token) {
-		return (Short) getValue(token);
+	public Integer getInteger(Property property) {
+		return (Integer) getValue(property);
 	}
 
 	@Override
-	public Long getLong(Property token) {
-		return (Long) getValue(token);
+	public Short getShort(Property property) {
+		return (Short) getValue(property);
 	}
 
 	@Override
-	public UUID getUUID(Property token) {
-		return (UUID) getValue(token);
+	public Long getLong(Property property) {
+		return (Long) getValue(property);
 	}
 
 	@Override
-	public Double getDouble(Property token) {
-		return (Double) getValue(token);
+	public UUID getUUID(Property property) {
+		return (UUID) getValue(property);
 	}
 
 	@Override
-	public BigDecimal getBigDecimal(Property token) {
-		return (BigDecimal) getValue(token);
+	public Double getDouble(Property property) {
+		return (Double) getValue(property);
 	}
 
 	@Override
-	public Float getFloat(Property token) {
-		return (Float) getValue(token);
+	public BigDecimal getBigDecimal(Property property) {
+		return (BigDecimal) getValue(property);
 	}
 
 	@Override
-	public Boolean getBoolean(Property token) {
-		return (Boolean) getValue(token);
+	public Float getFloat(Property property) {
+		return (Float) getValue(property);
 	}
 
 	@Override
-	public Byte getByte(Property token) {
-		return (Byte) getValue(token);
+	public Boolean getBoolean(Property property) {
+		return (Boolean) getValue(property);
 	}
 
 	@Override
-	public byte[] getBytes(Property token) {
-		return (byte[]) getValue(token);
+	public Byte getByte(Property property) {
+		return (Byte) getValue(property);
 	}
 
 	@Override
-	public <T extends Enum<T>> T getEnum(Property token, Class<T> aClass) {
-		return (T) getValue(token);
+	public byte[] getBytes(Property property) {
+		return (byte[]) getValue(property);
 	}
 
 	@Override
-	public <T> Collection<T> getCollection(Property token, Class<T> aClass, Class<? extends Collection<T>> aClass1) {
-		return (Collection<T>) getValue(token);
+	public <T extends Enum<T>> T getEnum(Property property, Class<T> aClass) {
+		return (T) getValue(property);
+	}
+
+	@Override
+	public <T> Collection<T> getCollection(Property property, Class<T> aClass, Class<? extends Collection<T>> aClass1) {
+		return (Collection<T>) getValue(property);
 	}
 }

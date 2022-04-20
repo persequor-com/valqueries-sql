@@ -32,110 +32,110 @@ public class ValqueriesColumnBuilder implements ObjectMapHydrator {
 	}
 
 	@Override
-	public String getString(Property token) {
-		columns.add(token);
+	public String getString(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public Character getCharacter(Property token) {
-		columns.add(token);
+	public Character getCharacter(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public ZonedDateTime getZonedDateTime(Property token) {
-		columns.add(token);
+	public ZonedDateTime getZonedDateTime(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public Instant getInstant(Property token) {
-		columns.add(token);
+	public Instant getInstant(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public LocalDateTime getLocalDateTime(Property token) {
-		columns.add(token);
+	public LocalDateTime getLocalDateTime(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public LocalDate getLocalDate(Property token) {
-		columns.add(token);
+	public LocalDate getLocalDate(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public Integer getInteger(Property token) {
-		columns.add(token);
+	public Integer getInteger(Property property) {
+		columns.add(property);
 		return 0;
 	}
 
 	@Override
-	public Short getShort(Property token) {
-		columns.add(token);
+	public Short getShort(Property property) {
+		columns.add(property);
 		return 0;
 	}
 
 	@Override
-	public Long getLong(Property token) {
-		columns.add(token);
+	public Long getLong(Property property) {
+		columns.add(property);
 		return 0L;
 	}
 
 	@Override
-	public UUID getUUID(Property token) {
-		columns.add(token);
+	public UUID getUUID(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public Double getDouble(Property token) {
-		columns.add(token);
+	public Double getDouble(Property property) {
+		columns.add(property);
 		return 0.0;
 	}
 
 	@Override
-	public BigDecimal getBigDecimal(Property token) {
-		columns.add(token);
+	public BigDecimal getBigDecimal(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public Float getFloat(Property token) {
-		columns.add(token);
+	public Float getFloat(Property property) {
+		columns.add(property);
 		return 0.0f;
 	}
 
 	@Override
-	public Boolean getBoolean(Property token) {
-		columns.add(token);
+	public Boolean getBoolean(Property property) {
+		columns.add(property);
 		return false;
 	}
 
 	@Override
-	public Byte getByte(Property token) {
-		columns.add(token);
+	public Byte getByte(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public byte[] getBytes(Property token) {
-		columns.add(token);
+	public byte[] getBytes(Property property) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public <T extends Enum<T>> T getEnum(Property token, Class<T> aClass) {
-		columns.add(token);
+	public <T extends Enum<T>> T getEnum(Property property, Class<T> aClass) {
+		columns.add(property);
 		return null;
 	}
 
 	@Override
-	public <T> Collection<T> getCollection(Property token, Class<T> aClass, Class<? extends Collection<T>> collectionClass) {
-		columns.add(token);
+	public <T> Collection<T> getCollection(Property property, Class<T> aClass, Class<? extends Collection<T>> collectionClass) {
+		columns.add(property);
 		return null;
 	}
 

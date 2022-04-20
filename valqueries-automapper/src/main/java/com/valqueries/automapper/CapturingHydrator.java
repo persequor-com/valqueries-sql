@@ -28,10 +28,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public String getString(Property token) {
+	public String getString(Property property) {
 		try {
-			String value = innerHydrator.getString(token);
-			values.put(token, value);
+			String value = innerHydrator.getString(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -40,10 +40,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Character getCharacter(Property token) {
+	public Character getCharacter(Property property) {
 		try {
-			Character value = innerHydrator.getCharacter(token);
-			values.put(token, value);
+			Character value = innerHydrator.getCharacter(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -52,10 +52,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public ZonedDateTime getZonedDateTime(Property token) {
+	public ZonedDateTime getZonedDateTime(Property property) {
 		try {
-			ZonedDateTime value = innerHydrator.getZonedDateTime(token);
-			values.put(token, value);
+			ZonedDateTime value = innerHydrator.getZonedDateTime(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -64,10 +64,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Instant getInstant(Property token) {
+	public Instant getInstant(Property property) {
 		try {
-			Instant value = innerHydrator.getInstant(token);
-			values.put(token, value);
+			Instant value = innerHydrator.getInstant(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -76,10 +76,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public LocalDateTime getLocalDateTime(Property token) {
+	public LocalDateTime getLocalDateTime(Property property) {
 		try {
-			LocalDateTime value = innerHydrator.getLocalDateTime(token);
-			values.put(token, value);
+			LocalDateTime value = innerHydrator.getLocalDateTime(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -88,10 +88,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public LocalDate getLocalDate(Property token) {
+	public LocalDate getLocalDate(Property property) {
 		try {
-			LocalDate value = innerHydrator.getLocalDate(token);
-			values.put(token, value);
+			LocalDate value = innerHydrator.getLocalDate(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -100,10 +100,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Integer getInteger(Property token) {
+	public Integer getInteger(Property property) {
 		try {
-			Integer value = innerHydrator.getInteger(token);
-			values.put(token, value);
+			Integer value = innerHydrator.getInteger(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -112,10 +112,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Short getShort(Property token) {
+	public Short getShort(Property property) {
 		try {
-			Short value = innerHydrator.getShort(token);
-			values.put(token, value);
+			Short value = innerHydrator.getShort(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -124,10 +124,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Long getLong(Property token) {
+	public Long getLong(Property property) {
 		try {
-			Long value = innerHydrator.getLong(token);
-			values.put(token, value);
+			Long value = innerHydrator.getLong(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -136,10 +136,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public UUID getUUID(Property token) {
+	public UUID getUUID(Property property) {
 		try {
-			UUID value = innerHydrator.getUUID(token);
-			values.put(token, value);
+			UUID value = innerHydrator.getUUID(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -148,10 +148,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Double getDouble(Property token) {
+	public Double getDouble(Property property) {
 		try {
-			Double value = innerHydrator.getDouble(token);
-			values.put(token, value);
+			Double value = innerHydrator.getDouble(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -161,10 +161,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 
 
 	@Override
-	public BigDecimal getBigDecimal(Property token) {
+	public BigDecimal getBigDecimal(Property property) {
 		try {
-			BigDecimal value = innerHydrator.getBigDecimal(token);
-			values.put(token, value);
+			BigDecimal value = innerHydrator.getBigDecimal(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -173,10 +173,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Float getFloat(Property token) {
+	public Float getFloat(Property property) {
 		try {
-			Float value = innerHydrator.getFloat(token);
-			values.put(token, value);
+			Float value = innerHydrator.getFloat(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -185,10 +185,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Boolean getBoolean(Property token) {
+	public Boolean getBoolean(Property property) {
 		try {
-			Boolean value = innerHydrator.getBoolean(token);
-			values.put(token, value);
+			Boolean value = innerHydrator.getBoolean(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -197,10 +197,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Byte getByte(Property token) {
+	public Byte getByte(Property property) {
 		try {
-			Byte value = innerHydrator.getByte(token);
-			values.put(token, value);
+			Byte value = innerHydrator.getByte(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -209,10 +209,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public byte[] getBytes(Property token) {
+	public byte[] getBytes(Property property) {
 		try {
-			byte[] value = innerHydrator.getBytes(token);
-			values.put(token, value);
+			byte[] value = innerHydrator.getBytes(property);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -221,10 +221,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public <T extends Enum<T>> T getEnum(Property token, Class<T> aClass) {
+	public <T extends Enum<T>> T getEnum(Property property, Class<T> aClass) {
 		try {
-			T value = innerHydrator.getEnum(token, aClass);
-			values.put(token, value);
+			T value = innerHydrator.getEnum(property, aClass);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -233,10 +233,10 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public <T> Collection<T> getCollection(Property token, Class<T> aClass, Class<? extends Collection<T>> aClass1) {
+	public <T> Collection<T> getCollection(Property property, Class<T> aClass, Class<? extends Collection<T>> aClass1) {
 		try {
-			Collection<T> value = innerHydrator.getCollection(token, aClass, aClass1);
-			values.put(token, value);
+			Collection<T> value = innerHydrator.getCollection(property, aClass, aClass1);
+			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
 			// Ignoring non existing fields
@@ -244,8 +244,8 @@ public class CapturingHydrator implements ObjectMapHydrator {
 		}
 	}
 
-	public Object getValue(Token token) {
-		return values.get(token);
+	public Object getValue(Token property) {
+		return values.get(property);
 	}
 
 	public List<Object> getValues() {
