@@ -50,18 +50,18 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 
 
 
-	protected void add(Token token, Consumer<IStatement> consumer) {
-		fields.put(token.snake_case(),transformKey(token));
-		placeholders.add(token.snake_case());
+	protected void add(Property token, Consumer<IStatement> consumer) {
+		fields.put(token.getSnakeCase(),transformKey(token));
+		placeholders.add(token.getSnakeCase());
 
-		String sql = "`"+transformKey(token)+"` = :"+token.snake_case();
+		String sql = "`"+transformKey(token)+"` = :"+token.getSnakeCase();
 		sqlStatements.add(sql);
 
 
 		if (((Property.PropertyValueList<?>)this.key.getValues()).stream().anyMatch(pv -> {
-			return !pv.getProperty().getToken().equals(token);
+			return !pv.getProperty().getSnakeCase().equals(token.getSnakeCase());
 		})) {
-			fieldsWithoutKeys.put(token.snake_case(),transformKey(token));
+			fieldsWithoutKeys.put(token.getSnakeCase(),transformKey(token));
 			sqlWithoutKey.add(sql);
 		} else {
 			keys.add(transformKey(token));
@@ -69,102 +69,101 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 		statements.add(consumer);
 	}
 
-	protected String transformKey(Token key) {
-		Property<?> property = typeDescriber.fields().get(key);
-		return dialect.column(property).toSql();
+	protected String transformKey(Property key) {
+		return dialect.column(key).toSql();
 	}
 
-	protected String transformFieldPlaceholder(Token key) {
-		return key.snake_case();
+	protected String transformFieldPlaceholder(Property key) {
+		return key.getSnakeCase();
 	}
 
 	@Override
-	public void set(Token key, String value) {
+	public void set(Property key, String value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
-	public void set(Token token, Character character) {
+	public void set(Property token, Character character) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), character == null ? null : character.toString()));
 	}
 
 	@Override
-	public void set(Token key, ZonedDateTime value) {
+	public void set(Property key, ZonedDateTime value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
-	public void set(Token token, LocalDateTime localDateTime) {
+	public void set(Property token, LocalDateTime localDateTime) {
 		add(token, s -> s.set(transformFieldPlaceholder(token),localDateTime));
 	}
 
 	@Override
-	public void set(Token token, Instant instant) {
+	public void set(Property token, Instant instant) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), instant));
 	}
 
 	@Override
-	public void set(Token token, LocalDate localDate) {
+	public void set(Property token, LocalDate localDate) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), localDate));
 	}
 
 	@Override
-	public void set(Token key, Integer value) {
+	public void set(Property key, Integer value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
-	public void set(Token token, Short aShort) {
+	public void set(Property token, Short aShort) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), aShort == null ? null : aShort.intValue()));
 	}
 
 	@Override
-	public void set(Token key, Long value) {
+	public void set(Property key, Long value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
-	public void set(Token key, UUID value) {
+	public void set(Property key, UUID value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
-	public void set(Token key, Double value) {
+	public void set(Property key, Double value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
-	public void set(Token key, BigDecimal value) {
+	public void set(Property key, BigDecimal value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value == null ? null : value.toString()));
 	}
 
 	@Override
-	public void set(Token key, Float value) {
+	public void set(Property key, Float value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
 
 	@Override
-	public void set(Token token, Boolean value) {
+	public void set(Property token, Boolean value) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), value));
 	}
 
 	@Override
-	public void set(Token token, Byte aByte) {
+	public void set(Property token, Byte aByte) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), aByte == null ? null : aByte.intValue()));
 	}
 
 	@Override
-	public void set(Token token, byte[] bytes) {
+	public void set(Property token, byte[] bytes) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), bytes));
 	}
 
 	@Override
-	public void set(Token token, Enum<?> anEnum) {
+	public void set(Property token, Enum<?> anEnum) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), anEnum));
 	}
 
 	@Override
-	public void set(Token token, Collection<?> list) {
+	public void set(Property token, Collection<?> list) {
 		add(token, s -> s.set(transformFieldPlaceholder(token), list == null ? null : list.stream().map(Object::toString).collect(Collectors.joining(","))));
 	}
 

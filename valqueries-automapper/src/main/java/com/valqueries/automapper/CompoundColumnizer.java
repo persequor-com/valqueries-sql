@@ -18,7 +18,7 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 	private final List<String> columnsWithoutKey = new ArrayList<>();
 	private final List<List<String>> valueTokens = new ArrayList<>();
 	private List<String> valueTokensCurrent = new ArrayList<>();
-	private Token.TokenList keyFields;
+	private Property.PropertyList keyFields;
 	private int index = 0;
 
 
@@ -29,9 +29,9 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		this.key = mappingHelper.getKey(ts.stream().findFirst().get());
 		for (T t : ts) {
 			if (keyFields == null) {
-				keyFields = new Token.TokenList();
+				keyFields = new Property.PropertyList();
 				for(Object propertyValue : mappingHelper.getKey(t).getValues()) {
-					keyFields.add(((Property.PropertyValue)propertyValue).getProperty().getToken());
+					keyFields.add(((Property.PropertyValue)propertyValue).getProperty());
 				}
 			}
 			mappingHelper.columnize(t, this);
@@ -56,21 +56,21 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		}
 	}
 
-	protected String transformFieldPlaceholder(Token key) {
-		return key.snake_case()+"_"+index;
+	protected String transformFieldPlaceholder(Property key) {
+		return key.getSnakeCase()+"_"+index;
 	}
 
-	protected void add(Token token, Consumer<IStatement> consumer) {
-		fields.put(token.snake_case(),transformKey(token));
-		placeholders.add(token.snake_case());
+	protected void add(Property token, Consumer<IStatement> consumer) {
+		fields.put(token.getSnakeCase(),transformKey(token));
+		placeholders.add(token.getSnakeCase());
 		if (index == 0) {
 			columns.add(transformKey(token));
 		}
 		valueTokensCurrent.add(transformFieldPlaceholder(token));
-		if (keyFields.contains(token)) {
+		if (keyFields.contains(token.getSnakeCase())) {
 			keys.add(transformKey(token));
 		} else {
-			fieldsWithoutKeys.put(token.snake_case(),transformKey(token));
+			fieldsWithoutKeys.put(token.getSnakeCase(),transformKey(token));
 			columnsWithoutKey.add(transformKey(token));
 		}
 		currentStatements.add(consumer);

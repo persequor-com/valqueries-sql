@@ -2,6 +2,7 @@ package com.valqueries.automapper;
 
 import com.valqueries.OrmResultSet;
 import io.ran.ObjectMapHydrator;
+import io.ran.Property;
 import io.ran.token.Token;
 
 import java.math.BigDecimal;
@@ -19,7 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class CapturingHydrator implements ObjectMapHydrator {
-	private Map<Token, Object> values = new LinkedHashMap<>();
+	private Map<Property, Object> values = new LinkedHashMap<>();
 	private ObjectMapHydrator innerHydrator;
 
 	public CapturingHydrator(ObjectMapHydrator innerHydrator) {
@@ -27,7 +28,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public String getString(Token token) {
+	public String getString(Property token) {
 		try {
 			String value = innerHydrator.getString(token);
 			values.put(token, value);
@@ -39,7 +40,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Character getCharacter(Token token) {
+	public Character getCharacter(Property token) {
 		try {
 			Character value = innerHydrator.getCharacter(token);
 			values.put(token, value);
@@ -51,7 +52,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public ZonedDateTime getZonedDateTime(Token token) {
+	public ZonedDateTime getZonedDateTime(Property token) {
 		try {
 			ZonedDateTime value = innerHydrator.getZonedDateTime(token);
 			values.put(token, value);
@@ -63,7 +64,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Instant getInstant(Token token) {
+	public Instant getInstant(Property token) {
 		try {
 			Instant value = innerHydrator.getInstant(token);
 			values.put(token, value);
@@ -75,7 +76,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public LocalDateTime getLocalDateTime(Token token) {
+	public LocalDateTime getLocalDateTime(Property token) {
 		try {
 			LocalDateTime value = innerHydrator.getLocalDateTime(token);
 			values.put(token, value);
@@ -87,7 +88,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public LocalDate getLocalDate(Token token) {
+	public LocalDate getLocalDate(Property token) {
 		try {
 			LocalDate value = innerHydrator.getLocalDate(token);
 			values.put(token, value);
@@ -99,7 +100,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Integer getInteger(Token token) {
+	public Integer getInteger(Property token) {
 		try {
 			Integer value = innerHydrator.getInteger(token);
 			values.put(token, value);
@@ -111,7 +112,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Short getShort(Token token) {
+	public Short getShort(Property token) {
 		try {
 			Short value = innerHydrator.getShort(token);
 			values.put(token, value);
@@ -123,7 +124,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Long getLong(Token token) {
+	public Long getLong(Property token) {
 		try {
 			Long value = innerHydrator.getLong(token);
 			values.put(token, value);
@@ -135,7 +136,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public UUID getUUID(Token token) {
+	public UUID getUUID(Property token) {
 		try {
 			UUID value = innerHydrator.getUUID(token);
 			values.put(token, value);
@@ -147,7 +148,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Double getDouble(Token token) {
+	public Double getDouble(Property token) {
 		try {
 			Double value = innerHydrator.getDouble(token);
 			values.put(token, value);
@@ -160,7 +161,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 
 
 	@Override
-	public BigDecimal getBigDecimal(Token token) {
+	public BigDecimal getBigDecimal(Property token) {
 		try {
 			BigDecimal value = innerHydrator.getBigDecimal(token);
 			values.put(token, value);
@@ -172,7 +173,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Float getFloat(Token token) {
+	public Float getFloat(Property token) {
 		try {
 			Float value = innerHydrator.getFloat(token);
 			values.put(token, value);
@@ -184,7 +185,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Boolean getBoolean(Token token) {
+	public Boolean getBoolean(Property token) {
 		try {
 			Boolean value = innerHydrator.getBoolean(token);
 			values.put(token, value);
@@ -196,7 +197,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Byte getByte(Token token) {
+	public Byte getByte(Property token) {
 		try {
 			Byte value = innerHydrator.getByte(token);
 			values.put(token, value);
@@ -208,7 +209,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public byte[] getBytes(Token token) {
+	public byte[] getBytes(Property token) {
 		try {
 			byte[] value = innerHydrator.getBytes(token);
 			values.put(token, value);
@@ -220,7 +221,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public <T extends Enum<T>> T getEnum(Token token, Class<T> aClass) {
+	public <T extends Enum<T>> T getEnum(Property token, Class<T> aClass) {
 		try {
 			T value = innerHydrator.getEnum(token, aClass);
 			values.put(token, value);
@@ -232,7 +233,7 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public <T> Collection<T> getCollection(Token token, Class<T> aClass, Class<? extends Collection<T>> aClass1) {
+	public <T> Collection<T> getCollection(Property token, Class<T> aClass, Class<? extends Collection<T>> aClass1) {
 		try {
 			Collection<T> value = innerHydrator.getCollection(token, aClass, aClass1);
 			values.put(token, value);

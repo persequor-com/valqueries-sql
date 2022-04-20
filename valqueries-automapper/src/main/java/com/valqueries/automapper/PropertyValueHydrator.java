@@ -20,96 +20,96 @@ public class PropertyValueHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public String getString(Token token) {
+	public String getString(Property token) {
 		return (String) getValue(token);
 	}
 
-	private Object getValue(Token token) {
-		return newValues.stream().filter(p -> p.getProperty().getToken().equals(token)).findFirst().get().getValue();
+	private Object getValue(Property token) {
+		return newValues.stream().filter(p -> p.getProperty().matchesSnakeCase(token.getSnakeCase())).findFirst().get().getValue();
 	}
 
 	@Override
-	public Character getCharacter(Token token) {
+	public Character getCharacter(Property token) {
 		return (Character) getValue(token);
 	}
 
 	@Override
-	public ZonedDateTime getZonedDateTime(Token token) {
+	public ZonedDateTime getZonedDateTime(Property token) {
 		return (ZonedDateTime) getValue(token);
 	}
 
 	@Override
-	public Instant getInstant(Token token) {
+	public Instant getInstant(Property token) {
 		return (Instant) getValue(token);
 	}
 
 	@Override
-	public LocalDateTime getLocalDateTime(Token token) {
+	public LocalDateTime getLocalDateTime(Property token) {
 		return (LocalDateTime) getValue(token);
 	}
 
 	@Override
-	public LocalDate getLocalDate(Token token) {
+	public LocalDate getLocalDate(Property token) {
 		return (LocalDate) getValue(token);
 	}
 
 	@Override
-	public Integer getInteger(Token token) {
+	public Integer getInteger(Property token) {
 		return (Integer) getValue(token);
 	}
 
 	@Override
-	public Short getShort(Token token) {
+	public Short getShort(Property token) {
 		return (Short) getValue(token);
 	}
 
 	@Override
-	public Long getLong(Token token) {
+	public Long getLong(Property token) {
 		return (Long) getValue(token);
 	}
 
 	@Override
-	public UUID getUUID(Token token) {
+	public UUID getUUID(Property token) {
 		return (UUID) getValue(token);
 	}
 
 	@Override
-	public Double getDouble(Token token) {
+	public Double getDouble(Property token) {
 		return (Double) getValue(token);
 	}
 
 	@Override
-	public BigDecimal getBigDecimal(Token token) {
+	public BigDecimal getBigDecimal(Property token) {
 		return (BigDecimal) getValue(token);
 	}
 
 	@Override
-	public Float getFloat(Token token) {
+	public Float getFloat(Property token) {
 		return (Float) getValue(token);
 	}
 
 	@Override
-	public Boolean getBoolean(Token token) {
+	public Boolean getBoolean(Property token) {
 		return (Boolean) getValue(token);
 	}
 
 	@Override
-	public Byte getByte(Token token) {
+	public Byte getByte(Property token) {
 		return (Byte) getValue(token);
 	}
 
 	@Override
-	public byte[] getBytes(Token token) {
+	public byte[] getBytes(Property token) {
 		return (byte[]) getValue(token);
 	}
 
 	@Override
-	public <T extends Enum<T>> T getEnum(Token token, Class<T> aClass) {
+	public <T extends Enum<T>> T getEnum(Property token, Class<T> aClass) {
 		return (T) getValue(token);
 	}
 
 	@Override
-	public <T> Collection<T> getCollection(Token token, Class<T> aClass, Class<? extends Collection<T>> aClass1) {
+	public <T> Collection<T> getCollection(Property token, Class<T> aClass, Class<? extends Collection<T>> aClass1) {
 		return (Collection<T>) getValue(token);
 	}
 }
