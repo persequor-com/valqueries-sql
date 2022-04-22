@@ -86,7 +86,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	@Override
 	public Optional<T> get(K id) {
 		return database.obtainInTransaction(tx -> {
-			return tx.query("select * from "+getTableName()+" where "+typeDescriber.primaryKeys().get(0).getToken().snake_case()+" = :"+ getKeyName(0), b -> {
+			return tx.query("select * from "+getTableName()+" where "+dialect.column(typeDescriber.primaryKeys().get(0).getProperty())+" = :"+ getKeyName(0), b -> {
 				setKey(b, id);
 			}, this::hydrate).stream().findFirst();
 		});

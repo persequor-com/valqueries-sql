@@ -8,6 +8,7 @@ import com.valqueries.automapper.GuiceModule;
 import com.valqueries.automapper.SqlNameFormatter;
 import com.valqueries.automapper.ValqueriesResolver;
 import io.ran.Clazz;
+import io.ran.KeySet;
 import io.ran.Property;
 import io.ran.token.Token;
 import org.junit.Before;
@@ -55,7 +56,7 @@ public abstract class BaseSchemaBuilderIT {
 		builder.addTable(Token.get("TheTable"), tb -> {
 			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
 			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
-			tb.addPrimaryKey(Token.get("id"));
+			tb.addPrimaryKey(Property.get(Token.get("id")));
 		});
 		builder.build();
 
@@ -91,7 +92,7 @@ public abstract class BaseSchemaBuilderIT {
 		builder.addTable(Token.get("TheTable"), tb -> {
 			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
 			tb.addColumn(Property.get(Token.get("timeField"), Clazz.of(ZonedDateTime.class)));
-			tb.addPrimaryKey(Token.get("id"));
+			tb.addPrimaryKey(Property.get(Token.get("id")));
 		});
 		builder.build();
 
@@ -118,7 +119,7 @@ public abstract class BaseSchemaBuilderIT {
 		builder.addTable(Token.get("TheTable"), tb -> {
 			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
 			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
-			tb.addPrimaryKey(Token.get("id"), Token.get("title"));
+			tb.addPrimaryKey(Property.get(Token.get("id")), Property.get(Token.get("title")));
 		});
 		builder.build();
 
@@ -150,7 +151,7 @@ public abstract class BaseSchemaBuilderIT {
 		builder.addTable(Token.get("TheTable"), tb -> {
 			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
 			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
-			tb.addPrimaryKey(Token.get("id"));
+			tb.addPrimaryKey(Property.get(Token.get("id")));
 		});
 
 		builder.modifyTable(Token.get("TheTable"), tb -> {
@@ -196,7 +197,7 @@ public abstract class BaseSchemaBuilderIT {
 		builder.addTable(Token.get("TheTable"), tb -> {
 			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
 			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
-			tb.addPrimaryKey(Token.get("id"));
+			tb.addPrimaryKey(Property.get(Token.get("id")));
 		});
 		builder.build();
 		builder = new ValqueriesSchemaBuilder(executor, sqlNameFormatter);
@@ -230,13 +231,13 @@ public abstract class BaseSchemaBuilderIT {
 		builder.addTable(Token.get("TheTable"), tb -> {
 			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
 			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
-			tb.addPrimaryKey(Token.get("id"));
+			tb.addPrimaryKey(Property.get(Token.get("id")));
 		});
 		builder.build();
 
 		builder = new ValqueriesSchemaBuilder(executor, sqlNameFormatter);
 		builder.modifyTable(Token.get("TheTable"), tb -> {
-			tb.addIndex(Token.get("my_index"), Token.get("title"), Token.get("id"));
+			tb.addIndex(Property.get(Token.get("my_index")), Property.get(Token.get("title")), Property.get(Token.get("id")));
 		});
 		builder.build();
 
@@ -264,13 +265,13 @@ public abstract class BaseSchemaBuilderIT {
 		builder.addTable(Token.get("TheTable"), tb -> {
 			tb.addColumn(Property.get(Token.get("id"), Clazz.of(UUID.class)));
 			tb.addColumn(Property.get(Token.get("title"), Clazz.of(String.class)));
-			tb.addPrimaryKey(Token.get("id"));
+			tb.addPrimaryKey(Property.get(Token.get("id")));
 		});
 
 		builder.modifyTable(Token.get("TheTable"), tb -> {
-			tb.addIndex(Token.get("myUnique"), ib -> {
-				ib.addField(Token.get("id"));
-				ib.addField(Token.get("title"));
+			tb.addIndex(Property.get(Token.get("myUnique")), ib -> {
+				ib.addField(Property.get(Token.get("id")));
+				ib.addField(Property.get(Token.get("title")));
 				ib.isUnique();
 			});
 		});
