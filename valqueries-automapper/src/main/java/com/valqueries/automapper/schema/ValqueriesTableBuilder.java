@@ -49,6 +49,16 @@ public class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder
 	}
 
 	@Override
+	protected ColumnToken getColumnToken(Property property) {
+		return new ValqueriesColumnToken(sqlNameFormatter, dialect, property);
+	}
+
+	@Override
+	protected IndexToken getIndexToken(Property property) {
+		return new ValqueriesIndexToken(sqlNameFormatter, dialect, property);
+	}
+
+	@Override
 	protected ColumnActionDelegate create() {
 		return (t,ca) -> {
 			return (t.getType() == TableActionType.MODIFY ? "ALTER TABLE "+t.getName()+" "+dialect.getAddColumnStatement() : "")+dialect.column(ca.getProperty()).toString()+" "+dialect.getSqlType(ca.getProperty());
@@ -71,18 +81,18 @@ public class ValqueriesTableBuilder extends TableModifier<ValqueriesTableBuilder
 
 	@Override
 	protected IndexActionDelegate createIndex() {
-		return (t,ia) -> {
+		return (tableAction,indexAction) -> {
 
 			AtomicInteger incrementor = new AtomicInteger();
-			Stream<KeySet.Field> fieldStream = ia.getFields().stream().map(f -> new KeySet.Field(Property.get(f.getToken(), Clazz.of(Object.class)), incrementor.incrementAndGet()));
+			Stream<KeySet.Field> fieldStream = indexAction.getFields().stream().map(f -> new KeySet.Field(f.getProperty(), incrementor.incrementAndGet()));
 			KeySet keyset = new KeySet(fieldStream.collect(Collectors.toList()));
 
-			keyset.setPrimary(ia.isPrimary());
-			keyset.setName(ia.getName().unescaped());
-			if (t.getType() == TableActionType.MODIFY || !keyset.isPrimary()) {
-				return dialect.generateIndexStatement(t.getName(), keyset, ia.getProperty("isUnique").equals(true));
+			keyset.setPrimary(indexAction.isPrimary());
+			keyset.setName(indexAction.getName().unescaped());
+			if (tableAction.getType() == TableActionType.MODIFY || !keyset.isPrimary()) {
+				return dialect.generateIndexStatement(tableAction.getName(), keyset, indexAction.getProperty("isUnique").equals(true));
 			} else {
-				return dialect.generatePrimaryKeyStatement(t.getName(), keyset, ia.getProperty("isUnique").equals(true));
+				return dialect.generatePrimaryKeyStatement(tableAction.getName(), keyset, indexAction.getProperty("isUnique").equals(true));
 			}
 		};
 	}
