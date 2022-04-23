@@ -65,6 +65,14 @@ public abstract class SqlGeneratorITBase {
 //			e.printStackTrace();
 		}
 		update(dialect.dropTableStatement(Clazz.of(SimpleTestTable.class)));
+		try {
+			update(dialect.generateDropIndexStatement(dialect.getTableName(Clazz.of(TestTableWithChangedKeys.class)), new ValqueriesIndexToken(sqlNameFormatter, dialect, Token.get("created_idx")), false));
+		} catch (Exception e) {
+//			System.out.println(e.toString());
+//			e.printStackTrace();
+		}
+		update(dialect.dropTableStatement(Clazz.of(TestTableWithChangedKeys.class)));
+
 
 
 	}
@@ -167,6 +175,15 @@ public abstract class SqlGeneratorITBase {
 		} catch (InvalidTypeConversionException e) {
 			// expected
 		}
+	}
+
+	@Test
+	public void supportsChangesPrimaryKey() {
+		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(TestTableWithChangedKeys.class));
+		database.doInTransaction(tx -> {
+			tx.update("insert into test_table_with_changed_keys (theid, idxedCol) values ('an id', 'idxed')");
+		});
+
 	}
 
 }

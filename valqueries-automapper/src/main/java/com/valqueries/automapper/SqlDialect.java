@@ -39,7 +39,7 @@ public interface SqlDialect {
 	SqlNameFormatter sqlNameFormatter();
 
 	default ColumnToken column(Property property) {
-		DbName dbName = property.getAnnotations().get(DbName.class);
+		DbName dbName = property != null && property.getAnnotations() != null ? property.getAnnotations().get(DbName.class) : null;
 		if (dbName != null) {
 			return new ValqueriesColumnToken(sqlNameFormatter(), this, dbName.value());
 		} else {

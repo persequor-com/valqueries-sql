@@ -1,12 +1,6 @@
 package com.valqueries.automapper;
 
-import io.ran.Clazz;
-import io.ran.CompoundKey;
-import io.ran.Key;
-import io.ran.Mapper;
-import io.ran.PrimaryKey;
-import io.ran.Property;
-import io.ran.Relation;
+import io.ran.*;
 import io.ran.token.Token;
 
 import java.util.UUID;
@@ -14,6 +8,7 @@ import java.util.UUID;
 @Mapper(dbType = Valqueries.class)
 public class EngineCar {
 	@PrimaryKey
+	@DbName("theCarId")
 	private UUID carId;
 	@PrimaryKey
 	private UUID engineId;

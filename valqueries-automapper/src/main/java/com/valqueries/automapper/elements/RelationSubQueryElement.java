@@ -31,10 +31,10 @@ public class RelationSubQueryElement implements Element {
 		for(int i=0;i<relation.getFromKeys().size();i++) {
 			KeySet.Field key = relation.getFromKeys().get(i);
 			KeySet.Field toKey = relation.getToKeys().get(i);
-			res += (res.length() > 0 ? " AND " : "")+tableAlias+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(toKey.getToken()))+ " = "+parentTableAlias + "." + dialect.escapeColumnOrTable(sqlNameFormatter.column(key.getToken()));
+			res += (res.length() > 0 ? " AND " : "")+tableAlias+"."+dialect.column(toKey.getProperty())+ " = "+parentTableAlias + "." + dialect.column(key.getProperty());
 		}
 
-		return "exists ("+otherQuery.buildSimpleSelectSql(tableAlias, res, relation.getToKeys().stream().map(p -> tableAlias + "." + sqlNameFormatter.column(p.getToken())).collect(Collectors.toList()))+")";
+		return "exists ("+otherQuery.buildSimpleSelectSql(tableAlias, res, relation.getToKeys().stream().map(p -> tableAlias + "." + dialect.column(p.getProperty())).collect(Collectors.toList()))+")";
 	}
 
 	@Override

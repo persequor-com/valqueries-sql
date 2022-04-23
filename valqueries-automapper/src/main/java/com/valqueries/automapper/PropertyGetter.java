@@ -50,93 +50,92 @@ public class PropertyGetter<FROM> implements ObjectMapColumnizer, Setter {
 		}
 	}
 	@Override
-
-	public void set(Token token, String s) {
-		put(token.snake_case(), s);
+	public void set(Property token, String s) {
+		put(token.getSnakeCase(), s);
 	}
 
 	@Override
-	public void set(Token token, Character character) {
-		put(token.snake_case(), character);
+	public void set(Property token, Character character) {
+		put(token.getSnakeCase(), character);
 	}
 
 	@Override
-	public void set(Token token, ZonedDateTime zonedDateTime) {
-		put(token.snake_case(), zonedDateTime);
+	public void set(Property token, ZonedDateTime zonedDateTime) {
+		put(token.getSnakeCase(), zonedDateTime);
 	}
 
 	@Override
-	public void set(Token token, LocalDateTime localDateTime) {
-		put(token.snake_case(), localDateTime);
+	public void set(Property token, LocalDateTime localDateTime) {
+		put(token.getSnakeCase(), localDateTime);
 	}
 
 	@Override
-	public void set(Token token, Instant instant) {
-		put(token.snake_case(), instant);
+	public void set(Property token, Instant instant) {
+		put(token.getSnakeCase(), instant);
 	}
 
 	@Override
-	public void set(Token token, LocalDate localDate) {
-		put(token.snake_case(), localDate);
+	public void set(Property token, LocalDate localDate) {
+		put(token.getSnakeCase(), localDate);
 	}
 
 	@Override
-	public void set(Token token, Integer integer) {
-		put(token.snake_case(), integer);
+	public void set(Property token, Integer integer) {
+		put(token.getSnakeCase(), integer);
 	}
 
 	@Override
-	public void set(Token token, Short aShort) {
-		put(token.snake_case(), aShort);
+	public void set(Property token, Short aShort) {
+		put(token.getSnakeCase(), aShort);
 	}
 
 	@Override
-	public void set(Token token, Long aLong) {
-		put(token.snake_case(), aLong);
+	public void set(Property token, Long aLong) {
+		put(token.getSnakeCase(), aLong);
 	}
 
 	@Override
-	public void set(Token token, UUID uuid) {
-		put(token.snake_case(), uuid);
+	public void set(Property token, UUID uuid) {
+		put(token.getSnakeCase(), uuid);
 	}
 
 	@Override
-	public void set(Token token, Double aDouble) {
-		put(token.snake_case(), aDouble);
+	public void set(Property token, Double aDouble) {
+		put(token.getSnakeCase(), aDouble);
 	}
 
 	@Override
-	public void set(Token token, BigDecimal bigDecimal) {
-		put(token.snake_case(), bigDecimal);
+	public void set(Property token, BigDecimal bigDecimal) {
+		put(token.getSnakeCase(), bigDecimal);
 	}
 
 	@Override
-	public void set(Token token, Float aFloat) {
-		put(token.snake_case(), aFloat);
+	public void set(Property token, Float aFloat) {
+		put(token.getSnakeCase(), aFloat);
 	}
 
 	@Override
-	public void set(Token token, Boolean aBoolean) {
-		put(token.snake_case(), aBoolean);
+	public void set(Property token, Boolean aBoolean) {
+		put(token.getSnakeCase(), aBoolean);
 	}
 
 	@Override
-	public void set(Token token, Byte aByte) {
-		put(token.snake_case(), aByte);
+	public void set(Property token, Byte aByte) {
+		put(token.getSnakeCase(), aByte);
 	}
 
 	@Override
-	public void set(Token token, byte[] bytes) {
-		put(token.snake_case(), bytes);
+	public void set(Property token, byte[] bytes) {
+		put(token.getSnakeCase(), bytes);
 	}
 
 	@Override
-	public void set(Token token, Enum<?> anEnum) {
-		put(token.snake_case(), anEnum);
+	public void set(Property token, Enum<?> anEnum) {
+		put(token.getSnakeCase(), anEnum);
 	}
 
 	@Override
-	public void set(Token token, Collection<?> list) {
-		put(token.snake_case(), list);
+	public void set(Property token, Collection<?> list) {
+		put(token.getSnakeCase(), list);
 	}
 }

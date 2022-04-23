@@ -581,7 +581,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		List<KeySet.Field> to = relation.getToKeys().stream().collect(Collectors.toList());
 		List<String> onParams = new ArrayList<>();
 		for (int x = 0; x < from.size(); x++) {
-			onParams.add(fromTableAlias + "." + sqlNameFormatter.column(from.get(x).getToken()) + " = " + toTableAlias + "." + sqlNameFormatter.column(to.get(x).getToken()));
+			onParams.add(fromTableAlias + "." + dialect.column(from.get(x).getProperty()) + " = " + toTableAlias + "." + dialect.column(to.get(x).getProperty()));
 		}
 		joinSql.append(String.join(" AND ", onParams));
 		TypeDescriber<?> eagerRelationTypeDescriber = TypeDescriberImpl.getTypeDescriber(relation.getToClass().clazz);

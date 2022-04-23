@@ -1,5 +1,6 @@
 package com.valqueries.automapper;
 
+import io.ran.DbName;
 import io.ran.Mapper;
 import io.ran.PrimaryKey;
 import io.ran.Relation;
@@ -10,6 +11,7 @@ import java.util.UUID;
 @Mapper(dbType = Valqueries.class)
 public class Engine {
 	@PrimaryKey
+	@DbName("engineId")
 	private UUID id;
 	@Relation(collectionElementType = Car.class, via = EngineCar.class, autoSave = true)
 	private List<Car> cars;

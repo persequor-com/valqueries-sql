@@ -70,7 +70,7 @@ public class MariaSqlDialect implements SqlDialect {
 		updateStatement.append("UPDATE " + getTableName(Clazz.of(typeDescriber.clazz())) + " as main SET ");
 
 		String columnsToUpdate = newPropertyValues.stream()
-				.map(pv -> "main." + sqlNameFormatter.column(pv.getProperty().getToken()) + " = :" + pv.getProperty().getToken().snake_case())
+				.map(pv -> "main." + column(pv.getProperty()) + " = :" + pv.getProperty().getToken().snake_case())
 				.collect(Collectors.joining(", "));
 		updateStatement.append(columnsToUpdate);
 

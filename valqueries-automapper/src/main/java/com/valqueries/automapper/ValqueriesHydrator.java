@@ -35,13 +35,12 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	private SqlDialect dialect;
 	private TypeDescriber typeDescriber;
 
-	private String transformKey(Token key) {
-		List<Property> collect = typeDescriber.fields().stream().filter(field -> field.getToken().equals(key)).collect(Collectors.toList());
-		DbName dbName = collect.get(0).getAnnotations().get(DbName.class);
+	private String transformKey(Property key) {
+		DbName dbName = key.getAnnotations().get(DbName.class);
 		if (dbName != null) {
 			return prefix+dbName.value();
 		} else {
-			return prefix+sqlNameFormatter.column(key);
+			return prefix+sqlNameFormatter.column(key.getToken());
 		}
 	}
 
@@ -60,7 +59,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public String getString(Token key) {
+	public String getString(Property key) {
 		try {
 			return row.getString(transformKey(key));
 		} catch (SQLException e) {
@@ -69,9 +68,9 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Character getCharacter(Token token) {
+	public Character getCharacter(Property property) {
 		try {
-			String string = row.getString(transformKey(token));
+			String string = row.getString(transformKey(property));
 			return string == null ? null : string.charAt(0);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -79,7 +78,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public ZonedDateTime getZonedDateTime(Token key) {
+	public ZonedDateTime getZonedDateTime(Property key) {
 		try {
 			return row.getDateTime(transformKey(key));
 		} catch (SQLException e) {
@@ -88,7 +87,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Instant getInstant(Token key) {
+	public Instant getInstant(Property key) {
 		try {
 			ZonedDateTime date = row.getDateTime(transformKey(key));
 			if (date != null) {
@@ -102,9 +101,9 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public LocalDateTime getLocalDateTime(Token token) {
+	public LocalDateTime getLocalDateTime(Property property) {
 		try {
-			String date = row.getString(transformKey(token));
+			String date = row.getString(transformKey(property));
 			if (date != null) {
 				return LocalDateTime.parse(date.replace(' ','T'));
 			} else {
@@ -116,9 +115,9 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public LocalDate getLocalDate(Token token) {
+	public LocalDate getLocalDate(Property property) {
 		try {
-			String date = row.getString(transformKey(token));
+			String date = row.getString(transformKey(property));
 			if (date != null) {
 				return LocalDate.parse(date);
 			} else {
@@ -130,7 +129,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Integer getInteger(Token key) {
+	public Integer getInteger(Property key) {
 		try {
 			return row.getInt(transformKey(key));
 		} catch (SQLException e) {
@@ -139,9 +138,9 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Short getShort(Token token) {
+	public Short getShort(Property property) {
 		try {
-			Integer i = row.getInt(transformKey(token));
+			Integer i = row.getInt(transformKey(property));
 			if (i == null) {
 				return null;
 			}
@@ -152,7 +151,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Long getLong(Token key) {
+	public Long getLong(Property key) {
 		try {
 			return row.getLong(transformKey(key));
 		} catch (SQLException e) {
@@ -161,7 +160,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public UUID getUUID(Token key) {
+	public UUID getUUID(Property key) {
 		try {
 			return row.getUUID(transformKey(key));
 		} catch (SQLException e) {
@@ -170,7 +169,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Double getDouble(Token key) {
+	public Double getDouble(Property key) {
 		try {
 			return row.getDouble(transformKey(key));
 		} catch (SQLException e) {
@@ -179,7 +178,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public BigDecimal getBigDecimal(Token key) {
+	public BigDecimal getBigDecimal(Property key) {
 		try {
 			String num = row.getString(transformKey(key));
 			return num != null ? new BigDecimal(num) : null;
@@ -189,7 +188,7 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Float getFloat(Token key) {
+	public Float getFloat(Property key) {
 		try {
 			return row.getFloat(transformKey(key));
 		} catch (SQLException e) {
@@ -198,18 +197,18 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public Boolean getBoolean(Token token) {
+	public Boolean getBoolean(Property property) {
 		try {
-			return row.getBoolean(transformKey(token));
+			return row.getBoolean(transformKey(property));
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public Byte getByte(Token token) {
+	public Byte getByte(Property property) {
 		try {
-			Integer anInt = row.getInt(transformKey(token));
+			Integer anInt = row.getInt(transformKey(property));
 			return anInt == null ? null : anInt.byteValue();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -217,26 +216,26 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 	}
 
 	@Override
-	public byte[] getBytes(Token token) {
+	public byte[] getBytes(Property property) {
 		try {
-			return row.getBlob(transformKey(token));
+			return row.getBlob(transformKey(property));
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public <T extends Enum<T>> T getEnum(Token token, Class<T> aClass) {
+	public <T extends Enum<T>> T getEnum(Property property, Class<T> aClass) {
 		try {
-			return row.getEnum(transformKey(token), aClass);
+			return row.getEnum(transformKey(property), aClass);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public <T> Collection<T> getCollection(Token token, Class<T> aClass, Class<? extends Collection<T>> collectionClass) {
-		String collectionString = getString(token);
+	public <T> Collection<T> getCollection(Property property, Class<T> aClass, Class<? extends Collection<T>> collectionClass) {
+		String collectionString = getString(property);
 		if (collectionString == null) {
 			return null;
 		}
