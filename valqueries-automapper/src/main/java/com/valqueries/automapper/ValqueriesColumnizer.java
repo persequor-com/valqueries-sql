@@ -15,23 +15,17 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	private final List<Consumer<IStatement>> statements = new ArrayList<>();
-	private final List<String> sqlStatements = new ArrayList<>();
-	private final List<String> sqlWithoutKey = new ArrayList<>();
+	private final Set<String> sqlStatements = new LinkedHashSet<>();
+	private final Set<String> sqlWithoutKey = new LinkedHashSet<>();
 	protected final Map<String,String> fields = new LinkedHashMap<>();
 	protected final Map<String, String> fieldsWithoutKeys = new LinkedHashMap<>();
-	protected final List<String> placeholders = new ArrayList<>();
-	protected final List<String> keys = new ArrayList<>();
+	protected final Set<String> keys = new LinkedHashSet<>();
 	protected TypeDescriber<? extends Object> typeDescriber;
 	CompoundKey key;
 	protected SqlDialect dialect;
@@ -52,11 +46,8 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 
 	protected void add(Property property, Consumer<IStatement> consumer) {
 		fields.put(property.getSnakeCase(),transformKey(property));
-		placeholders.add(property.getSnakeCase());
 
 		String sql = "`"+transformKey(property)+"` = :"+property.getSnakeCase();
-		sqlStatements.add(sql);
-
 
 		if (((Property.PropertyValueList<?>)this.key.getValues()).stream().anyMatch(pv -> {
 			return !pv.getProperty().getSnakeCase().equals(property.getSnakeCase());
@@ -172,11 +163,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 		statements.forEach(s -> s.accept(statement));
 	}
 
-	public String getSql() {
-		return String.join(", ", sqlStatements);
-	}
-
-	public String getSqlWithoutKey() {
+		public String getSqlWithoutKey() {
 		return String.join(", ", sqlWithoutKey);
 	}
 
@@ -184,11 +171,7 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 		return fields;
 	}
 
-	public List<String> getPlaceholders() {
-		return placeholders;
-	}
-
-	public List<String> getKeys() {
+	public Set<String> getKeys() {
 		return keys;
 	}
 

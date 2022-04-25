@@ -5,17 +5,15 @@ import com.valqueries.Setter;
 import io.ran.*;
 import io.ran.token.Token;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Setter, ObjectMapColumnizer {
 	protected final List<List<Consumer<IStatement>>> statements = new ArrayList<>();
 	protected List<Consumer<IStatement>> currentStatements = new ArrayList<>();
 
-	private final List<String> columns = new ArrayList<>();
-	private final List<String> columnsWithoutKey = new ArrayList<>();
+	private final Set<String> columns = new LinkedHashSet<>();
+	private final Set<String> columnsWithoutKey = new LinkedHashSet<>();
 	private final List<List<String>> valueTokens = new ArrayList<>();
 	private List<String> valueTokensCurrent = new ArrayList<>();
 	private Property.PropertyList keyFields;
@@ -62,7 +60,6 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 
 	protected void add(Property property, Consumer<IStatement> consumer) {
 		fields.put(property.getSnakeCase(),transformKey(property));
-		placeholders.add(property.getSnakeCase());
 		if (index == 0) {
 			columns.add(transformKey(property));
 		}
@@ -76,7 +73,7 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		currentStatements.add(consumer);
 	}
 
-	public List<String> getColumns() {
+	public Set<String> getColumns() {
 		return columns;
 	}
 
@@ -84,7 +81,7 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		return valueTokens;
 	}
 
-	public List<String> getColumnsWithoutKey() {
+	public Set<String> getColumnsWithoutKey() {
 		return columnsWithoutKey;
 	}
 }
