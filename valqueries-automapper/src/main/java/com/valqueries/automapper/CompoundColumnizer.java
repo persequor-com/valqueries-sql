@@ -2,36 +2,34 @@ package com.valqueries.automapper;
 
 import com.valqueries.IStatement;
 import com.valqueries.Setter;
-import io.ran.GenericFactory;
-import io.ran.MappingHelper;
-import io.ran.ObjectMapColumnizer;
-import io.ran.Property;
+import io.ran.*;
 import io.ran.token.Token;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Setter, ObjectMapColumnizer {
 	protected final List<List<Consumer<IStatement>>> statements = new ArrayList<>();
 	protected List<Consumer<IStatement>> currentStatements = new ArrayList<>();
 
-	private final List<String> columns = new ArrayList<>();
-	private final List<String> columnsWithoutKey = new ArrayList<>();
+	private final Set<String> columns = new LinkedHashSet<>();
+	private final Set<String> columnsWithoutKey = new LinkedHashSet<>();
 	private final List<List<String>> valueTokens = new ArrayList<>();
 	private List<String> valueTokensCurrent = new ArrayList<>();
-	private Token.TokenList keyFields;
+	private Property.PropertyList keyFields;
 	private int index = 0;
 
-	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> ts, SqlNameFormatter sqlNameFormatter) {
+
+	public CompoundColumnizer(GenericFactory genericFactory, MappingHelper mappingHelper, Collection<T> ts, SqlNameFormatter sqlNameFormatter, SqlDialect dialect, TypeDescriber<T> typeDescriber) {
+		this.typeDescriber = typeDescriber;
+		this.dialect = dialect;
 		this.sqlNameFormatter = sqlNameFormatter;
 		this.key = mappingHelper.getKey(ts.stream().findFirst().get());
 		for (T t : ts) {
 			if (keyFields == null) {
-				keyFields = new Token.TokenList();
+				keyFields = new Property.PropertyList();
 				for(Object propertyValue : mappingHelper.getKey(t).getValues()) {
-					keyFields.add(((Property.PropertyValue)propertyValue).getProperty().getToken());
+					keyFields.add(((Property.PropertyValue)propertyValue).getProperty());
 				}
 			}
 			mappingHelper.columnize(t, this);
@@ -45,6 +43,7 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		}
 		index = 0;
 	}
+
 	@Override
 	public void set(IStatement statement) {
 		for (List<Consumer<IStatement>> ss : statements) {
@@ -55,27 +54,26 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		}
 	}
 
-	protected String transformFieldPlaceholder(Token key) {
-		return key.snake_case()+"_"+index;
+	protected String transformFieldPlaceholder(Property key) {
+		return key.getSnakeCase()+"_"+index;
 	}
 
-	protected void add(Token token, Consumer<IStatement> consumer) {
-		fields.put(token.snake_case(),transformKey(token));
-		placeholders.add(token.snake_case());
+	protected void add(Property property, Consumer<IStatement> consumer) {
+		fields.put(property.getSnakeCase(),transformKey(property));
 		if (index == 0) {
-			columns.add(transformKey(token));
+			columns.add(transformKey(property));
 		}
-		valueTokensCurrent.add(transformFieldPlaceholder(token));
-		if (keyFields.contains(token)) {
-			keys.add(transformKey(token));
+		valueTokensCurrent.add(transformFieldPlaceholder(property));
+		if (keyFields.contains(property.getSnakeCase())) {
+			keys.add(transformKey(property));
 		} else {
-			fieldsWithoutKeys.put(token.snake_case(),transformKey(token));
-			columnsWithoutKey.add(transformKey(token));
+			fieldsWithoutKeys.put(property.getSnakeCase(),transformKey(property));
+			columnsWithoutKey.add(transformKey(property));
 		}
 		currentStatements.add(consumer);
 	}
 
-	public List<String> getColumns() {
+	public Set<String> getColumns() {
 		return columns;
 	}
 
@@ -83,7 +81,7 @@ public class CompoundColumnizer<T> extends ValqueriesColumnizer<T> implements Se
 		return valueTokens;
 	}
 
-	public List<String> getColumnsWithoutKey() {
+	public Set<String> getColumnsWithoutKey() {
 		return columnsWithoutKey;
 	}
 }

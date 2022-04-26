@@ -386,6 +386,18 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 	}
 
 	@Override
+	public GroupStringResult concat(Function<T, ?> field, String separator) {
+		field.apply(instance);
+		return concat(queryWrapper.getCurrentProperty(), separator);
+	}
+
+	@Override
+	public GroupStringResult concat(BiConsumer<T, ?> field, String separator) {
+		field.accept(instance, null);
+		return concat(queryWrapper.getCurrentProperty(), separator);
+	}
+
+	@Override
 	public GroupNumericResult min(Function<T, ?> field) {
 		field.apply(instance);
 		return min(queryWrapper.getCurrentProperty().copy());
@@ -413,6 +425,10 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 		return aggregateFunction(property, o -> o.stream().mapToLong(l -> Long.valueOf(l.toString())).min().orElse(0));
 	}
 
+	private GroupStringResult concat(Property property, String separator) {
+		return aggregateFunctionString(property, o -> String.join(separator, o));
+	}
+
 	private GroupNumericResult aggregateFunction(Property property, Function<List<Object>,Long> func) {
 		return new GroupNumericResultImpl(execute()
 			.map(t -> new GroupNumericResultImpl.Grouping(groupByProperties.stream().map(p -> getValue(p, t)).collect(Collectors.toList()), getValue(property, t)))
@@ -423,6 +439,18 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 			.entrySet()
 			.stream()
 			.collect(Collectors.toMap(e -> e.getKey(), e -> func.apply(e.getValue()))));
+	}
+
+	private GroupStringResult aggregateFunctionString(Property property, Function<List<String>,String> func) {
+		return new GroupStringResultImpl(execute()
+				.map(t -> new GroupStringResultImpl.Grouping(groupByProperties.stream().map(p -> getValue(p, t)).collect(Collectors.toList()), getValue(property, t)))
+				.collect(Collectors.toMap(g -> g, g -> new ArrayList(Arrays.asList(g.getValue())), (v1, v2) -> {
+					v1.addAll(v2);
+					return v1;
+				}))
+				.entrySet()
+				.stream()
+				.collect(Collectors.toMap(e -> e.getKey(), e -> func.apply(e.getValue()))));
 	}
 
 	public Stream<T> execute() {

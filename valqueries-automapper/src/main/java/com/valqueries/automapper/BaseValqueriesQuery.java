@@ -39,7 +39,8 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 	@Override
 	public <X> ValqueriesQuery<T> in(Function<T, X> field, X... value) {
 		field.apply(instance);
-		final Class<?> fieldType = this.typeDescriber.fields().get(queryWrapper.getCurrentProperty().getToken()).getType().clazz;
+		Property property = this.typeDescriber.fields().get(queryWrapper.getCurrentProperty().getToken());
+		final Class<?> fieldType = property.getType().clazz;
 
 		if (value != null && value.length > 0 && !fieldType.isAssignableFrom(value[0].getClass())) {
 			//it can happen for instance if we provide Collection of the type mismatching the field type then JVM would infer X as an object and make it the first element of the vararg array
@@ -48,7 +49,7 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 					+ String.format("Field type is '%s', value type is '%s'.", fieldType, value[0].getClass()));
 		}
 
-		in(queryWrapper.getCurrentProperty().values(value));
+		in(property.values(value));
 		return this;
 	}
 
@@ -214,4 +215,18 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 	}
 
 	protected abstract GroupNumericResult min(Property resultProperty);
+
+	@Override
+	public GroupStringResult concat(Function<T, ?> field, String separator) {
+		field.apply(instance);
+		return concat(queryWrapper.getCurrentProperty().copy(), separator);
+	}
+
+	@Override
+	public GroupStringResult concat(BiConsumer<T, ?> field, String separator) {
+		field.accept(instance, null);
+		return concat(queryWrapper.getCurrentProperty().copy(), separator);
+	}
+
+	protected abstract GroupStringResult concat(Property resultProperty, String separator);
 }

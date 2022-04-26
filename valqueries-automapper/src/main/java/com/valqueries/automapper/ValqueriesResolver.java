@@ -32,17 +32,19 @@ public class ValqueriesResolver implements DbResolver<Valqueries> {
 		KeySet toKeys;
 		Optional<RelationDescriber> fromObjRelationDescriber = Optional.empty();
 		if (relationDescriber.getVia() != null && !relationDescriber.getVia().isEmpty()) {
-			TypeDescriber<?> o = TypeDescriberImpl.getTypeDescriber(relationDescriber.getToClass().clazz);
-			fromObjRelationDescriber = o.relations().get(relationDescriber.getFromClass().clazz);
-			RelationDescriber intermediateRelation = fromObjRelationDescriber.get().getVia().stream().filter(via -> !via.getToClass().clazz.equals(relationDescriber.getRelationAnnotation().via())).findFirst().get().inverse();
-			fromKeys = intermediateRelation.getFromKeys();
-			toKeys = intermediateRelation.getToKeys();
+			RelationDescriber fromThis = relationDescriber.getVia().get(0);
+			fromObjRelationDescriber = Optional.of(relationDescriber.inverse());
+			fromKeys = fromThis.getFromKeys();
+			toKeys = fromThis.getToKeys();
 		} else {
 			fromKeys = relationDescriber.getFromKeys();
 			toKeys = relationDescriber.getToKeys();
 		}
 		PropertiesColumnizer columnizer = new PropertiesColumnizer(fromKeys.toProperties());
 		mappingHelper.columnize(from, columnizer);
+		if (columnizer.getValues().size() != toKeys.size()) {
+			throw new RuntimeException("Mismatch in key and property count. Keys has "+toKeys.size()+" elements and matching properties has "+columnizer.getValues().size()+" keys");
+		}
 		Iterator<Property.PropertyValue> values = columnizer.getValues().iterator();
 		for (Property property : toKeys.toProperties()) {
 			if (fromObjRelationDescriber.isPresent()) {

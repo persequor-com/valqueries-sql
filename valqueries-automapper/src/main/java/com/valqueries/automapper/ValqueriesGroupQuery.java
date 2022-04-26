@@ -15,4 +15,7 @@ public interface ValqueriesGroupQuery<T> {
 
 	GroupNumericResult min(Function<T, ?> field);
 	GroupNumericResult min(BiConsumer<T, ?> field);
+
+	GroupStringResult concat(Function<T, ?> field, String separator);
+	GroupStringResult concat(BiConsumer<T, ?> field, String separator);
 }

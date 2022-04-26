@@ -55,7 +55,8 @@ public abstract class AutoMapperBaseTests {
 	static TypeDescriber<BikeGearBike> bikeGearBikeDescriber;
 	static TypeDescriber<BikeWheel> bikeWheelDescriber;
 	static TypeDescriber<PrimaryKeyModel> primaryKeyDescriber;
-
+	static TypeDescriber<Bipod> bipodDescriber;
+	static TypeDescriber<Pod> podDescriber;
 	@Mock
 	Resolver resolver;
 	CarRepository carRepository;
@@ -72,6 +73,7 @@ public abstract class AutoMapperBaseTests {
 	PrimaryKeyModelRepository primayKeyModelRepository;
 	ObjectWithSerializedFieldRepository objectWithSerializedFieldRepository;
 	BipodRepository podRepository;
+	PersonRepository personRepository;
 
 
 	@Before
@@ -91,8 +93,8 @@ public abstract class AutoMapperBaseTests {
 		bikeGearBikeDescriber = TypeDescriberImpl.getTypeDescriber(BikeGearBike.class);
 		bikeWheelDescriber = TypeDescriberImpl.getTypeDescriber(BikeWheel.class);
 		withCollectionsDescriber = TypeDescriberImpl.getTypeDescriber(WithCollections.class);
-
-
+		bipodDescriber = TypeDescriberImpl.getTypeDescriber(Bipod.class);
+		podDescriber = TypeDescriberImpl.getTypeDescriber(Pod.class);
 		carRepository = injector.getInstance(CarRepository.class);
 		doorRepository = injector.getInstance(DoorRepository.class);
 		engineRepository = injector.getInstance(EngineRepository.class);
@@ -105,6 +107,7 @@ public abstract class AutoMapperBaseTests {
 		podRepository = injector.getInstance(BipodRepository.class);
 		allFieldTypesRepository = injector.getInstance(AllFieldTypesRepository.class);
 		objectWithSerializedFieldRepository = injector.getInstance(ObjectWithSerializedFieldRepository.class);
+		personRepository = injector.getInstance(PersonRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -1055,6 +1058,45 @@ public abstract class AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Bike.class})
+	public void groupByAggregate_concat() {
+		Bike bike = factory.get(Bike.class);
+		String mountainId1 = UUID.randomUUID().toString();
+		bike.setId(mountainId1);
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		String mountainId2 = UUID.randomUUID().toString();
+		bike.setId(mountainId2);
+		bike.setBikeType(BikeType.Mountain);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		bike = factory.get(Bike.class);
+		String racerId = UUID.randomUUID().toString();
+		bike.setId(racerId);
+		bike.setBikeType(BikeType.Racer);
+		bike.setWheelSize(20);
+
+		bikeRepository.save(bike);
+
+		String separator = ",";
+		GroupStringResult result = bikeRepository.query().groupBy(Bike::getBikeType).concat(Bike::getId, separator);
+		assertEquals(2, result.size());
+		assertTrue(result.get(BikeType.Mountain).contains(mountainId1));
+		assertTrue(result.get(BikeType.Mountain).contains(mountainId2));
+		assertTrue(result.get(BikeType.Mountain).contains(separator));
+		assertEquals(racerId, result.get(BikeType.Racer));
+		assertEquals(2, result.keys().size());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Mountain)).count());
+		assertEquals(1, result.keys().stream().filter(k -> k.contains(BikeType.Racer)).count());
+	}
+
+	@Test
+	@TestClasses({Bike.class})
 	public void groupByAggregate_multipleFields_count() {
 		Bike bike = factory.get(Bike.class);
 		bike.setId(UUID.randomUUID().toString());
@@ -1585,6 +1627,41 @@ public abstract class AutoMapperBaseTests {
 		assertTrue(loadedObj.isPresent());
 		assertEquals("down", loadedObj.get().getSerialized().getDown());
 		assertEquals(33, loadedObj.get().getSerialized().getUp());
+	}
+
+	@Test
+	@TestClasses({Person.class, PersonMarriage.class, ChildMarriage.class, Marriage.class})
+	public void via_relation_advanced() throws Throwable {
+		Person dad = factory.get(Person.class);
+		dad.setId("dad");
+		Person mom = factory.get(Person.class);
+		mom.setId("mom");
+		Person child1 = factory.get(Person.class);
+		child1.setId("child1");
+		Person child2 = factory.get(Person.class);
+		child2.setId("child2");
+		Marriage marriage = factory.get(Marriage.class);
+		marriage.setId("themarriage");
+		marriage.setChildren(Arrays.asList(child1, child2));
+		marriage.setPersons(Arrays.asList(mom, dad));
+		dad.setMarriages(Arrays.asList(marriage));
+		mom.setMarriages(Arrays.asList(marriage));
+		personRepository.save(dad);
+		personRepository.save(mom);
+		personRepository.save(child1);
+		personRepository.save(child2);
+
+		Optional<Person> dadLoaded = personRepository.get("dad");
+		assertTrue(dadLoaded.isPresent());
+		List<Marriage> marriages = dadLoaded.get().getMarriages();
+		assertEquals(1,marriages.size());
+		assertEquals(2,marriages.get(0).getPersons().size());
+		assertEquals(1,marriages.get(0).getPersons().stream().filter(p -> p.getId().equals("dad")).count());
+		assertEquals(1,marriages.get(0).getPersons().stream().filter(p -> p.getId().equals("mom")).count());
+
+		assertEquals(2,marriages.get(0).getChildren().size());
+		assertEquals(1,marriages.get(0).getChildren().stream().filter(p -> p.getId().equals("child1")).count());
+		assertEquals(1,marriages.get(0).getChildren().stream().filter(p -> p.getId().equals("child2")).count());
 	}
 }
 

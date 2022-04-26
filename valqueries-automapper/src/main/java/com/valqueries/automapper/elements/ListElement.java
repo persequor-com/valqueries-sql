@@ -29,7 +29,7 @@ public class ListElement<T> implements Element {
 	}
 
 	public String queryString() {
-		return query.getTableAlias()+"."+dialect.column(values.getProperty().getToken())+" "+operator+" (:"+field+")";
+		return query.getTableAlias()+"."+dialect.column(values.getProperty())+" "+operator+" (:"+field+")";
 	}
 
 	@Override

@@ -584,4 +584,58 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		Car car = cars.stream().findAny().get();
 		assertNull(car.drivers);
 	}
+
+	@Test
+	@TestClasses({Car.class})
+	public void empmtyManyToMany_returnsEmptyList_notNull() throws Throwable {
+		Car nissan = factory.get(Car.class);
+		nissan.setId(UUID.randomUUID());
+		nissan.setTitle("Nissan");
+		nissan.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		carRepository.save(nissan);
+
+		Optional<Car> car = carRepository.get(nissan.getId());
+		assertTrue(car.isPresent());
+		assertEquals(0,car.get().getDrivers().size());
+	}
+
+	@Test
+	@TestClasses({Car.class, Engine.class, EngineCar.class})
+	public void manyToMany_dbName() throws Throwable {
+		Car nissan = factory.get(Car.class);
+		nissan.setId(UUID.randomUUID());
+		nissan.setTitle("Nissan");
+		nissan.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+
+		Engine engine = factory.get(Engine.class);
+		engine.setId(UUID.randomUUID());
+		nissan.setEngines(Collections.singletonList(engine));
+
+		carRepository.save(nissan);
+
+		Optional<Car> car = carRepository.query().eq(Car::getId, nissan.getId()).withEager(Car::getEngines).execute().findFirst();
+		assertTrue(car.isPresent());
+		assertEquals(1, car.get().getEngines().size());
+	}
+
+
+	@Test
+	@TestClasses(Door.class)
+	public void dbName_CRUD_happy(){
+
+		Door door = factory.get(Door.class);
+		door.setId(UUID.randomUUID());
+		door.setMaterial("Carbon");
+
+		doorRepository.save(door);
+		assertEquals(door.getId(), doorRepository.getDoorByMaterial("Carbon"));
+
+		doorRepository.query().in(Door::getMaterial,"Carbon").update(u->{u.set(Door::getTitle,"my_title");});
+		assertEquals("my_title", doorRepository.get(door.getId()).get().getTitle());
+
+		doorRepository.query().in(Door::getMaterial,"Carbon").delete();
+		assertEquals(0,doorRepository.getAll().collect(Collectors.toList()).size());
+
+	}
 }
