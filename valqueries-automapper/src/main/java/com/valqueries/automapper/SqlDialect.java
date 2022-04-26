@@ -56,7 +56,7 @@ public interface SqlDialect {
 		}
 		Serialized serialized = property.getAnnotations().get(Serialized.class);
 		if (serialized != null) {
-			return "VARCHAR(4000)";
+			return "TEXT";
 		}
 		if (type == String.class) {
 			return "VARCHAR(255)";
@@ -77,7 +77,7 @@ public interface SqlDialect {
 			return "DATE";
 		}
 		if (Collection.class.isAssignableFrom(type)) {
-			return "VARCHAR(4000)";
+			return "TEXT";
 		}
 		if (type.isEnum()) {
 			return "VARCHAR(255)";
@@ -109,9 +109,9 @@ public interface SqlDialect {
 	<O> String getUpsert(CompoundColumnizer<O> columnizer, Class<O> oClass);
 	String getLimitDefinition(int offset, Integer limit);
 	String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues);
-	
+
 	<O> String getInsert(CompoundColumnizer<O> columnizer, Class<O> oClass);
-	
+
 	default String generateDeleteStatement(String tableAlias, TypeDescriber<?> typeDescriber, List<Element> elements, int offset, Integer limit) {
 		String sql = "DELETE "+tableAlias+" FROM " + getTableName(Clazz.of(typeDescriber.clazz())) + " AS "+tableAlias;
 		if (!elements.isEmpty()) {
