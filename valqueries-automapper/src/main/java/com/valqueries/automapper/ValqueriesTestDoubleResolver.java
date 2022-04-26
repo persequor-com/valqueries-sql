@@ -1,19 +1,13 @@
 package com.valqueries.automapper;
 
-import io.ran.DbResolver;
-import io.ran.GenericFactory;
-import io.ran.MappingHelper;
-import io.ran.Property;
-import io.ran.RelationDescriber;
-import io.ran.TestDoubleDb;
-import io.ran.TypeDescriberImpl;
+import io.ran.*;
 
 import javax.inject.Inject;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ValqueriesTestDoubleResolver implements DbResolver<Valqueries> {
+public class ValqueriesTestDoubleResolver implements DbResolver<Valqueries>, DbType {
 	private GenericFactory genericFactory;
 	private MappingHelper mappingHelper;
 	private TestDoubleDb store;
@@ -53,5 +47,10 @@ public class ValqueriesTestDoubleResolver implements DbResolver<Valqueries> {
 	@Override
 	public <FROM, TO> Collection<TO> getCollection(RelationDescriber relationDescriber, FROM from) {
 		return (Collection<TO>) getStream(relationDescriber, from).collect(Collectors.toList());
+	}
+
+	@Override
+	public String getName() {
+		return "Test double";
 	}
 }
