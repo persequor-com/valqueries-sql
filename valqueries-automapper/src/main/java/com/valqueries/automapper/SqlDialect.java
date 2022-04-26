@@ -77,7 +77,7 @@ public interface SqlDialect {
 			return "DATE";
 		}
 		if (Collection.class.isAssignableFrom(type)) {
-			return "VARCHAR(4000)";
+			return "TEXT";
 		}
 		if (type.isEnum()) {
 			return "VARCHAR(255)";
