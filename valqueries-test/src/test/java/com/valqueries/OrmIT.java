@@ -254,6 +254,8 @@ public class OrmIT {
 			Optional<String> dbIndex = orm.querySingle("SELECT id FROM it_orm_basic WHERE id=:id", statement -> statement.set("id", "øscår"), row -> row.getString("id"));
 
 			assertTrue(dbIndex.isPresent());
+		} catch (Exception e) {
+			fail("UTF8 persisting/retrieving should have worked");
 		}
 	}
 
