@@ -244,6 +244,20 @@ public class OrmIT {
 	}
 
 	@Test
+	public void writeUTF8Characters() {
+		String sql = "INSERT INTO it_orm_basic SET id = :id";
+		try (IOrm orm = database.getOrm()) {
+			orm.update(sql, statement -> {
+				statement.set("id", "øscår");
+			});
+
+			Optional<String> dbIndex = orm.querySingle("SELECT id FROM it_orm_basic WHERE id=:id", statement -> statement.set("id", "øscår"), row -> row.getString("id"));
+
+			assertTrue(dbIndex.isPresent());
+		}
+	}
+
+	@Test
 	public void transaction_successful() {
 		String sql = "INSERT INTO it_orm_basic SET id = :id";
 		String id = UUID.randomUUID().toString();
