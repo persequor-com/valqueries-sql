@@ -35,16 +35,28 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 		return store.getStore(modelType);
 	}
 
+	private T mappingCopy(T t) {
+		T tc = genericFactory.get(modelType);
+		mappingHelper.copyValues(modelType, t, tc);
+		return tc;
+	}
+
+	private <O> O mappingCopy(Class<O> c,O t) {
+		O tc = genericFactory.get(c);
+		mappingHelper.copyValues(c, t, tc);
+		return tc;
+	}
+
 	@Override
 	public Optional<T> get(K k) {
-		return Optional.ofNullable(getStore(modelType).get(k));
+		return Optional.ofNullable(getStore(modelType).get(k)).map(this::mappingCopy);
 	}
 
 
 
 	@Override
 	public Stream<T> getAll() {
-		return getStore(modelType).values().stream();
+		return getStore(modelType).values().stream().map(this::mappingCopy);
 	}
 
 	@Override
@@ -63,11 +75,8 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 
 	private <Z> CrudUpdateResult save(Z o, Class<Z> zClass) {
 		Object key = getGenericKey(o);
-		ObjectMap map = new ObjectMap();
-		mappingHelper.columnize(o, map);
-		Z oClone = (Z)genericFactory.get(zClass);
-		mappingHelper.hydrate(oClone, map);
-		Z existing = store.getStore(zClass).put((Object) key, oClone);
+
+		Z existing = store.getStore(zClass).put((Object) key, mappingCopy(zClass, o));
 		return new CrudUpdateResult() {
 			@Override
 			public int affectedRows() {
@@ -132,7 +141,7 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 		if(store.getStore(zClass).get((Object) key) != null){
 			throw new ValqueriesInsertFailedException("Duplicate entry");
 		}
-		store.getStore(zClass).put((Object) key, o);
+		store.getStore(zClass).put((Object) key, mappingCopy(zClass, o));
 		return () -> 1;
 	}
 	
