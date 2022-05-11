@@ -15,9 +15,11 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	private final ValqueriesAccessDataLayer<T, K> baseRepo;
 	private final ValqueriesRepositoryFactory factory;
 	private final Class<T> modelType;
+	private final RelationsHelper relationsHelper;
 
 	public ValqueriesCrudRepositoryImpl(ValqueriesRepositoryFactory factory, Class<T> modelType, Class<K> keyType) {
 		this.modelType = modelType;
+		this.relationsHelper = new RelationsHelper(factory);
 		this.baseRepo = factory.get(modelType, keyType);
 		this.factory = factory;
 	}
@@ -44,36 +46,36 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 
 	@Override
 	public CrudUpdateResult save(T entity) {
-		final ChangeMonitor changed = new ChangeMonitor();
+		final ChangeMonitor changed = new ChangeMonitor(factory.mappingHelper);
 		doRetryableInTransaction(tx -> saveIncludingRelationInternal(changed, tx, entity, modelType));
 		return changed::getNumberOfChangedRows;
 	}
 
 	@Override
 	public CrudUpdateResult save(ITransactionContext tx, T entity) {
-		final ChangeMonitor changed = new ChangeMonitor();
+		final ChangeMonitor changed = new ChangeMonitor(factory.mappingHelper);
 		saveIncludingRelationInternal(changed, tx, entity, modelType);
 		return changed::getNumberOfChangedRows;
 	}
 
 	@Override
 	public CrudUpdateResult insert(ITransactionContext tx, T entity) throws ValqueriesInsertFailedException {
-		final ChangeMonitor changed = new ChangeMonitor();
+		final ChangeMonitor changed = new ChangeMonitor(factory.mappingHelper);
 		changed.increment(entity, insertOther(tx, entity, modelType).affectedRows());
 		return changed::getNumberOfChangedRows;
 	}
 
 	@Override
 	public CrudUpdateResult save(ITransactionContext tx, Collection<T> entities) {
-		final ChangeMonitor changed = new ChangeMonitor();
+		final ChangeMonitor changed = new ChangeMonitor(factory.mappingHelper);
 		saveIncludingRelationsInternal(changed, tx, entities, modelType);
 		return changed::getNumberOfChangedRows;
 	}
 
 	@Override
 	public CrudUpdateResult insert(ITransactionContext tx, Collection<T> entities) throws ValqueriesInsertFailedException {
-		final ChangeMonitor changed = new ChangeMonitor();
-		changed.increment(entities, insertOthers(tx, entities, modelType).affectedRows());
+		final ChangeMonitor changed = new ChangeMonitor(factory.mappingHelper);
+		changed.incrementCollection(entities, insertOthers(tx, entities, modelType).affectedRows());
 		return changed::getNumberOfChangedRows;
 	}
 
@@ -94,19 +96,19 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	public <O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> ts, Class<O> oClass) throws ValqueriesInsertFailedException {
 		return baseRepo.insertOthers(tx, ts, oClass);
 	}
-	
+
 	/*
 		Save methods
 	 */
-	
+
 	private <O> void saveIncludingRelationsInternal(ChangeMonitor changed, ITransactionContext tx, Collection<O> ts, Class<O> xClass) {
 		Collection<O> notAlreadySaved = ts.stream().filter(t -> !changed.isAlreadySaved(t)).collect(Collectors.toList());
-		changed.increment(notAlreadySaved, saveOthers(tx, notAlreadySaved, xClass).affectedRows());
+		changed.incrementCollection(notAlreadySaved, saveOthers(tx, notAlreadySaved, xClass).affectedRows());
 		TypeDescriberImpl.getTypeDescriber(xClass).relations().forEach(relationDescriber -> {
 			internalSaveRelation(changed, tx, notAlreadySaved, relationDescriber);
 		});
 	}
-	
+
 	private <X> void saveIncludingRelationInternal(ChangeMonitor changed, ITransactionContext tx, X t, Class<X> xClass) {
 		if (changed.isAlreadySaved(t)) {
 			return;
@@ -126,14 +128,14 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 			if (!relationDescriber.getRelationAnnotation().autoSave()) {
 				return;
 			}
-			if (!(t instanceof Mapping)) {
-				throw new RuntimeException("Valqueries models should have a @Mapper annotation");
-			}
-			Mapping mapping = (Mapping) t;
-			Object relation = mapping._getRelation(relationDescriber);
+//			if (!(t instanceof Mapping)) {
+//				throw new RuntimeException("Valqueries models should have a @Mapper annotation");
+//			}
+//			Mapping mapping = (Mapping) t;
+			Object relation = factory.mappingHelper.getRelation(t, relationDescriber.getField());
 
 			if (relation != null) {
-				manyToManyRelations.addAll(getManyToManyRelations(relationDescriber, mapping, relation, via));
+				manyToManyRelations.addAll(relationsHelper.getManyToManyRelations(relationDescriber, t, relation, via));
 				if(relationDescriber.isCollectionRelation()) {
 					objectsToSave.addAll((Collection<Object>) relation);
 				} else {
@@ -150,35 +152,7 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		}
 	}
 
-	private Collection<Object> getManyToManyRelations(RelationDescriber relationDescriber, Mapping mapping, Object relation, Class<?> via) {
-		Collection<Object> manyToManyRelations = new ArrayList<>();
 
-		if (!via.equals(None.class)) {
-			((Collection <?>) relation).forEach(rel -> {
-				Mapping mappingRelation = (Mapping) rel;
-				Mapping manyToManyRelation = (Mapping) factory.genericFactory.get(via);
-				UncheckedObjectMap map = new UncheckedObjectMap();
-
-				relationDescriber.getVia().forEach(viaRelationDescriber -> {
-					Property.PropertyList properties = viaRelationDescriber.getFromKeys().toProperties();
-
-					for (int i = 0; i < properties.size(); i++) {
-						Token propertiesToken = properties.get(i).getToken();
-						Token viaToken = viaRelationDescriber.getToKeys().get(i).getToken();
-
-						if (viaRelationDescriber.getToClass().clazz.isAssignableFrom(mappingRelation.getClass())) {
-							map.set(propertiesToken, mappingRelation._getKey().getValues().get(viaToken).getValue());
-						} else {
-							map.set(viaToken, mapping._getKey().getValues().get(propertiesToken).getValue());
-						}
-					}
-				});
-				manyToManyRelation.hydrate(map);
-				manyToManyRelations.add(manyToManyRelation);
-			});
-		}
-		return manyToManyRelations;
-	}
 
 	protected ValqueriesQuery<T> query() {
 		return baseRepo.query();
@@ -202,9 +176,5 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		baseRepo.doRetryableInTransaction(tx);
 	}
 
-	private static class UncheckedObjectMap extends ObjectMap {
-		public void set(Token key, Object value) {
-			put(key, value);
-		}
-	}
+
 }

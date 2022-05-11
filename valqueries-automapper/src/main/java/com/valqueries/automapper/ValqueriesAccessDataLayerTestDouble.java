@@ -3,15 +3,7 @@ package com.valqueries.automapper;
 import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
-import io.ran.CompoundKey;
-import io.ran.GenericFactory;
-import io.ran.Mapping;
-import io.ran.MappingHelper;
-import io.ran.Property;
-import io.ran.RelationDescriber;
-import io.ran.TestDoubleDb;
-import io.ran.TypeDescriber;
-import io.ran.TypeDescriberImpl;
+import io.ran.*;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -70,16 +62,12 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 	}
 
 	private <Z> CrudUpdateResult save(Z o, Class<Z> zClass) {
-		Mapping mapping = (Mapping)o;
-		for (RelationDescriber relation : TypeDescriberImpl.getTypeDescriber(zClass).relations()) {
-			if (!relation.getRelationAnnotation().autoSave()) {
-				mapping._setRelation(relation, null);
-				mapping._setRelationNotLoaded(relation);
-			}
-		}
-
 		Object key = getGenericKey(o);
-		Z existing = store.getStore(zClass).put((Object) key, o);
+		ObjectMap map = new ObjectMap();
+		mappingHelper.columnize(o, map);
+		Z oClone = (Z)genericFactory.get(zClass);
+		mappingHelper.hydrate(oClone, map);
+		Z existing = store.getStore(zClass).put((Object) key, oClone);
 		return new CrudUpdateResult() {
 			@Override
 			public int affectedRows() {

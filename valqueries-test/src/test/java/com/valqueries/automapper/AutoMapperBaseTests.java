@@ -74,6 +74,7 @@ public abstract class AutoMapperBaseTests {
 	ObjectWithSerializedFieldRepository objectWithSerializedFieldRepository;
 	BipodRepository podRepository;
 	PersonRepository personRepository;
+	GraphNodeRepository graphNodeRepository;
 
 
 	@Before
@@ -108,6 +109,7 @@ public abstract class AutoMapperBaseTests {
 		allFieldTypesRepository = injector.getInstance(AllFieldTypesRepository.class);
 		objectWithSerializedFieldRepository = injector.getInstance(ObjectWithSerializedFieldRepository.class);
 		personRepository = injector.getInstance(PersonRepository.class);
+		graphNodeRepository = injector.getInstance(GraphNodeRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -1632,15 +1634,15 @@ public abstract class AutoMapperBaseTests {
 	@Test
 	@TestClasses({Person.class, PersonMarriage.class, ChildMarriage.class, Marriage.class})
 	public void via_relation_advanced() throws Throwable {
-		Person dad = factory.get(Person.class);
+		Person dad = new Person();
 		dad.setId("dad");
-		Person mom = factory.get(Person.class);
+		Person mom = new Person();
 		mom.setId("mom");
-		Person child1 = factory.get(Person.class);
+		Person child1 = new Person();
 		child1.setId("child1");
-		Person child2 = factory.get(Person.class);
+		Person child2 = new Person();
 		child2.setId("child2");
-		Marriage marriage = factory.get(Marriage.class);
+		Marriage marriage = new Marriage();
 		marriage.setId("themarriage");
 		marriage.setChildren(Arrays.asList(child1, child2));
 		marriage.setPersons(Arrays.asList(mom, dad));
@@ -1663,7 +1665,37 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1,marriages.get(0).getChildren().stream().filter(p -> p.getId().equals("child1")).count());
 		assertEquals(1,marriages.get(0).getChildren().stream().filter(p -> p.getId().equals("child2")).count());
 	}
+
+	@Test
+	@TestClasses({GraphNode.class, GraphNodeLink.class})
+	public void canHandleGraphs() throws Throwable {
+		GraphNode first = factory.get(GraphNode.class);
+		first.setId("first");
+		GraphNode second = factory.get(GraphNode.class);
+		second.setId("second");
+		GraphNode third = factory.get(GraphNode.class);
+		third.setId("third");
+		first.setNextNodes(Arrays.asList(second));
+		second.setPreviousNodes(Arrays.asList(first));
+		second.setNextNodes(Arrays.asList(third));
+		third.setPreviousNodes(Arrays.asList(second));
+
+
+		graphNodeRepository.save(first);
+		graphNodeRepository.save(second);
+		graphNodeRepository.save(third);
+
+		Optional<GraphNode> node = graphNodeRepository.query().eq(GraphNode::getId, "second").execute().findFirst();//.subQueryList(GraphNode::getNextNodes, nn -> {
+//			nn.eq(GraphNode::getId, "third");
+//		}).execute().findFirst();
+
+		assertTrue(node.isPresent());
+		assertEquals("second", node.get().getId());
+		assertEquals("first", node.get().getPreviousNodes().get(0).getId());
+		assertEquals("third", node.get().getNextNodes().get(0).getId());
+	}
 }
+
 
 
 
