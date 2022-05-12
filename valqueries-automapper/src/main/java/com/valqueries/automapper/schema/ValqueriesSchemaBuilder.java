@@ -14,12 +14,14 @@ import java.util.stream.Collectors;
 
 public class ValqueriesSchemaBuilder extends SchemaBuilder<ValqueriesSchemaBuilder, ValqueriesTableBuilder, ValqueriesColumnBuilder, ValqueriesIndexBuilder, IValqueriesTableBuilder> {
 	private SqlDialect dialect;
+	private ValqueriesSchemaExecutor _executor;
 	private SqlNameFormatter sqlNameFormatter;
 
 	@Inject
 	public ValqueriesSchemaBuilder(ValqueriesSchemaExecutor executor, SqlNameFormatter sqlNameFormatter) {
 		super(executor);
 		this.dialect = executor.getDialect();
+		this._executor = executor;
 		this.sqlNameFormatter = sqlNameFormatter;
 	}
 
@@ -58,5 +60,9 @@ public class ValqueriesSchemaBuilder extends SchemaBuilder<ValqueriesSchemaBuild
 		return ta -> {
 			return "DROP TABLE "+ta.getName()+";";
 		};
+	}
+
+	public String getGeneratedSql() {
+		return _executor.getSql();
 	}
 }

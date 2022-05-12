@@ -14,6 +14,7 @@ import java.util.Collection;
 public class ValqueriesSchemaExecutor implements SchemaExecutor {
 	private DialectFactory dialectFactory;
 	private Database database;
+	private String sql = "";
 
 	@Inject
 	public ValqueriesSchemaExecutor(DialectFactory dialectFactory, Database database) {
@@ -29,7 +30,7 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 				String[] actions = action.split(";");
 				for (String a: actions) {
 					if (a.length() > 0) {
-						System.out.println(a);
+						sql += a+";\n";
 						UpdateResult res = orm.update(a, s -> {	});
 					}
 				}
@@ -40,5 +41,9 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 
 	public SqlDialect getDialect() {
 		return dialectFactory.get(database);
+	}
+
+	public String getSql() {
+		return sql;
 	}
 }
