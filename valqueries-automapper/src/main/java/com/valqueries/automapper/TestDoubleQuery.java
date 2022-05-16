@@ -11,15 +11,7 @@ import io.ran.TypeDescriberImpl;
 
 import javax.swing.*;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeSet;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -295,7 +287,7 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 			return () -> 0;
 		}
 		List<Property.PropertyValue> newPropertyValues = this.getPropertyValuesFromUpdater(updater);
-		List<T> records = execute().collect(Collectors.toList());
+		List<T> records = executeInternal().collect(Collectors.toList());
 		records.forEach(t -> {
 			List<Property.PropertyValue> storedValues = this.getStoredValues(t);
 			Property.PropertyValueList updatedPropertyValues = new Property.PropertyValueList();

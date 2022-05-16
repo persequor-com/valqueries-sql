@@ -1,22 +1,18 @@
 package com.valqueries.automapper;
 
-import com.sun.tools.javac.jvm.Gen;
 import com.valqueries.Database;
 import io.ran.GenericFactory;
 import io.ran.MappingHelper;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.List;
-import java.util.MissingResourceException;
 
 @Singleton
 public class ValqueriesRepositoryFactory {
 	protected Database database;
 	protected GenericFactory genericFactory;
 	protected MappingHelper mappingHelper;
-	private SqlNameFormatter columnFormatter;
-	private DialectFactory dialectFactory;
+	private final SqlNameFormatter columnFormatter;
+	private final DialectFactory dialectFactory;
 
 	@Inject
 	public ValqueriesRepositoryFactory(Database database, GenericFactory genericFactory, MappingHelper mappingHelper, SqlNameFormatter columnFormatter, DialectFactory dialectFactory) {
