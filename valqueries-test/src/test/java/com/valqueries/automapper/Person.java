@@ -9,7 +9,7 @@ import java.util.List;
 public class Person {
     @PrimaryKey
     private String id;
-    @Relation(collectionElementType = Person.class, via = PersonMarriage.class, autoSave = true)
+    @Relation(collectionElementType = Person.class, via = PersonMarriage.class, fields = "id", relationFields = "personId", autoSave = true)
     private List<Marriage> marriages;
 
     public String getId() {

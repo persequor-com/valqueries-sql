@@ -7,9 +7,9 @@ import java.util.List;
 @Mapper(dbType = Valqueries.class)
 public class Marriage {
     private String id;
-    @Relation(collectionElementType = Person.class,via = PersonMarriage.class)
+    @Relation(collectionElementType = Person.class,via = PersonMarriage.class, fields = "id", relationFields = "marriageId")
     private List<Person> persons;
-    @Relation(collectionElementType = Person.class,via = ChildMarriage.class, autoSave = true)
+    @Relation(collectionElementType = Person.class,via = ChildMarriage.class, fields = "id", relationFields = "marriageId", autoSave = true)
     private List<Person> children;
 
     public String getId() {

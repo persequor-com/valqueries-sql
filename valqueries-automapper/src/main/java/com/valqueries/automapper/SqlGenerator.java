@@ -34,13 +34,13 @@ public class SqlGenerator {
 		return dialect.getTableName(Clazz.of(typeDescriber.clazz()));
 	}
 
-	public void generateOrModifyTable(Database database, TypeDescriber<?> typeDescriber) {
+	public String generateOrModifyTable(Database database, TypeDescriber<?> typeDescriber) {
 //		logger.warn("generateOrModifyTable is a work in progress and is not considered stable");
 		TableToken tablename = getTableName(typeDescriber);
 		SqlDescriber.DbTable table = sqlDescriber.describe(tablename, database);
 
 		if (table == null) {
-			generateCreateTable(typeDescriber);
+			return generateCreateTable(typeDescriber);
 		} else {
 			ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
 			schemaBuilder.modifyTable(tablename, t -> {
@@ -70,6 +70,7 @@ public class SqlGenerator {
 				});
 			});
 			schemaBuilder.build();
+			return schemaBuilder.getGeneratedSql();
 		}
 
 	}
@@ -90,7 +91,7 @@ public class SqlGenerator {
 		return dbIndex;
 	}
 
-	public void generateCreateTable(TypeDescriber<?> typeDescriber) {
+	public String generateCreateTable(TypeDescriber<?> typeDescriber) {
 		ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
 		schemaBuilder.addTable(Clazz.of(typeDescriber.clazz()).getToken(), table -> {
 			typeDescriber.fields().forEach(table::addColumn);
@@ -98,5 +99,6 @@ public class SqlGenerator {
 			typeDescriber.indexes().forEach(table::addIndex);
 		});
 		schemaBuilder.build();
+		return schemaBuilder.getGeneratedSql();
 	}
 }
