@@ -2,6 +2,8 @@ package com.valqueries.automapper.schema;
 
 import com.valqueries.automapper.SqlDialect;
 import com.valqueries.automapper.SqlNameFormatter;
+import io.ran.Clazz;
+import io.ran.TypeDescriber;
 import io.ran.schema.ColumnAction;
 import io.ran.schema.IndexAction;
 import io.ran.schema.SchemaBuilder;
@@ -33,6 +35,11 @@ public class ValqueriesSchemaBuilder extends SchemaBuilder<ValqueriesSchemaBuild
 	@Override
 	protected TableToken getTableToken(Token token) {
 		return new ValqueriesTableToken(sqlNameFormatter, dialect, token);
+	}
+
+	@Override
+	protected TableToken getTableToken(TypeDescriber<?> typeDescriber) {
+		return dialect.getTableName(Clazz.of(typeDescriber.clazz()));
 	}
 
 	@Override

@@ -12,7 +12,6 @@ import io.ran.ObjectMapHydrator;
 import io.ran.Property;
 import io.ran.TypeDescriber;
 import io.ran.token.Token;
-import sun.awt.X11.XPropertyCache;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
