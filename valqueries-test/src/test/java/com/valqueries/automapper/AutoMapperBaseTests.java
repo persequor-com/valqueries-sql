@@ -75,6 +75,9 @@ public abstract class AutoMapperBaseTests {
 	BipodRepository podRepository;
 	PersonRepository personRepository;
 	GraphNodeRepository graphNodeRepository;
+	ViaAltNameSourceRepository viaAltNameSourceRepository;
+	RelationSourceRepository relationSourceRepository;
+
 
 
 	@Before
@@ -110,6 +113,8 @@ public abstract class AutoMapperBaseTests {
 		objectWithSerializedFieldRepository = injector.getInstance(ObjectWithSerializedFieldRepository.class);
 		personRepository = injector.getInstance(PersonRepository.class);
 		graphNodeRepository = injector.getInstance(GraphNodeRepository.class);
+		viaAltNameSourceRepository = injector.getInstance(ViaAltNameSourceRepository.class);
+		relationSourceRepository = injector.getInstance(RelationSourceRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -1693,6 +1698,48 @@ public abstract class AutoMapperBaseTests {
 		assertEquals("second", node.get().getId());
 		assertEquals("first", node.get().getPreviousNodes().get(0).getId());
 		assertEquals("third", node.get().getNextNodes().get(0).getId());
+	}
+
+	@Test
+	@TestClasses({ViaAltName.class, ViaAltNameTarget.class, ViaAltNameSource.class})
+	public void alternativeNameOnViaClass() throws Throwable {
+		ViaAltNameSource source = factory.get(ViaAltNameSource.class);
+		ViaAltNameTarget target = factory.get(ViaAltNameTarget.class);
+		source.setId("id of source");
+		target.setId("id of target");
+		source.getTargets().add(target);
+
+		viaAltNameSourceRepository.save(source);
+
+		String actual = database.obtainInTransaction(tx -> {
+			return tx.query("select * from via_this_alternative_name", r -> {
+				return r.getString("target_id");
+			}).stream().findFirst().get();
+		});
+
+		assertEquals("id of target", actual);
+
+		Optional<ViaAltNameSource> sourceLoaded = viaAltNameSourceRepository.query().withEager(ViaAltNameSource::getTargets).execute().findFirst();
+		assertTrue(sourceLoaded.isPresent());
+		assertEquals("id of target", sourceLoaded.get().getTargets().get(0).getId());
+
+	}
+
+	@Test
+	@TestClasses({RelationWithExplicitVia.class, RelationExplicitVia.class})
+	public void relationsThatAreSetButNotSaved_shouldNotBeOverwrittenByLazyLoading() throws Throwable {
+		RelationWithExplicitVia source = factory.get(RelationWithExplicitVia.class);
+		RelationExplicitVia middle = factory.get(RelationExplicitVia.class);
+		RelationWithExplicitVia target = factory.get(RelationWithExplicitVia.class);
+		source.setId("id of source");
+		middle.setId("id of middle");
+		target.setId("id of target");
+		source.getForwards().add(middle);
+		middle.setSourceId(source.getId());
+		middle.setTargetId(target.getId());
+		middle.setTarget(target);
+
+		assertNotNull(middle.getTarget());
 	}
 }
 

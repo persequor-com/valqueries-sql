@@ -93,7 +93,7 @@ public class SqlGenerator {
 
 	public String generateCreateTable(TypeDescriber<?> typeDescriber) {
 		ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
-		schemaBuilder.addTable(Clazz.of(typeDescriber.clazz()).getToken(), table -> {
+		schemaBuilder.addTable(dialect.getTableName(Clazz.of(typeDescriber.clazz())), table -> {
 			typeDescriber.fields().forEach(table::addColumn);
 			table.addPrimaryKey(typeDescriber.primaryKeys());
 			typeDescriber.indexes().forEach(table::addIndex);
