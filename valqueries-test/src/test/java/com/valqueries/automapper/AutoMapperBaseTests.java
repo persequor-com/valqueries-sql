@@ -75,6 +75,9 @@ public abstract class AutoMapperBaseTests {
 	BipodRepository podRepository;
 	PersonRepository personRepository;
 	GraphNodeRepository graphNodeRepository;
+	ViaAltNameSourceRepository viaAltNameSourceRepository;
+	RelationSourceRepository relationSourceRepository;
+
 
 
 	@Before
@@ -110,6 +113,8 @@ public abstract class AutoMapperBaseTests {
 		objectWithSerializedFieldRepository = injector.getInstance(ObjectWithSerializedFieldRepository.class);
 		personRepository = injector.getInstance(PersonRepository.class);
 		graphNodeRepository = injector.getInstance(GraphNodeRepository.class);
+		viaAltNameSourceRepository = injector.getInstance(ViaAltNameSourceRepository.class);
+		relationSourceRepository = injector.getInstance(RelationSourceRepository.class);
 	}
 
 	protected abstract void setInjector();
@@ -1324,7 +1329,7 @@ public abstract class AutoMapperBaseTests {
 		model2.setTitle("Muh");
 		model2.setBrand(Brand.Porsche);
 		model2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
-		
+
 		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, Arrays.asList(model1, model2)));
 
 		Optional<Car> actualOptional = carRepository.get(model1.getId());
@@ -1365,7 +1370,7 @@ public abstract class AutoMapperBaseTests {
 		} catch (Exception e){
 			assertTrue(e.getCause() instanceof ValqueriesInsertFailedException);
 		}
-		
+
 		Optional<Car> actualOptional = carRepository.get(model1.getId());
 		Car actual = actualOptional.orElseThrow(RuntimeException::new);
 		assertEquals(model1.getId(), actual.getId());
@@ -1407,7 +1412,7 @@ public abstract class AutoMapperBaseTests {
 		Exhaust exhaust = factory.get(Exhaust.class);
 		exhaust.setId(UUID.randomUUID());
 		exhaust.setBrand(Brand.Porsche);
-		
+
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle("Muh");
@@ -1415,9 +1420,9 @@ public abstract class AutoMapperBaseTests {
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 		model.setExhaust(exhaust);
 
-		// manually set exhaustId to null because the exhaust setter also sets it  
+		// manually set exhaustId to null because the exhaust setter also sets it
 		model.setExhaustId(null);
-		
+
 		//manual inserts
 		exhaustRepository.doRetryableInTransaction(tx -> exhaustRepository.insert(tx, exhaust));
 		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
@@ -1448,7 +1453,7 @@ public abstract class AutoMapperBaseTests {
 		// set relations
 		model.setDoors(Collections.singletonList(door1));
 		door1.setCar(model);
-		// manually set carId to null because the car setter also sets it  
+		// manually set carId to null because the car setter also sets it
 		door1.setCarId(null);
 		doorRepository.doRetryableInTransaction(tx -> doorRepository.insert(tx, door1));
 		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
@@ -1460,7 +1465,7 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
 		assertEquals(Brand.Porsche, actual.getBrand());
 		assertEquals(0, actual.getDoors().size());
-		
+
 		Optional<Door> actualDoor = doorRepository.get(door1.getId());
 		assertNull(actualDoor.get().getCarId());
 	}
@@ -1523,7 +1528,7 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(Brand.Porsche, actual.getBrand());
 		assertEquals(1, actual.getEngines().size());
 		assertEquals(engine.getId(), actual.getEngines().get(0).getId());
-		
+
 		Optional<Engine> optionalEngine = engineRepository.get(engine.getId());
 		Engine actualEngine = optionalEngine.orElseThrow(RuntimeException::new);
 		assertEquals(1, actualEngine.getCars().size());
@@ -1693,6 +1698,50 @@ public abstract class AutoMapperBaseTests {
 		assertEquals("second", node.get().getId());
 		assertEquals("first", node.get().getPreviousNodes().get(0).getId());
 		assertEquals("third", node.get().getNextNodes().get(0).getId());
+	}
+
+	@Test
+	@TestClasses({ViaAltName.class, ViaAltNameTarget.class, ViaAltNameSource.class})
+	public void alternativeNameOnViaClass() throws Throwable {
+		ViaAltNameSource source = factory.get(ViaAltNameSource.class);
+		ViaAltNameTarget target = factory.get(ViaAltNameTarget.class);
+		source.setId("id of source");
+		target.setId("id of target");
+		source.getTargets().add(target);
+
+		viaAltNameSourceRepository.save(source);
+
+		if (database !=  null) {
+			String actual = database.obtainInTransaction(tx -> {
+				return tx.query("select * from via_this_alternative_name", r -> {
+					return r.getString("target_id");
+				}).stream().findFirst().get();
+			});
+
+			assertEquals("id of target", actual);
+		}
+
+		Optional<ViaAltNameSource> sourceLoaded = viaAltNameSourceRepository.query().withEager(ViaAltNameSource::getTargets).execute().findFirst();
+		assertTrue(sourceLoaded.isPresent());
+		assertEquals("id of target", sourceLoaded.get().getTargets().get(0).getId());
+
+	}
+
+	@Test
+	@TestClasses({RelationWithExplicitVia.class, RelationExplicitVia.class})
+	public void relationsThatAreSetButNotSaved_shouldNotBeOverwrittenByLazyLoading() throws Throwable {
+		RelationWithExplicitVia source = factory.get(RelationWithExplicitVia.class);
+		RelationExplicitVia middle = factory.get(RelationExplicitVia.class);
+		RelationWithExplicitVia target = factory.get(RelationWithExplicitVia.class);
+		source.setId("id of source");
+		middle.setId("id of middle");
+		target.setId("id of target");
+		source.getForwards().add(middle);
+		middle.setSourceId(source.getId());
+		middle.setTargetId(target.getId());
+		middle.setTarget(target);
+
+		assertNotNull(middle.getTarget());
 	}
 }
 
