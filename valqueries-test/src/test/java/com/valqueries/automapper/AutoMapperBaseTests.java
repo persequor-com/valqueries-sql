@@ -1329,7 +1329,7 @@ public abstract class AutoMapperBaseTests {
 		model2.setTitle("Muh");
 		model2.setBrand(Brand.Porsche);
 		model2.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
-		
+
 		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, Arrays.asList(model1, model2)));
 
 		Optional<Car> actualOptional = carRepository.get(model1.getId());
@@ -1370,7 +1370,7 @@ public abstract class AutoMapperBaseTests {
 		} catch (Exception e){
 			assertTrue(e.getCause() instanceof ValqueriesInsertFailedException);
 		}
-		
+
 		Optional<Car> actualOptional = carRepository.get(model1.getId());
 		Car actual = actualOptional.orElseThrow(RuntimeException::new);
 		assertEquals(model1.getId(), actual.getId());
@@ -1412,7 +1412,7 @@ public abstract class AutoMapperBaseTests {
 		Exhaust exhaust = factory.get(Exhaust.class);
 		exhaust.setId(UUID.randomUUID());
 		exhaust.setBrand(Brand.Porsche);
-		
+
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle("Muh");
@@ -1420,9 +1420,9 @@ public abstract class AutoMapperBaseTests {
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 		model.setExhaust(exhaust);
 
-		// manually set exhaustId to null because the exhaust setter also sets it  
+		// manually set exhaustId to null because the exhaust setter also sets it
 		model.setExhaustId(null);
-		
+
 		//manual inserts
 		exhaustRepository.doRetryableInTransaction(tx -> exhaustRepository.insert(tx, exhaust));
 		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
@@ -1453,7 +1453,7 @@ public abstract class AutoMapperBaseTests {
 		// set relations
 		model.setDoors(Collections.singletonList(door1));
 		door1.setCar(model);
-		// manually set carId to null because the car setter also sets it  
+		// manually set carId to null because the car setter also sets it
 		door1.setCarId(null);
 		doorRepository.doRetryableInTransaction(tx -> doorRepository.insert(tx, door1));
 		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
@@ -1465,7 +1465,7 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
 		assertEquals(Brand.Porsche, actual.getBrand());
 		assertEquals(0, actual.getDoors().size());
-		
+
 		Optional<Door> actualDoor = doorRepository.get(door1.getId());
 		assertNull(actualDoor.get().getCarId());
 	}
@@ -1528,7 +1528,7 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(Brand.Porsche, actual.getBrand());
 		assertEquals(1, actual.getEngines().size());
 		assertEquals(engine.getId(), actual.getEngines().get(0).getId());
-		
+
 		Optional<Engine> optionalEngine = engineRepository.get(engine.getId());
 		Engine actualEngine = optionalEngine.orElseThrow(RuntimeException::new);
 		assertEquals(1, actualEngine.getCars().size());
@@ -1711,13 +1711,15 @@ public abstract class AutoMapperBaseTests {
 
 		viaAltNameSourceRepository.save(source);
 
-		String actual = database.obtainInTransaction(tx -> {
-			return tx.query("select * from via_this_alternative_name", r -> {
-				return r.getString("target_id");
-			}).stream().findFirst().get();
-		});
+		if (database !=  null) {
+			String actual = database.obtainInTransaction(tx -> {
+				return tx.query("select * from via_this_alternative_name", r -> {
+					return r.getString("target_id");
+				}).stream().findFirst().get();
+			});
 
-		assertEquals("id of target", actual);
+			assertEquals("id of target", actual);
+		}
 
 		Optional<ViaAltNameSource> sourceLoaded = viaAltNameSourceRepository.query().withEager(ViaAltNameSource::getTargets).execute().findFirst();
 		assertTrue(sourceLoaded.isPresent());
