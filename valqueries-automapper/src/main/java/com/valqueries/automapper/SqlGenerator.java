@@ -50,7 +50,7 @@ public class SqlGenerator {
 					if (!table.getColumns().containsKey(columnName.name())) {
 						t.addColumn(property);
 					} else if (!table.getColumns().get(columnName.name()).matches(property, sqlType)) {
-						checkTypeCompatibiliy(property.getType(), table.getColumns().get(columnName.name()).getType());
+//						checkTypeCompatibiliy(property.getType(), table.getColumns().get(columnName.name()).getType());
 						t.modifyColumn(property);
 					}
 
