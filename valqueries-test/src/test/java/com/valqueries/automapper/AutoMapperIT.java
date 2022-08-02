@@ -3,11 +3,7 @@ package com.valqueries.automapper;
 import com.google.inject.Guice;
 import com.valqueries.Database;
 import com.valqueries.IOrm;
-import io.ran.CrudRepository;
-import io.ran.GenericFactory;
-import io.ran.Resolver;
-import io.ran.TypeDescriber;
-import io.ran.TypeDescriberImpl;
+import io.ran.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -637,5 +633,28 @@ public abstract class AutoMapperIT extends AutoMapperBaseTests {
 		doorRepository.query().in(Door::getMaterial,"Carbon").delete();
 		assertEquals(0,doorRepository.getAll().collect(Collectors.toList()).size());
 
+	}
+
+	@Test
+	@TestClasses({NonAnnotatedSource.class, NonAnnotatedTarget.class})
+	public void nonAnnotated_shouldThrowOnLazyLoad(){
+		NonAnnotatedSource source = factory.get(NonAnnotatedSource.class);
+		source.setId(UUID.randomUUID().toString());
+		NonAnnotatedTarget target = factory.get(NonAnnotatedTarget.class);
+		target.setId(UUID.randomUUID().toString());
+
+
+		nonAnnotatedSourceRepository.doRetryableInTransaction(tx -> {
+			nonAnnotatedSourceRepository.save(tx, source);
+			nonAnnotatedSourceRepository.saveOther(tx, target, NonAnnotatedTarget.class);
+		});
+
+		NonAnnotatedSource actual = nonAnnotatedSourceRepository.get(source.getId()).orElseThrow(RuntimeException::new);
+		try {
+			actual.getTarget();
+			fail();
+		} catch (MissingDbTypeException ex) {
+			// This is to be expected
+		}
 	}
 }

@@ -77,7 +77,7 @@ public abstract class AutoMapperBaseTests {
 	GraphNodeRepository graphNodeRepository;
 	ViaAltNameSourceRepository viaAltNameSourceRepository;
 	RelationSourceRepository relationSourceRepository;
-
+	NonAnnotatedSourceRepository nonAnnotatedSourceRepository;
 
 
 	@Before
@@ -115,6 +115,7 @@ public abstract class AutoMapperBaseTests {
 		graphNodeRepository = injector.getInstance(GraphNodeRepository.class);
 		viaAltNameSourceRepository = injector.getInstance(ViaAltNameSourceRepository.class);
 		relationSourceRepository = injector.getInstance(RelationSourceRepository.class);
+		nonAnnotatedSourceRepository = injector.getInstance(NonAnnotatedSourceRepository.class);
 	}
 
 	protected abstract void setInjector();
