@@ -3,7 +3,7 @@ package com.valqueries;
 import java.util.Arrays;
 
 public enum DialectType {
-	MariaDB("mysql", "com.valqueries.automapper.MariaSqlDialect")
+	MariaDB("mariadb", "com.valqueries.automapper.MariaSqlDialect")
 	, MsSql("sqlserver", "com.valqueries.automapper.MssqlSqlDialect")
 	, H2("h2", "com.valqueries.automapper.H2SqlDialect");
 
@@ -24,6 +24,9 @@ public enum DialectType {
 	}
 
 	public static DialectType from(String jdbcName) {
-		return Arrays.asList(values()).stream().filter(dialectType -> dialectType.jdbcName.equals(jdbcName)).findFirst().orElseThrow(() -> new RuntimeException("Unknown dialect type: "+jdbcName));
+		if("mysql".equals(jdbcName)){
+			return MariaDB;
+		}
+		return Arrays.stream(values()).filter(dialectType -> dialectType.jdbcName.equals(jdbcName)).findFirst().orElseThrow(() -> new RuntimeException("Unknown dialect type: "+jdbcName));
 	}
 }

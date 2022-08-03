@@ -1,5 +1,5 @@
 dependencies {
-    implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.3'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.0.6'
     implementation "io.ran:ran-core:$ran_version"
     api project(':valqueries-core')
     api project(':valqueries-automapper')

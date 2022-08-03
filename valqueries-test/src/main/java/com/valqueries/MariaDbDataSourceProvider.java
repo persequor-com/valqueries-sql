@@ -16,7 +16,7 @@ public class MariaDbDataSourceProvider extends HikariDataSource {
 
 	private MariaDbDataSourceProvider() {
 		HikariConfig config = new HikariConfig();
-		config.setJdbcUrl(System.getProperty("db.url", "jdbc:mysql://localhost:3307/valqueries"));
+		config.setJdbcUrl(System.getProperty("db.url", "jdbc:mariadb://localhost:3307/valqueries"));
 		config.setDriverClassName("org.mariadb.jdbc.Driver");
 		config.setUsername(System.getProperty("db.user", "root"));
 		config.setPassword(System.getProperty("db.password", "s3cr3t"));
@@ -35,7 +35,7 @@ public class MariaDbDataSourceProvider extends HikariDataSource {
 			try {
 				INSTANCE = new MariaDbDataSourceProvider();
 			} catch (RuntimeException ex) {
-				throw new RuntimeException("You should probably provide correct VM parameters. E.g.: \n -Ddb.url=jdbc:mysql://localhost:3306/saga -Ddb.user=root -Ddb.password=s3cr3t", ex);
+				throw new RuntimeException("You should probably provide correct VM parameters. E.g.: \n -Ddb.url=jdbc:mariadb://localhost:3306/saga -Ddb.user=root -Ddb.password=s3cr3t", ex);
 			}
 		}
 		return INSTANCE.getDataSource();
