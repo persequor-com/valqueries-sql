@@ -51,12 +51,12 @@ subprojects {
     }
 
     dependencies {
-        testCompile 'junit:junit:4.12'
-        testCompile group: 'org.mockito', name: 'mockito-core', version: '3.6.28'
-        testCompile group: 'com.google.inject', name: 'guice', version: '4.2.3'
-        compile 'com.zaxxer:HikariCP:3.3.1'
-        compile 'javax.inject:javax.inject:1'
-        compile 'org.slf4j:slf4j-api:1.7.30'
+        testImplementation 'junit:junit:4.12'
+        testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.6.28'
+        testImplementation group: 'com.google.inject', name: 'guice', version: '4.2.3'
+        implementation 'com.zaxxer:HikariCP:3.3.1'
+        implementation 'javax.inject:javax.inject:1'
+        implementation 'org.slf4j:slf4j-api:1.7.30'
 
     }
 
