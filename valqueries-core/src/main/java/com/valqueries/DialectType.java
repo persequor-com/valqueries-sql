@@ -24,6 +24,9 @@ public enum DialectType {
 	}
 
 	public static DialectType from(String jdbcName) {
-		return Arrays.asList(values()).stream().filter(dialectType -> dialectType.jdbcName.equals(jdbcName)).findFirst().orElseThrow(() -> new RuntimeException("Unknown dialect type: "+jdbcName));
+		if("mariadb".equals(jdbcName)){
+			return MariaDB;
+		}
+		return Arrays.stream(values()).filter(dialectType -> dialectType.jdbcName.equals(jdbcName)).findFirst().orElseThrow(() -> new RuntimeException("Unknown dialect type: "+jdbcName));
 	}
 }
