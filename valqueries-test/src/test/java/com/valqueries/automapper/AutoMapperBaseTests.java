@@ -7,6 +7,7 @@ import io.ran.GenericFactory;
 import io.ran.Resolver;
 import io.ran.TypeDescriber;
 import io.ran.TypeDescriberImpl;
+import io.ran.token.Token;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -1711,11 +1712,12 @@ public abstract class AutoMapperBaseTests {
 		source.getTargets().add(target);
 
 		viaAltNameSourceRepository.save(source);
+		SqlNameFormatter nameFormatter = injector.getInstance(SqlNameFormatter.class);
 
 		if (database !=  null) {
 			String actual = database.obtainInTransaction(tx -> {
 				return tx.query("select * from via_this_alternative_name", r -> {
-					return r.getString("target_id");
+					return r.getString(nameFormatter.column(Token.get("target_id")));
 				}).stream().findFirst().get();
 			});
 
