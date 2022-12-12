@@ -61,6 +61,8 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 			b.set(getKeyName(position), (String) id);
 		} else if (keyType == UUID.class) {
 			b.set(getKeyName(position), (UUID) id);
+		} else if (keyType == Integer.class) {
+			b.set(getKeyName(position), (Integer) id);
 		} else {
 			throw new RuntimeException("So far unhandled key type: "+keyType.getName());
 		}
