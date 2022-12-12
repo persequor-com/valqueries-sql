@@ -24,9 +24,6 @@ public class SimpleElement implements Element {
 	}
 
 	public String queryString() {
-		if(operator.equals("IS NULL") || operator.equals("IS NOT NULL")) {
-			return query.getTableAlias()+"."+dialect.column(propertyValue.getProperty())+" "+operator;
-		}
 		return query.getTableAlias()+"."+dialect.column(propertyValue.getProperty())+" "+operator+" (:"+field+")";
 	}
 
