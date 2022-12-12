@@ -12,12 +12,7 @@ import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import com.valqueries.OrmResultSet;
 import com.valqueries.UpdateResult;
-import io.ran.Clazz;
-import io.ran.CompoundKey;
-import io.ran.GenericFactory;
-import io.ran.MappingHelper;
-import io.ran.TypeDescriber;
-import io.ran.TypeDescriberImpl;
+import io.ran.*;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -104,7 +99,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	@Override
 	public CrudUpdateResult deleteById(K id) {
 		return getUpdateResult(database.obtainInTransaction(tx -> {
-			return tx.update("DELETE from "+getTableName()+" where "+typeDescriber.primaryKeys().get(0).getToken().snake_case()+" = :"+ getKeyName(0), b -> {
+			return tx.update("DELETE from "+getTableName()+" where "+dialect.column(typeDescriber.primaryKeys().get(0).getProperty())+" = :"+ getKeyName(0), b -> {
 				setKey(b, id, 0);
 			});
 		}));
@@ -115,7 +110,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 		String inIdsSql = IntStream.range(0, ids.size()).mapToObj(id -> ":" + getKeyName(id)).collect(Collectors.joining(", "));
 		return getUpdateResult(database.obtainInTransaction(tx ->
 			tx.update("DELETE from " + getTableName() +
-					" where " + typeDescriber.primaryKeys().get(0).getToken().snake_case() +
+					" where " + dialect.column(typeDescriber.primaryKeys().get(0).getProperty()) +
 					" IN (" + inIdsSql + ")",
 					b -> {
 						int counter = 0;
