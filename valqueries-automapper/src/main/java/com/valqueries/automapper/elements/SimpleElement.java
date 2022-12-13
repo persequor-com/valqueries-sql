@@ -24,7 +24,7 @@ public class SimpleElement implements Element {
 	}
 
 	public String queryString() {
-		return query.getTableAlias()+"."+dialect.column(propertyValue.getProperty())+" "+operator+" (:"+field+")";
+		return query.getTableAlias()+"."+dialect.column(propertyValue.getProperty())+" "+operator+(!operator.toLowerCase().contains("null") ? " (:"+field+")":"");
 	}
 
 	@Override

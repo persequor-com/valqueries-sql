@@ -197,6 +197,31 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1, cars.size());
 	}
 
+	@Test
+	@TestClasses(Car.class)
+	public void isNull() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle(null);
+		carRepository.save(model);
+
+		Optional<Car> actualOptional = carRepository.query().isNull(Car::getTitle).execute().findFirst();
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+	}
+
+	@Test
+	@TestClasses(Car.class)
+	public void isNotNull() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("My title");
+		carRepository.save(model);
+
+		Optional<Car> actualOptional = carRepository.query().isNotNull(Car::getTitle).execute().findFirst();
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+	}
 
 	@Test
 	@TestClasses({Car.class, Door.class})
