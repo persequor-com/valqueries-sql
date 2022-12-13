@@ -205,8 +205,14 @@ public abstract class AutoMapperBaseTests {
 		model.setTitle(null);
 		carRepository.save(model);
 
-		Optional<Car> actualOptional = carRepository.query().isNull(Car::getTitle).execute().findFirst();
-		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		Car modelWithTitle = factory.get(Car.class);
+		modelWithTitle.setId(UUID.randomUUID());
+		modelWithTitle.setTitle("My title");
+		carRepository.save(modelWithTitle);
+
+		List<Car> actualList = carRepository.query().isNull(Car::getTitle).execute().collect(Collectors.toList());
+		assertEquals(1, actualList.size());
+		Car actual = actualList.get(0);
 		assertEquals(model.getId(), actual.getId());
 	}
 
@@ -215,12 +221,18 @@ public abstract class AutoMapperBaseTests {
 	public void isNotNull() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
-		model.setTitle("My title");
+		model.setTitle(null);
 		carRepository.save(model);
 
-		Optional<Car> actualOptional = carRepository.query().isNotNull(Car::getTitle).execute().findFirst();
-		Car actual = actualOptional.orElseThrow(RuntimeException::new);
-		assertEquals(model.getId(), actual.getId());
+		Car modelWithTitle = factory.get(Car.class);
+		modelWithTitle.setId(UUID.randomUUID());
+		modelWithTitle.setTitle("My title");
+		carRepository.save(modelWithTitle);
+
+		List<Car> actualList = carRepository.query().isNotNull(Car::getTitle).execute().collect(Collectors.toList());
+		assertEquals(1, actualList.size());
+		Car actual = actualList.get(0);
+		assertEquals(modelWithTitle.getId(), actual.getId());
 	}
 
 	@Test
