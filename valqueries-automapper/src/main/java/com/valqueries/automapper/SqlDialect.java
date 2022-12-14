@@ -1,6 +1,7 @@
 package com.valqueries.automapper;
 
 import com.valqueries.OrmResultSet;
+import com.valqueries.automapper.elements.BinaryOperator;
 import com.valqueries.automapper.elements.Element;
 import com.valqueries.automapper.elements.UnaryOperator;
 import com.valqueries.automapper.schema.ValqueriesColumnToken;
@@ -112,6 +113,28 @@ public interface SqlDialect {
 				return "IS NOT NULL";
 		}
 		throw new RuntimeException("Unhandled unary operator " + operator + " for dialect: " + this.getClass().getSimpleName());
+	}
+
+	default String operator(BinaryOperator operator) {
+		switch (operator) {
+			case EQUALS:
+				return "=";
+			case NOT_EQUALS:
+				return "<>";
+			case IN:
+				return "IN";
+			case LESS_THAN:
+				return "<";
+			case LESS_THAN_OR_EQUALS:
+				return "<=";
+			case GREATER_THAN:
+				return ">";
+			case GREATER_THAN_OR_EQUALS:
+				return ">=";
+			case LIKE:
+				return "LIKE";
+		}
+		throw new RuntimeException("Unhandled binary operator " + operator + " for dialect: " + this.getClass().getSimpleName());
 	}
 
 	// query methods

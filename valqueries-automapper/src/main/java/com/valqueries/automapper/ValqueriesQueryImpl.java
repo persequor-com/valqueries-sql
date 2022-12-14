@@ -39,7 +39,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> eq(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "=", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.EQUALS, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
@@ -51,7 +51,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> like(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "like", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.LIKE, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
@@ -64,25 +64,25 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> gt(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, ">", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.GREATER_THAN, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public ValqueriesQuery<T> gte(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, ">=", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.GREATER_THAN_OR_EQUALS, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public ValqueriesQuery<T> lt(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "<", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.LESS_THAN, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public ValqueriesQuery<T> lte(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "<=", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.LESS_THAN_OR_EQUALS, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
