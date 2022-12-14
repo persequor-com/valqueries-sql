@@ -3,6 +3,7 @@ package com.valqueries.automapper;
 import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.BinaryOperator;
 import com.valqueries.automapper.elements.Element;
+import com.valqueries.automapper.elements.ListOperator;
 import com.valqueries.automapper.elements.UnaryOperator;
 import com.valqueries.automapper.schema.ValqueriesColumnToken;
 import com.valqueries.automapper.schema.ValqueriesTableToken;
@@ -121,8 +122,6 @@ public interface SqlDialect {
 				return "=";
 			case NOT_EQUALS:
 				return "<>";
-			case IN:
-				return "IN";
 			case LESS_THAN:
 				return "<";
 			case LESS_THAN_OR_EQUALS:
@@ -135,6 +134,16 @@ public interface SqlDialect {
 				return "LIKE";
 		}
 		throw new RuntimeException("Unhandled binary operator " + operator + " for dialect: " + this.getClass().getSimpleName());
+	}
+
+	default String operator(ListOperator operator) {
+		switch (operator) {
+			case IN:
+				return "IN";
+			case NOT_IN:
+				return "NOT IN";
+		}
+		throw new RuntimeException("Unhandled list operator " + operator + " for dialect: " + this.getClass().getSimpleName());
 	}
 
 	// query methods

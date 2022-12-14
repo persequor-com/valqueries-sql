@@ -45,7 +45,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> in(Property.PropertyValueList propertyValues) {
-		elements.add(new ListElement(this, propertyValues, "IN", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new ListElement(this, propertyValues, ListOperator.IN, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
