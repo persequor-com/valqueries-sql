@@ -2,7 +2,7 @@ package com.valqueries.automapper;
 
 import com.valqueries.OrmResultSet;
 import com.valqueries.automapper.elements.Element;
-import com.valqueries.automapper.elements.Operator;
+import com.valqueries.automapper.elements.UnaryOperator;
 import com.valqueries.automapper.schema.ValqueriesColumnToken;
 import com.valqueries.automapper.schema.ValqueriesTableToken;
 import io.ran.*;
@@ -104,14 +104,14 @@ public interface SqlDialect {
 		throw new RuntimeException("So far unsupported column type: "+type.getName());
 	}
 
-	default String operator(Operator operator) {
+	default String operator(UnaryOperator operator) {
 		switch (operator) {
 			case IS_NULL:
 				return "IS NULL";
 			case IS_NOT_NULL:
 				return "IS NOT NULL";
 		}
-		throw new RuntimeException("Unhandled operator "+operator+" for dialect: "+this.getClass().getSimpleName());
+		throw new RuntimeException("Unhandled unary operator " + operator + " for dialect: " + this.getClass().getSimpleName());
 	}
 
 	// query methods

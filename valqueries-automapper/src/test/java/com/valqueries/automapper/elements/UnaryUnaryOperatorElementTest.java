@@ -8,10 +8,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import static org.junit.Assert.*;
-
 @RunWith(MockitoJUnitRunner.class)
-public class UnaryOperatorElementTest {
+public class UnaryUnaryOperatorElementTest {
 
 	@Mock
 	private ValqueriesQueryImpl<?> query;
@@ -22,11 +20,6 @@ public class UnaryOperatorElementTest {
 
 	@Test
 	public void validWithUnaryOperator() {
-		new UnaryOperatorElement(query, property, Operator.IS_NULL, dialect);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void invalidWithBinaryOperator() {
-		new UnaryOperatorElement(query, property, Operator.EQUALS, dialect);
+		new UnaryOperatorElement(query, property, UnaryOperator.IS_NULL, dialect);
 	}
 }

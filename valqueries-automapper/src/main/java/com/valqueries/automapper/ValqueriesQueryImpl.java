@@ -118,12 +118,12 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> isNull(Property<?> property) {
-		elements.add(new UnaryOperatorElement(this, property, Operator.IS_NULL, dialect));
+		elements.add(new UnaryOperatorElement(this, property, UnaryOperator.IS_NULL, dialect));
 		return this;
 	}
 
 	public ValqueriesQuery<T> isNotNull(Property<?> property) {
-		elements.add(new UnaryOperatorElement(this, property, Operator.IS_NOT_NULL, dialect));
+		elements.add(new UnaryOperatorElement(this, property, UnaryOperator.IS_NOT_NULL, dialect));
 		return this;
 	}
 

@@ -8,13 +8,10 @@ import io.ran.Property;
 public class UnaryOperatorElement implements Element {
 	private final ValqueriesQueryImpl<?> query;
 	private final Property<?> property;
-	private final Operator operator;
+	private final UnaryOperator operator;
 	private SqlDialect dialect;
 
-	public UnaryOperatorElement(ValqueriesQueryImpl<?> query, Property<?> property, Operator operator, SqlDialect dialect) {
-		if(!operator.isUnary()) {
-			throw new IllegalArgumentException("Operator "+operator+" is not a unary operator");
-		}
+	public UnaryOperatorElement(ValqueriesQueryImpl<?> query, Property<?> property, UnaryOperator operator, SqlDialect dialect) {
 		this.query = query;
 		this.property = property;
 		this.operator = operator;
