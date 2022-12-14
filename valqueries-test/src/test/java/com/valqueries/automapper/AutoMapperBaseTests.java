@@ -197,6 +197,43 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1, cars.size());
 	}
 
+	@Test
+	@TestClasses(Car.class)
+	public void isNull() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle(null);
+		carRepository.save(model);
+
+		Car modelWithTitle = factory.get(Car.class);
+		modelWithTitle.setId(UUID.randomUUID());
+		modelWithTitle.setTitle("My title");
+		carRepository.save(modelWithTitle);
+
+		List<Car> actualList = carRepository.query().isNull(Car::getTitle).execute().collect(Collectors.toList());
+		assertEquals(1, actualList.size());
+		Car actual = actualList.get(0);
+		assertEquals(model.getId(), actual.getId());
+	}
+
+	@Test
+	@TestClasses(Car.class)
+	public void isNotNull() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle(null);
+		carRepository.save(model);
+
+		Car modelWithTitle = factory.get(Car.class);
+		modelWithTitle.setId(UUID.randomUUID());
+		modelWithTitle.setTitle("My title");
+		carRepository.save(modelWithTitle);
+
+		List<Car> actualList = carRepository.query().isNotNull(Car::getTitle).execute().collect(Collectors.toList());
+		assertEquals(1, actualList.size());
+		Car actual = actualList.get(0);
+		assertEquals(modelWithTitle.getId(), actual.getId());
+	}
 
 	@Test
 	@TestClasses({Car.class, Door.class})
