@@ -5,10 +5,7 @@ import io.ran.Property;
 import io.ran.token.Token;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -51,6 +48,11 @@ public class PropertyValueHydrator implements ObjectMapHydrator {
 	@Override
 	public LocalDate getLocalDate(Property property) {
 		return (LocalDate) getValue(property);
+	}
+
+	@Override
+	public LocalTime getLocalTime(Property property) {
+		return (LocalTime) getValue(property);
 	}
 
 	@Override

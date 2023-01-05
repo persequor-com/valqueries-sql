@@ -15,10 +15,7 @@ import io.ran.token.Token;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -119,6 +116,20 @@ public class ValqueriesHydrator implements ObjectMapHydrator {
 			String date = row.getString(transformKey(property));
 			if (date != null) {
 				return LocalDate.parse(date);
+			} else {
+				return null;
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public LocalTime getLocalTime(Property property) {
+		try {
+			String time = row.getString(transformKey(property));
+			if (time != null) {
+				return LocalTime.parse(time);
 			} else {
 				return null;
 			}

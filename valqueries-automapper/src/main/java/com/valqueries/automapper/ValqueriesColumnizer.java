@@ -11,10 +11,7 @@ import io.ran.*;
 import io.ran.token.Token;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -99,6 +96,11 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 	}
 
 	@Override
+	public void set(Property property, LocalTime localTime) {
+		add(property, s -> s.set(transformFieldPlaceholder(property), localTime));
+	}
+
+	@Override
 	public void set(Property key, Integer value) {
 		add(key, s -> s.set(transformFieldPlaceholder(key), value));
 	}
@@ -179,4 +181,3 @@ public class ValqueriesColumnizer<T> implements ObjectMapColumnizer, Setter {
 		return fieldsWithoutKeys;
 	}
 }
-

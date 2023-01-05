@@ -6,10 +6,7 @@ import io.ran.Property;
 import io.ran.token.Token;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,6 +88,18 @@ public class CapturingHydrator implements ObjectMapHydrator {
 	public LocalDate getLocalDate(Property property) {
 		try {
 			LocalDate value = innerHydrator.getLocalDate(property);
+			values.put(property, value);
+			return value;
+		} catch (RuntimeException e) {
+			// Ignoring non existing fields
+			return null;
+		}
+	}
+
+	@Override
+	public LocalTime getLocalTime(Property property) {
+		try {
+			LocalTime value = innerHydrator.getLocalTime(property);
 			values.put(property, value);
 			return value;
 		} catch (RuntimeException e) {
