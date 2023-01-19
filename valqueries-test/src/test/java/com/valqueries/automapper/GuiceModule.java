@@ -76,11 +76,5 @@ public class GuiceModule extends AbstractModule implements GenericBinder {
 			Clazz<DbResolver<DbType>> clazz = Clazz.ofClazzes(DbResolver.class, Clazz.of(dbTypeClass));
 			return (DbResolver<DbType>) injector.getInstance(Key.get(clazz.getType()));
 		}
-
-		@Override
-		public <T> T wrapped(Class<T> aClass) {
-			return injector.getInstance(aClass);
-		}
-
 	}
 }
