@@ -166,6 +166,10 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		return baseRepo.query(tx);
 	}
 
+	protected <O> ValqueriesQuery<O> query(ITransactionContext tx, Class<O> oClass) {
+		return baseRepo.query(tx, oClass);
+	}
+
 	@Override
 	public <X> X obtainInTransaction(ITransactionWithResult<X> tx) {
 		return baseRepo.obtainInTransaction(tx);

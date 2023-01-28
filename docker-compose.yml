@@ -1,11 +1,11 @@
 version: '2.3'
 services:
   mssql:
-    image: mcr.microsoft.com/mssql/server:2019-latest
+    image: mcr.microsoft.com/azure-sql-edge
     ports:
       - "1433:1433"
     environment:
-      - MSSQL_PID=Express
+      #- MSSQL_PID=Express
       - SA_PASSWORD=7h3_s3cr3t!1s?0u7
       - ACCEPT_EULA=Y
   sql:
