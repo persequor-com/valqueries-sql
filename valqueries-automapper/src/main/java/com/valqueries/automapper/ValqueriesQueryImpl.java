@@ -45,7 +45,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> in(Property.PropertyValueList propertyValues) {
-		elements.add(new ListElement(this, propertyValues, "IN", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new ListElement(this, propertyValues, "IN", ++fieldNum, dialect));
 		return this;
 	}
 
@@ -57,7 +57,7 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	ValqueriesQuery<T> freetext(Property.PropertyValue<?> propertyValue) {
-		elements.add(new FreeTextElement(this, propertyValue, ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new FreeTextElement(this, propertyValue, ++fieldNum, dialect));
 		return this;
 	}
 
