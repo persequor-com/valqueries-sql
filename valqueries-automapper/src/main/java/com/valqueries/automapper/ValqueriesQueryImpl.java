@@ -222,13 +222,13 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public <X extends Comparable<X>> ValqueriesQuery<T> sortAscending(Property<X> property) {
-		sortElements.add(new SortElement<T>(this, property, true, sqlNameFormatter, dialect));
+		sortElements.add(new SortElement<T>(this, property, true, dialect));
 		return this;
 	}
 
 	@Override
 	public <X extends Comparable<X>> ValqueriesQuery<T> sortDescending(Property<X> property) {
-		sortElements.add(new SortElement<T>(this, property, false, sqlNameFormatter, dialect));
+		sortElements.add(new SortElement<T>(this, property, false, dialect));
 		return null;
 	}
 
