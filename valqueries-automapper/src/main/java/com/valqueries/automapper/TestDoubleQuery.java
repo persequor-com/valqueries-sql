@@ -9,8 +9,6 @@ import io.ran.RelationDescriber;
 import io.ran.TestDoubleDb;
 import io.ran.TypeDescriberImpl;
 
-import javax.swing.*;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -282,32 +280,36 @@ public class TestDoubleQuery<T> extends io.ran.TestDoubleQuery<T, ValqueriesQuer
 	}
 
 	@Override
-	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updater) {
+	public CrudRepository.CrudUpdateResult update(Consumer<ValqueriesUpdate<T>> updaterConsumer) {
 		if (forcedEmpty) {
 			return () -> 0;
 		}
-		List<Property.PropertyValue> newPropertyValues = this.getPropertyValuesFromUpdater(updater);
+		ValqueriesUpdateImpl<T> updater = this.getPropertyValuesFromUpdater(updaterConsumer);
 		List<T> records = executeInternal().collect(Collectors.toList());
 		records.forEach(t -> {
 			List<Property.PropertyValue> storedValues = this.getStoredValues(t);
 			Property.PropertyValueList updatedPropertyValues = new Property.PropertyValueList();
 			storedValues.forEach((storedPropertyValue) -> {
-				Optional<? extends Property.PropertyValue> propertyValue = this.getNewPropertyValue(storedPropertyValue, newPropertyValues);
+				Optional<? extends Property.PropertyValue> propertyValue = this.getNewPropertyValue(storedPropertyValue, updater.getPropertyValues());
+				Optional<? extends Property.PropertyValue> incrementPropertyValue = this.getNewPropertyValue(storedPropertyValue, updater.getIncrementValues());
+				Property.PropertyValue newPropertyValue = storedPropertyValue;
 				if (propertyValue.isPresent()) {
-					updatedPropertyValues.add(propertyValue.get());
-				} else {
-					updatedPropertyValues.add(storedPropertyValue);
+					newPropertyValue = propertyValue.get();
 				}
+				if (incrementPropertyValue.isPresent()) {
+					newPropertyValue = newPropertyValue.add(incrementPropertyValue.get());
+				}
+				updatedPropertyValues.add(newPropertyValue);
 			});
 			mappingHelper.hydrate(t, new PropertyValueHydrator(updatedPropertyValues));
 		});
 		return records::size;
 	}
 
-	private List<Property.PropertyValue> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
+	private ValqueriesUpdateImpl<T> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
 		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
 		updater.accept(updImpl);
-		return updImpl.getPropertyValues();
+		return updImpl;
 	}
 
 	private List<Property.PropertyValue> getStoredValues(T t) {

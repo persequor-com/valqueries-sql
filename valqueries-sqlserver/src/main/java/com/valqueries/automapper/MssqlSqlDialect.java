@@ -78,13 +78,18 @@ public class MssqlSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues, List<Property.PropertyValue> incrementValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
 		updateStatement.append("UPDATE main SET ");
 
 		String columnsToUpdate = newPropertyValues.stream()
 				.map(pv -> "main." + column(pv.getProperty()) + " = :" + pv.getProperty().getToken().snake_case())
+				.collect(Collectors.joining(", "));
+		updateStatement.append(columnsToUpdate);
+		columnsToUpdate = incrementValues.stream()
+				.map(pv -> "main." + column(pv.getProperty()) + " = main." + column(pv.getProperty()) +" + " +
+						" :" + pv.getProperty().getToken().snake_case())
 				.collect(Collectors.joining(", "));
 		updateStatement.append(columnsToUpdate);
 

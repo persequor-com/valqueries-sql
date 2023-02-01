@@ -91,13 +91,18 @@ public class H2SqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues, List<Property.PropertyValue> incrementPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
 		updateStatement.append("UPDATE " + getTableName(Clazz.of(typeDescriber.clazz())) + " as main SET ");
 
 		String columnsToUpdate = newPropertyValues.stream()
 				.map(pv -> "main." + column(pv.getProperty()) + " = :" + pv.getProperty().getToken().snake_case())
+				.collect(Collectors.joining(", "));
+		updateStatement.append(columnsToUpdate);
+
+		columnsToUpdate = incrementPropertyValues.stream()
+				.map(pv -> "main." + column(pv.getProperty()) + " = main." + column(pv.getProperty()) + " + :" + pv.getProperty().getToken().snake_case())
 				.collect(Collectors.joining(", "));
 		updateStatement.append(columnsToUpdate);
 

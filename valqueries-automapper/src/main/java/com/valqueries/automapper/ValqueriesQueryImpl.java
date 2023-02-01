@@ -469,25 +469,28 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 		if (forcedEmpty) {
 			return () -> 0;
 		}
-		List<Property.PropertyValue> newPropertyValues = this.getPropertyValuesFromUpdater(updater);
-		String updateStatement = this.buildUpdateSql(newPropertyValues);
+		ValqueriesUpdateImpl<T> upd = this.getPropertyValuesFromUpdater(updater);
+		List<Property.PropertyValue> newPropertyValues = upd.getPropertyValues();
+		List<Property.PropertyValue> incrementPropertyValues = upd.getIncrementValues();
+		String updateStatement = this.buildUpdateSql(newPropertyValues, incrementPropertyValues);
 
 		int affectedRows = transactionContext.update(updateStatement, uStmt -> {
 			newPropertyValues.forEach(v -> uStmt.set(v.getProperty().getToken().snake_case(), v.getValue()));
+			incrementPropertyValues.forEach(v -> uStmt.set(v.getProperty().getToken().snake_case(), v.getValue()));
 			set(uStmt);
 		}).getAffectedRows();
 		transactionContext.close();
 		return () -> affectedRows;
 	}
 
-	private List<Property.PropertyValue> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
+	private ValqueriesUpdateImpl<T> getPropertyValuesFromUpdater(Consumer<ValqueriesUpdate<T>> updater) {
 		ValqueriesUpdateImpl<T> updImpl = new ValqueriesUpdateImpl(instance, queryWrapper);
 		updater.accept(updImpl);
-		return updImpl.getPropertyValues();
+		return updImpl;
 	}
 
-	private String buildUpdateSql(List<Property.PropertyValue> newPropertyValues) {
-		return dialect.generateUpdateStatement(typeDescriber, elements, newPropertyValues);
+	private String buildUpdateSql(List<Property.PropertyValue> newPropertyValues, List<Property.PropertyValue> incrementPropertyValues) {
+		return dialect.generateUpdateStatement(typeDescriber, elements, newPropertyValues, incrementPropertyValues);
 
 	}
 

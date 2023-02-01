@@ -108,7 +108,7 @@ public interface SqlDialect {
 
 	<O> String getUpsert(CompoundColumnizer<O> columnizer, Class<O> oClass);
 	String getLimitDefinition(int offset, Integer limit);
-	String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues);
+	String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues, List<Property.PropertyValue> incrementPropertyValues);
 
 	<O> String getInsert(CompoundColumnizer<O> columnizer, Class<O> oClass);
 
