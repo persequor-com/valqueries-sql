@@ -1785,6 +1785,38 @@ public abstract class AutoMapperBaseTests {
 
 		assertNotNull(middle.getTarget());
 	}
+
+
+	@Test
+	@TestClasses(Car.class)
+	public void differentWaysOfSaving_smokeTest() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Porsche);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.inRetryablqeTransaction(tx -> {
+			tx.insert(model);
+		});
+		carRepository.doRetryableInTransaction(tx -> {
+			carRepository.save(model);
+		});
+		carRepository.save(model);
+		database.doRetryableInTransaction(tx -> {
+			carRepository.save(tx, model);
+		});
+		carRepository.inRetryablqeTransaction(tx -> {
+			tx.save(model);
+		});
+
+
+		Optional<Car> actualOptional = carRepository.get(model.getId());
+		Car actual = actualOptional.orElseThrow(RuntimeException::new);
+		assertEquals(model.getId(), actual.getId());
+		assertEquals(model.getTitle(), actual.getTitle());
+		assertEquals(model.getCreatedAt(), actual.getCreatedAt());
+		assertEquals(Brand.Porsche, actual.getBrand());
+	}
 }
 
 

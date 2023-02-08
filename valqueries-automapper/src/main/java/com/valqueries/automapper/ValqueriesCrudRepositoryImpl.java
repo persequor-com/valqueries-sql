@@ -12,7 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudRepository<T, K> {
+public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudRepository<T, K>, InTransactionValqueriesCrudRepository<T, K> {
 
 	private final ValqueriesAccessDataLayer<T, K> baseRepo;
 	private final ValqueriesRepositoryFactory factory;
@@ -71,6 +71,55 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 		final ChangeMonitor changed = new ChangeMonitor(factory.mappingHelper);
 		doRetryableInTransaction(tx -> saveIncludingRelationInternal(changed, tx, entity, modelType));
 		return changed::getNumberOfChangedRows;
+	}
+
+	@Override
+	public CrudUpdateResult insert(T t) throws ValqueriesInsertFailedException {
+		return obtainInTransaction(tx -> {
+			return insert(tx, t);
+		});
+	}
+
+	@Override
+	public CrudUpdateResult save(Collection<T> t) {
+		return obtainInTransaction(tx -> {
+			return save(tx, t);
+		});
+	}
+
+	@Override
+	public CrudUpdateResult insert(Collection<T> t) throws ValqueriesInsertFailedException {
+		return obtainInTransaction(tx -> {
+			return insert(tx, t);
+		});
+	}
+
+	@Override
+	public <O> CrudUpdateResult saveOther(O t, Class<O> oClass) {
+		return obtainInTransaction(tx -> {
+			return saveOther(tx, t, oClass);
+		});
+	}
+
+	@Override
+	public <O> CrudUpdateResult insertOther(O t, Class<O> oClass) throws ValqueriesInsertFailedException {
+		return obtainInTransaction(tx -> {
+			return insertOther(tx, t, oClass);
+		});
+	}
+
+	@Override
+	public <O> CrudUpdateResult saveOthers(Collection<O> t, Class<O> oClass) {
+		return obtainInTransaction(tx -> {
+			return saveOthers(tx, t, oClass);
+		});
+	}
+
+	@Override
+	public <O> CrudUpdateResult insertOthers(Collection<O> t, Class<O> oClass) throws ValqueriesInsertFailedException {
+		return obtainInTransaction(tx -> {
+			return insertOthers(tx, t, oClass);
+		});
 	}
 
 	@Override
