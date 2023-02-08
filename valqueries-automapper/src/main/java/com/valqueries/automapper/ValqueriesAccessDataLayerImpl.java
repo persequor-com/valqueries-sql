@@ -83,43 +83,71 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	@Override
 	public Optional<T> get(K id) {
 		return database.obtainInTransaction(tx -> {
-			return tx.query("select * from "+getTableName()+" where "+dialect.column(typeDescriber.primaryKeys().get(0).getProperty())+" = :"+ getKeyName(0), b -> {
-				setKey(b, id);
-			}, this::hydrate).stream().findFirst();
+			return get(tx, id);
 		});
 	}
 
 	@Override
 	public Stream<T> getAll() {
 		return database.obtainInTransaction(tx -> {
-			return tx.query("select * from "+getTableName()+"", this::hydrate).stream();
+			return getAll(tx);
 		});
 	}
 
 	@Override
 	public CrudUpdateResult deleteById(K id) {
-		return getUpdateResult(database.obtainInTransaction(tx -> {
-			return tx.update("DELETE from "+getTableName()+" where "+dialect.column(typeDescriber.primaryKeys().get(0).getProperty())+" = :"+ getKeyName(0), b -> {
-				setKey(b, id, 0);
-			});
-		}));
+		return database.obtainInTransaction(tx -> {
+			return deleteById(tx, id);
+		});
 	}
 
 	@Override
 	public CrudUpdateResult deleteByIds(Collection<K> ids) {
-		String inIdsSql = IntStream.range(0, ids.size()).mapToObj(id -> ":" + getKeyName(id)).collect(Collectors.joining(", "));
-		return getUpdateResult(database.obtainInTransaction(tx ->
-			tx.update("DELETE from " + getTableName() +
-					" where " + dialect.column(typeDescriber.primaryKeys().get(0).getProperty()) +
-					" IN (" + inIdsSql + ")",
-					b -> {
-						int counter = 0;
-						for (K id : ids) {
-							setKey(b, id, counter++);
-						}
-					})
-				));
+		return database.obtainInTransaction(tx -> {
+			return deleteByIds(tx, ids);
+		});
 	}
+
+
+	@Override
+	public void doRetryableInTransaction(ITransaction tx) {
+		database.doRetryableInTransaction(tx);
+	}
+
+	@Override
+	public Optional<T> get(ITransactionContext tx, K id) {
+		return tx.query("select * from "+getTableName()+" where "+dialect.column(typeDescriber.primaryKeys().get(0).getProperty())+" = :"+ getKeyName(0), b -> {
+			setKey(b, id);
+		}, this::hydrate).stream().findFirst();
+	}
+
+	@Override
+	public Stream<T> getAll(ITransactionContext tx) {
+		return tx.query("select * from "+getTableName()+"", this::hydrate).stream();
+	}
+
+	@Override
+	public CrudUpdateResult deleteById(ITransactionContext tx, K id) {
+		return getUpdateResult(tx.update("DELETE from "+getTableName()+" where "+dialect.column(typeDescriber.primaryKeys().get(0).getProperty())+" = :"+ getKeyName(0), b -> {
+			setKey(b, id, 0);
+		}));
+	}
+
+	@Override
+	public CrudUpdateResult deleteByIds(ITransactionContext tx, Collection<K> ids) {
+		String inIdsSql = IntStream.range(0, ids.size()).mapToObj(id -> ":" + getKeyName(id)).collect(Collectors.joining(", "));
+
+		return getUpdateResult(tx.update("DELETE from " + getTableName() +
+						" where " + dialect.column(typeDescriber.primaryKeys().get(0).getProperty()) +
+						" IN (" + inIdsSql + ")",
+				b -> {
+					int counter = 0;
+					for (K id : ids) {
+						setKey(b, id, counter++);
+					}
+				}));
+	}
+
 
 	@Override
 	public CrudUpdateResult save(T t) {
@@ -257,11 +285,6 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	@Override
 	public <X> X obtainInTransaction(ITransactionWithResult<X> tx) {
 		return database.obtainInTransaction(tx);
-	}
-
-	@Override
-	public void doRetryableInTransaction(ITransaction tx) {
-		database.doRetryableInTransaction(tx);
 	}
 
 	protected String getTableName() {

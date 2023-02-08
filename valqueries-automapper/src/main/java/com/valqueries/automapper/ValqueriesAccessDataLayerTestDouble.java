@@ -227,4 +227,24 @@ public class ValqueriesAccessDataLayerTestDouble<T, K> implements ValqueriesAcce
 			throw new RuntimeException(e);
 		}
 	}
+
+	@Override
+	public Optional<T> get(ITransactionContext tx, K k) {
+		return get(k);
+	}
+
+	@Override
+	public Stream<T> getAll(ITransactionContext tx) {
+		return getAll();
+	}
+
+	@Override
+	public CrudUpdateResult deleteById(ITransactionContext tx, K k) {
+		return deleteById(k);
+	}
+
+	@Override
+	public CrudUpdateResult deleteByIds(ITransactionContext tx, Collection<K> collection) {
+		return deleteByIds(collection);
+	}
 }

@@ -1323,7 +1323,9 @@ public abstract class AutoMapperBaseTests {
 		model.setTitle("Muh");
 		model.setBrand(Brand.Porsche);
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
-		carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, model));
+		carRepository.inRetryablqeTransaction(tx -> {
+			tx.insert(model);
+		});
 
 		Optional<Car> actualOptional = carRepository.get(model.getId());
 		Car actual = actualOptional.orElseThrow(RuntimeException::new);

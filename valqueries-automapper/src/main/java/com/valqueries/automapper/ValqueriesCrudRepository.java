@@ -4,8 +4,11 @@ import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import io.ran.CrudRepository;
+import io.ran.ThrowingConsumer;
 
 import java.util.Collection;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface ValqueriesCrudRepository<T, K> extends CrudRepository<T, K> {
 	CrudUpdateResult save(ITransactionContext tx, T t);
@@ -28,4 +31,17 @@ public interface ValqueriesCrudRepository<T, K> extends CrudRepository<T, K> {
 	<O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> t, Class<O> oClass) throws ValqueriesInsertFailedException;
 	<X> X obtainInTransaction(ITransactionWithResult<X> tx);
 	void doRetryableInTransaction(ITransaction tx);
+
+	<X> X inTransaction(ThrowingFunction<InTransactionValqueriesCrudRepository<T, K>, X, ValqueriesException> consumer);
+	void inRetryablqeTransaction(ThrowingConsumer<InTransactionValqueriesCrudRepository<T, K>, ValqueriesException> consumer);
+
+	InTransactionValqueriesCrudRepository<T, K> inTransaction(ITransactionContext tx);
+
+	Optional<T> get(ITransactionContext tx, K k);
+
+	Stream<T> getAll(ITransactionContext tx);
+
+	CrudUpdateResult deleteById(ITransactionContext tx, K k);
+
+	CrudUpdateResult deleteByIds(ITransactionContext tx, Collection<K> collection);
 }

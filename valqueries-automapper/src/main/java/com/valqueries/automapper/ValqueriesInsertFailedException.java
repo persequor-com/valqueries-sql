@@ -1,6 +1,6 @@
 package com.valqueries.automapper;
 
-public class ValqueriesInsertFailedException extends Exception{
+public class ValqueriesInsertFailedException extends ValqueriesException {
 	public ValqueriesInsertFailedException(Exception e) {
 		super(e);
 	}

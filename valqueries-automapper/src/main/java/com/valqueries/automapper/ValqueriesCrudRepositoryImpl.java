@@ -7,6 +7,8 @@ import io.ran.*;
 import io.ran.token.Token;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,6 +44,26 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	@Override
 	public CrudUpdateResult deleteByIds(Collection<K> collection) {
 		return baseRepo.deleteByIds(collection);
+	}
+
+	@Override
+	public Optional<T> get(ITransactionContext tx, K k) {
+		return baseRepo.get(tx, k);
+	}
+
+	@Override
+	public Stream<T> getAll(ITransactionContext tx) {
+		return baseRepo.getAll(tx);
+	}
+
+	@Override
+	public CrudUpdateResult deleteById(ITransactionContext tx, K k) {
+		return baseRepo.deleteById(tx, k);
+	}
+
+	@Override
+	public CrudUpdateResult deleteByIds(ITransactionContext tx, Collection<K> collection) {
+		return baseRepo.deleteByIds(tx, collection);
 	}
 
 	@Override
@@ -179,6 +201,26 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	public void doRetryableInTransaction(ITransaction tx) {
 		baseRepo.doRetryableInTransaction(tx);
 	}
+
+	@Override
+	public <X> X inTransaction(ThrowingFunction<InTransactionValqueriesCrudRepository<T, K>, X, ValqueriesException> consumer) {
+		return obtainInTransaction(tx -> {
+			return consumer.apply(new InTransactionValqueriesCrudRepositoryImpl<>(this, tx));
+		});
+	}
+
+	@Override
+	public void inRetryablqeTransaction(ThrowingConsumer<InTransactionValqueriesCrudRepository<T, K>, ValqueriesException> consumer) {
+		doRetryableInTransaction(tx -> {
+			consumer.accept(new InTransactionValqueriesCrudRepositoryImpl<>(this, tx));
+		});
+	}
+
+	@Override
+	public InTransactionValqueriesCrudRepository<T, K> inTransaction(ITransactionContext tx) {
+		return new InTransactionValqueriesCrudRepositoryImpl<>(this, tx);
+	}
+
 
 
 }

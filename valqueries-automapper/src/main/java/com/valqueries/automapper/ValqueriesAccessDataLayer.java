@@ -6,6 +6,8 @@ import com.valqueries.ITransactionWithResult;
 import io.ran.CrudRepositoryBaseRepo;
 
 import java.util.Collection;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 
 public interface ValqueriesAccessDataLayer<T, K> extends CrudRepositoryBaseRepo<T,K, ValqueriesQuery<T>> {
@@ -32,4 +34,12 @@ public interface ValqueriesAccessDataLayer<T, K> extends CrudRepositoryBaseRepo<
 	<O> CrudUpdateResult insertOthers(ITransactionContext tx, Collection<O> t, Class<O> oClass) throws ValqueriesInsertFailedException;
 	<X> X obtainInTransaction(ITransactionWithResult<X> tx);
 	void doRetryableInTransaction(ITransaction tx);
+
+	Optional<T> get(ITransactionContext tx, K k);
+
+	Stream<T> getAll(ITransactionContext tx);
+
+	CrudUpdateResult deleteById(ITransactionContext tx, K k);
+
+	CrudUpdateResult deleteByIds(ITransactionContext tx, Collection<K> collection);
 }
