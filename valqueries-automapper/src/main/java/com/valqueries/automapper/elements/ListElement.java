@@ -13,9 +13,7 @@ public class ListElement<T> implements Element {
 	private final ValqueriesQueryImpl<T> query;
 	private final Property.PropertyValueList<?> values;
 	private final ListOperator operator;
-	private final int fieldNum;
-	private SqlNameFormatter sqlNameFormatter;
-	private final String field;
+		private final String field;
 	private final SqlDialect dialect;
 
 	public ListElement(ValqueriesQueryImpl<T> query, Property.PropertyValueList<?> values, ListOperator operator, int fieldNum, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
