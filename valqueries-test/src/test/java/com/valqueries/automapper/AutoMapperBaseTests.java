@@ -1323,7 +1323,7 @@ public abstract class AutoMapperBaseTests {
 		model.setTitle("Muh");
 		model.setBrand(Brand.Porsche);
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
-		carRepository.inRetryablqeTransaction(tx -> {
+		carRepository.inTransaction(tx -> {
 			tx.insert(model);
 		});
 
@@ -1795,17 +1795,18 @@ public abstract class AutoMapperBaseTests {
 		model.setTitle("Muh");
 		model.setBrand(Brand.Porsche);
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
-		carRepository.inRetryablqeTransaction(tx -> {
+
+		carRepository.inTransaction(tx -> {
 			tx.insert(model);
 		});
 		carRepository.doRetryableInTransaction(tx -> {
-			carRepository.save(model);
+			carRepository.save(tx, model);
 		});
 		carRepository.save(model);
 		database.doRetryableInTransaction(tx -> {
 			carRepository.save(tx, model);
 		});
-		carRepository.inRetryablqeTransaction(tx -> {
+		carRepository.inTransaction(tx -> {
 			tx.save(model);
 		});
 

@@ -4,11 +4,8 @@ import com.valqueries.ITransaction;
 import com.valqueries.ITransactionContext;
 import com.valqueries.ITransactionWithResult;
 import io.ran.*;
-import io.ran.token.Token;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -259,17 +256,21 @@ public class ValqueriesCrudRepositoryImpl<T, K> implements ValqueriesCrudReposit
 	}
 
 	@Override
-	public void inRetryablqeTransaction(ThrowingConsumer<InTransactionValqueriesCrudRepository<T, K>, ValqueriesException> consumer) {
+	public void inTransaction(ThrowingConsumer<InTransactionValqueriesCrudRepository<T, K>, ValqueriesException> consumer) {
 		doRetryableInTransaction(tx -> {
 			consumer.accept(new InTransactionValqueriesCrudRepositoryImpl<>(this, tx));
 		});
 	}
 
 	@Override
-	public InTransactionValqueriesCrudRepository<T, K> inTransaction(ITransactionContext tx) {
+	public InTransactionValqueriesCrudRepository<T, K> withTransaction(ITransactionContext tx) {
 		return new InTransactionValqueriesCrudRepositoryImpl<>(this, tx);
 	}
 
+	@Override
+	public <X> X withTransaction(ITransactionContext tx, ThrowingFunction<InTransactionValqueriesCrudRepository<T, K>, X, ValqueriesException> consumer) throws ValqueriesException {
+		return consumer.apply(new InTransactionValqueriesCrudRepositoryImpl<>(this, tx));
+	}
 
 
 }

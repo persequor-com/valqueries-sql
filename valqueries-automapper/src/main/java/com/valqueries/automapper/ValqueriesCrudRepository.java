@@ -33,9 +33,11 @@ public interface ValqueriesCrudRepository<T, K> extends CrudRepository<T, K> {
 	void doRetryableInTransaction(ITransaction tx);
 
 	<X> X inTransaction(ThrowingFunction<InTransactionValqueriesCrudRepository<T, K>, X, ValqueriesException> consumer);
-	void inRetryablqeTransaction(ThrowingConsumer<InTransactionValqueriesCrudRepository<T, K>, ValqueriesException> consumer);
+	void inTransaction(ThrowingConsumer<InTransactionValqueriesCrudRepository<T, K>, ValqueriesException> consumer);
 
-	InTransactionValqueriesCrudRepository<T, K> inTransaction(ITransactionContext tx);
+	InTransactionValqueriesCrudRepository<T, K> withTransaction(ITransactionContext tx);
+
+	<X> X withTransaction(ITransactionContext tx, ThrowingFunction<InTransactionValqueriesCrudRepository<T, K>, X, ValqueriesException> consumer) throws ValqueriesException;
 
 	Optional<T> get(ITransactionContext tx, K k);
 
