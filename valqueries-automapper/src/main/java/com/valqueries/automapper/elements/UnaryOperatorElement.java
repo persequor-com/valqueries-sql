@@ -8,10 +8,10 @@ import io.ran.Property;
 public class UnaryOperatorElement implements Element {
 	private final ValqueriesQueryImpl<?> query;
 	private final Property<?> property;
-	private final String operator;
+	private final UnaryOperator operator;
 	private SqlDialect dialect;
 
-	public UnaryOperatorElement(ValqueriesQueryImpl<?> query, Property<?> property, String operator, SqlDialect dialect) {
+	public UnaryOperatorElement(ValqueriesQueryImpl<?> query, Property<?> property, UnaryOperator operator, SqlDialect dialect) {
 		this.query = query;
 		this.property = property;
 		this.operator = operator;
@@ -19,7 +19,7 @@ public class UnaryOperatorElement implements Element {
 	}
 
 	public String queryString() {
-		return query.getTableAlias()+"."+dialect.column(property)+" "+operator;
+		return query.getTableAlias()+"."+dialect.column(property)+" "+dialect.operator(operator);
 	}
 
 	@Override
