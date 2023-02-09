@@ -18,7 +18,6 @@ public class SimpleElement implements Element {
 		this.query = query;
 		this.propertyValue = propertyValue;
 		this.operator = operator;
-		this.sqlNameFormatter = sqlNameFormatter;
 		this.dialect = dialect;
 		this.field = query.getTableAlias() + "_" + propertyValue.getProperty().getToken().snake_case() + fieldNum;
 	}

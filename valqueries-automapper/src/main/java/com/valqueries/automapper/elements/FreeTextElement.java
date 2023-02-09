@@ -10,21 +10,19 @@ public class FreeTextElement implements Element {
 
 	private final ValqueriesQueryImpl<?> query;
 	private final Property.PropertyValue<?> propertyValue;
-	private SqlNameFormatter sqlNameFormatter;
 	private final String field;
 	private SqlDialect dialect;
 
-	public FreeTextElement(ValqueriesQueryImpl<?> query, Property.PropertyValue<?> propertyValue, int fieldNum, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
+	public FreeTextElement(ValqueriesQueryImpl<?> query, Property.PropertyValue<?> propertyValue, int fieldNum, SqlDialect dialect) {
 		this.query = query;
 		this.propertyValue = propertyValue;
-		this.sqlNameFormatter = sqlNameFormatter;
 		this.dialect = dialect;
 		this.field = query.getTableAlias() + "_" + propertyValue.getProperty().getToken().snake_case() + fieldNum;
 	}
 
 	@Override
 	public String queryString() {
-		return "MATCH("+query.getTableAlias()+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(propertyValue.getProperty().getToken()))+") AGAINST(:"+field+")";
+		return "MATCH("+query.getTableAlias()+"."+dialect.column(propertyValue.getProperty())+") AGAINST(:"+field+")";
 	}
 
 	@Override
