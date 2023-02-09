@@ -10,20 +10,18 @@ public class SortElement<T> implements Element {
 	private final ValqueriesQueryImpl<T> query;
 	private final Property<?> property;
 	private boolean ascending;
-	private SqlNameFormatter sqlNameFormatter;
 	private SqlDialect dialect;
 
-	public SortElement(ValqueriesQueryImpl<T> query, Property<?> property, boolean ascending, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
+	public SortElement(ValqueriesQueryImpl<T> query, Property<?> property, boolean ascending, SqlDialect dialect) {
 		this.query = query;
 		this.property = property;
 		this.ascending = ascending;
-		this.sqlNameFormatter = sqlNameFormatter;
 		this.dialect = dialect;
 	}
 
 	@Override
 	public String queryString() {
-		return query.getTableAlias()+"."+dialect.escapeColumnOrTable(sqlNameFormatter.column(property.getToken()))+""+(ascending ? " ASC" : " DESC");
+		return query.getTableAlias()+"."+dialect.column(property)+" "+(ascending ? "ASC" : "DESC");
 	}
 
 	@Override

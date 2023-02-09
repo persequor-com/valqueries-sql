@@ -9,22 +9,21 @@ import io.ran.Property;
 public class SimpleElement implements Element {
 	private final ValqueriesQueryImpl<?> query;
 	private final Property.PropertyValue<?> propertyValue;
-	private final String operator;
+	private final BinaryOperator operator;
 	private SqlNameFormatter sqlNameFormatter;
 	private final String field;
 	private SqlDialect dialect;
 
-	public SimpleElement(ValqueriesQueryImpl<?> query, Property.PropertyValue<?> propertyValue, String operator, int fieldNum, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
+	public SimpleElement(ValqueriesQueryImpl<?> query, Property.PropertyValue<?> propertyValue, BinaryOperator operator, int fieldNum, SqlNameFormatter sqlNameFormatter, SqlDialect dialect) {
 		this.query = query;
 		this.propertyValue = propertyValue;
 		this.operator = operator;
-		this.sqlNameFormatter = sqlNameFormatter;
 		this.dialect = dialect;
 		this.field = query.getTableAlias() + "_" + propertyValue.getProperty().getToken().snake_case() + fieldNum;
 	}
 
 	public String queryString() {
-		return query.getTableAlias()+"."+dialect.column(propertyValue.getProperty())+" "+operator+" (:"+field+")";
+		return query.getTableAlias()+"."+dialect.column(propertyValue.getProperty())+" "+dialect.operator(operator)+" (:"+field+")";
 	}
 
 	@Override
