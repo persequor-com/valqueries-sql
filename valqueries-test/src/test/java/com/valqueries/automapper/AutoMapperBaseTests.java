@@ -1803,9 +1803,6 @@ public abstract class AutoMapperBaseTests {
 			carRepository.save(tx, model);
 		});
 		carRepository.save(model);
-		database.doRetryableInTransaction(tx -> {
-			carRepository.save(tx, model);
-		});
 		carRepository.inTransaction(tx -> {
 			tx.save(model);
 		});
