@@ -10,6 +10,7 @@ import io.ran.schema.SchemaExecutor;
 import io.ran.schema.TableAction;
 
 import javax.inject.Inject;
+import javax.sql.DataSource;
 import java.util.Collection;
 
 public class ValqueriesSchemaExecutor implements SchemaExecutor {
@@ -30,7 +31,11 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 
 	@Override
 	public void execute(Collection<TableAction> collection) {
-		try(IOrm orm = database.getOrm()) {
+		execute(collection, database);
+	}
+
+	private void execute(Collection<TableAction> collection, Database databaseToExecuteOn) {
+		try(IOrm orm = databaseToExecuteOn.getOrm()) {
 			for (TableAction ta : collection) {
 				String action = ta.getAction().apply(ta);
 				String[] actions = action.split(";");
@@ -43,6 +48,11 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 
 			}
 		}
+	}
+
+	@Override
+	public void execute(Collection<TableAction> collection, DataSource datasourceToExecuteOn) {
+		execute(collection, new Database(datasourceToExecuteOn));
 	}
 
 	public SqlDialect getDialect() {

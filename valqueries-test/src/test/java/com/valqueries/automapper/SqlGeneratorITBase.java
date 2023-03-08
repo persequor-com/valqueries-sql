@@ -4,8 +4,6 @@ import com.valqueries.Database;
 import com.valqueries.automapper.schema.ValqueriesIndexToken;
 import com.valqueries.automapper.schema.ValqueriesSchemaBuilder;
 import com.valqueries.automapper.schema.ValqueriesSchemaExecutor;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import io.ran.*;
 import io.ran.schema.TableAction;
 import io.ran.token.ColumnToken;
@@ -23,6 +21,7 @@ import javax.sql.DataSource;
 import java.util.Collection;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.spy;
 
@@ -84,23 +83,12 @@ public abstract class SqlGeneratorITBase {
 	}
 
 	protected abstract DataSource getDataSource();
+	protected abstract DataSource secondaryDatasource();
 
 	@Test
 	public void generateTable_withProvidedDatabase() {
 		// arrange
-		HikariConfig config = new HikariConfig();
-
-		// TODO: Move the responsability of creating a secondary database to an abstract method
-		//  so that each children implements it with the corresponding drivers
-		config.setJdbcUrl(System.getProperty("db.url", "jdbc:h2:file:/tmp/test2"));
-		config.setDriverClassName("org.h2.Driver");
-		config.setUsername(System.getProperty("db.user", "sa"));
-		config.setPassword(System.getProperty("db.password", "sa"));
-		config.setMinimumIdle(10);
-		config.setMaximumPoolSize(10);
-
-		final DataSource otherDataSource = new HikariDataSource(config);
-
+		final DataSource otherDataSource = secondaryDatasource();
 		final Database databaseToUse = new Database(otherDataSource);
 		final Database databaseToIgnore = database;
 
@@ -108,11 +96,11 @@ public abstract class SqlGeneratorITBase {
 		update("DROP TABLE IF EXISTS "+dialect.getTableName(Clazz.of(SimpleTestTable.class)), databaseToUse);
 
 		// act
-		sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class), databaseToUse);
+		sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class), otherDataSource);
 
 		// assert
-		SqlDescriber.DbTable tableThatShouldBeCreated = sqlDescriber.describe(dialect.table(Token.get("simple_test_table")), databaseToUse);
-		SqlDescriber.DbTable tableThatShouldNotBeCreated = sqlDescriber.describe(dialect.table(Token.get("simple_test_table")), databaseToIgnore);
+		SqlDescriber.DbTable tableThatShouldBeCreated = describeSimpleTestTable(databaseToUse);
+		SqlDescriber.DbTable tableThatShouldNotBeCreated = describeSimpleTestTable(databaseToIgnore);
 
 		assertEquals(3, tableThatShouldBeCreated.columns.size());
 		assertNotNull(tableThatShouldBeCreated.columns.get("id"));
@@ -121,19 +109,28 @@ public abstract class SqlGeneratorITBase {
 		assertNull(tableThatShouldNotBeCreated);
 	}
 
+	private SqlDescriber.DbTable describeSimpleTestTable(Database databaseToUse) {
+		return sqlDescriber.describe(dialect.table(Token.get("simple_test_table")), databaseToUse);
+	}
+
+	private SqlDescriber.DbTable describeSimpleTestTable() {
+		return describeSimpleTestTable(database);
+	}
+
 	@Test
 	public void generateTable() {
 		update("DROP TABLE IF EXISTS "+dialect.getTableName(Clazz.of(SimpleTestTable.class)));
 
 		sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 
-		SqlDescriber.DbTable table = describer.describe(dialect.table(Token.get("simple_test_table")), database);
+		SqlDescriber.DbTable table = describeSimpleTestTable();
 
 		assertEquals(3, table.columns.size());
 		assertNotNull(table.columns.get("id"));
 		assertNotNull(table.columns.get("title").getType());
 		assertNotNull(table.columns.get("created_at").getType());
 	}
+
 
 	@Test
 	public void generateTable_indexOrder() {
@@ -161,7 +158,7 @@ public abstract class SqlGeneratorITBase {
 		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 
 		InOrder inOrder = Mockito.inOrder(schemaExecutor);
-		inOrder.verify(schemaExecutor).execute(anyCollection());
+		inOrder.verify(schemaExecutor).execute(anyCollection(), any(DataSource.class));
 		inOrder.verify(schemaExecutor).execute(captor.capture());
 		assertEquals(0, captor.getValue().stream().findFirst().get().getActions().size());
 	}
@@ -171,12 +168,12 @@ public abstract class SqlGeneratorITBase {
 		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 		update("ALTER TABLE simple_test_table DROP COLUMN title");
 
-		SqlDescriber.DbTable table = describer.describe(dialect.table(Token.get("simple_test_table")), database);
+		SqlDescriber.DbTable table = describeSimpleTestTable();
 		assertFalse(table.columns.containsKey("title"));
 
 		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 
-		table = describer.describe(dialect.table(Token.get("simple_test_table")),database);
+		table = describeSimpleTestTable();
 
 		assertTrue(table.columns.containsKey("title"));
 	}
@@ -187,12 +184,12 @@ public abstract class SqlGeneratorITBase {
 		ColumnToken column = dialect.column(Token.get("title"));
 		update("ALTER TABLE simple_test_table "+ dialect.generateAlterColumnPartStatement(column)+" TEXT");
 
-		SqlDescriber.DbTable table = describer.describe(dialect.table(Token.get("simple_test_table")), database);
+		SqlDescriber.DbTable table = describeSimpleTestTable();
 		assertEquals(textType(),table.columns.get("title").getType());
 
 		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class));
 
-		table = describer.describe(dialect.table(Token.get("simple_test_table")),database);
+		table = describeSimpleTestTable();
 
 		assertNotEquals(textType(),table.columns.get("title").getType());
 	}
@@ -203,7 +200,7 @@ public abstract class SqlGeneratorITBase {
 
 		sqlGenerator.generateOrModifyTable(database, TypeDescriberImpl.getTypeDescriber(SimpleTestTableTextTitle.class));
 
-		SqlDescriber.DbTable table = describer.describe(dialect.table(Token.get("simple_test_table")), database);
+		SqlDescriber.DbTable table = describeSimpleTestTable();
 
 		assertEquals(textType(),table.columns.get("title").getType());
 	}

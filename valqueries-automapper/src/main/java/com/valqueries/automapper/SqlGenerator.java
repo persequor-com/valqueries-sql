@@ -2,22 +2,19 @@ package com.valqueries.automapper;
 
 import com.valqueries.Database;
 import com.valqueries.automapper.schema.ValqueriesSchemaBuilder;
-import com.valqueries.automapper.schema.ValqueriesSchemaExecutor;
 import io.ran.Clazz;
 import io.ran.KeySet;
 import io.ran.TypeDescriber;
 import io.ran.token.ColumnToken;
 import io.ran.token.TableToken;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.Optional;
 
 public class SqlGenerator {
-	private static Logger logger = LoggerFactory.getLogger(SqlGenerator.class);
 	private final SqlNameFormatter sqlNameFormatter;
 	private final SqlDialect dialect;
 	private final SqlDescriber sqlDescriber;
@@ -41,7 +38,7 @@ public class SqlGenerator {
 		SqlDescriber.DbTable table = sqlDescriber.describe(tablename, database);
 
 		if (table == null) {
-			return generateCreateTable(typeDescriber);
+			return generateCreateTable(typeDescriber, database.datasource());
 		} else {
 			ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
 			schemaBuilder.modifyTable(tablename, t -> {
@@ -93,28 +90,24 @@ public class SqlGenerator {
 	}
 
 	public String generateCreateTable(TypeDescriber<?> typeDescriber) {
-		ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
-
-		schemaBuilder.addTable(dialect.getTableName(Clazz.of(typeDescriber.clazz())), table -> {
-			typeDescriber.fields().forEach(table::addColumn);
-			table.addPrimaryKey(typeDescriber.primaryKeys());
-			typeDescriber.indexes().forEach(table::addIndex);
-		});
+		ValqueriesSchemaBuilder schemaBuilder = prepareSchemaBuilder(typeDescriber);
 		schemaBuilder.build();
 		return schemaBuilder.getGeneratedSql();
 	}
 
-	public String generateCreateTable(TypeDescriber<?> typeDescriber, Database targetDatabase) {
-		// TODO: Check if we can do this via an injector instead of instantiating an schema executor each time.
-		//  Alternatively, write an SchemaBuilder.build(database) method that tells the executor to run the queries with another db. We can not do it easily because SchemaBuilder is part of Ran.
-		ValqueriesSchemaExecutor valqueriesSchemaExecutor = ValqueriesSchemaExecutor.forDatabase(targetDatabase);
-		ValqueriesSchemaBuilder schemaBuilder = new ValqueriesSchemaBuilder(valqueriesSchemaExecutor, new SqlNameFormatter());
-		schemaBuilder.addTable(dialect.getTableName(Clazz.of(typeDescriber.clazz())), table -> {
+	private ValqueriesSchemaBuilder prepareSchemaBuilder(TypeDescriber<?> typeDescriber) {
+		ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
+		schemaBuilder.addTable(getTableName(typeDescriber), table -> {
 			typeDescriber.fields().forEach(table::addColumn);
 			table.addPrimaryKey(typeDescriber.primaryKeys());
 			typeDescriber.indexes().forEach(table::addIndex);
 		});
-		schemaBuilder.build();
+		return schemaBuilder;
+	}
+
+	public String generateCreateTable(TypeDescriber<?> typeDescriber, DataSource targetDataSource) {
+		ValqueriesSchemaBuilder schemaBuilder = prepareSchemaBuilder(typeDescriber);
+		schemaBuilder.build(targetDataSource);
 		return schemaBuilder.getGeneratedSql();
 	}
 }

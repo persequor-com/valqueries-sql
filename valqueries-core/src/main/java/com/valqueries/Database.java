@@ -27,6 +27,10 @@ public class Database {
 		this(dataSource, new DatabaseConfig());
 	}
 
+	public DataSource datasource() {
+		return dataSource;
+	}
+
 	public DialectType getDialectType() {
 		try(Connection connection = dataSource.getConnection()) {
 			String url = connection.getMetaData().getURL();
