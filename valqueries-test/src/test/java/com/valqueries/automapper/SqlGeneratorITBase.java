@@ -4,8 +4,9 @@ import com.valqueries.Database;
 import com.valqueries.automapper.schema.ValqueriesIndexToken;
 import com.valqueries.automapper.schema.ValqueriesSchemaBuilder;
 import com.valqueries.automapper.schema.ValqueriesSchemaExecutor;
-import io.ran.Clazz;
-import io.ran.TypeDescriberImpl;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import io.ran.*;
 import io.ran.schema.TableAction;
 import io.ran.token.ColumnToken;
 import io.ran.token.Token;
@@ -39,12 +40,16 @@ public abstract class SqlGeneratorITBase {
 
 	protected abstract String textType();
 
-	protected void update(String sql) {
-		database.doInTransaction(tx -> {
+	protected void update(String sql, Database databaseToUpdate) {
+		databaseToUpdate.doInTransaction(tx -> {
 			for(String s : sql.split(";")) {
 				tx.update(s, setter -> {});
 			}
 		});
+	}
+
+	protected void update(String sql) {
+		update(sql, database);
 	}
 
 	@Before
@@ -79,6 +84,42 @@ public abstract class SqlGeneratorITBase {
 	}
 
 	protected abstract DataSource getDataSource();
+
+	@Test
+	public void generateTable_withProvidedDatabase() {
+		// arrange
+		HikariConfig config = new HikariConfig();
+
+		// TODO: Move the responsability of creating a secondary database to an abstract method
+		//  so that each children implements it with the corresponding drivers
+		config.setJdbcUrl(System.getProperty("db.url", "jdbc:h2:file:/tmp/test2"));
+		config.setDriverClassName("org.h2.Driver");
+		config.setUsername(System.getProperty("db.user", "sa"));
+		config.setPassword(System.getProperty("db.password", "sa"));
+		config.setMinimumIdle(10);
+		config.setMaximumPoolSize(10);
+
+		final DataSource otherDataSource = new HikariDataSource(config);
+
+		final Database databaseToUse = new Database(otherDataSource);
+		final Database databaseToIgnore = database;
+
+		update("DROP TABLE IF EXISTS "+dialect.getTableName(Clazz.of(SimpleTestTable.class)));
+		update("DROP TABLE IF EXISTS "+dialect.getTableName(Clazz.of(SimpleTestTable.class)), databaseToUse);
+
+		// act
+		sqlGenerator.generateCreateTable(TypeDescriberImpl.getTypeDescriber(SimpleTestTable.class), databaseToUse);
+
+		// assert
+		SqlDescriber.DbTable tableThatShouldBeCreated = sqlDescriber.describe(dialect.table(Token.get("simple_test_table")), databaseToUse);
+		SqlDescriber.DbTable tableThatShouldNotBeCreated = sqlDescriber.describe(dialect.table(Token.get("simple_test_table")), databaseToIgnore);
+
+		assertEquals(3, tableThatShouldBeCreated.columns.size());
+		assertNotNull(tableThatShouldBeCreated.columns.get("id"));
+		assertNotNull(tableThatShouldBeCreated.columns.get("title").getType());
+		assertNotNull(tableThatShouldBeCreated.columns.get("created_at").getType());
+		assertNull(tableThatShouldNotBeCreated);
+	}
 
 	@Test
 	public void generateTable() {

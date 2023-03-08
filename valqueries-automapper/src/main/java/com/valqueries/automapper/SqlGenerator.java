@@ -2,6 +2,7 @@ package com.valqueries.automapper;
 
 import com.valqueries.Database;
 import com.valqueries.automapper.schema.ValqueriesSchemaBuilder;
+import com.valqueries.automapper.schema.ValqueriesSchemaExecutor;
 import io.ran.Clazz;
 import io.ran.KeySet;
 import io.ran.TypeDescriber;
@@ -17,10 +18,10 @@ import java.util.Optional;
 
 public class SqlGenerator {
 	private static Logger logger = LoggerFactory.getLogger(SqlGenerator.class);
-	private SqlNameFormatter sqlNameFormatter;
-	private SqlDialect dialect;
-	private SqlDescriber sqlDescriber;
-	private Provider<ValqueriesSchemaBuilder> schemaBuilderProvider;
+	private final SqlNameFormatter sqlNameFormatter;
+	private final SqlDialect dialect;
+	private final SqlDescriber sqlDescriber;
+	private final Provider<ValqueriesSchemaBuilder> schemaBuilderProvider;
 
 	@Inject
 	public SqlGenerator(SqlNameFormatter sqlNameFormatter, DialectFactory dialectFactory, Database database, SqlDescriber sqlDescriber, Provider<ValqueriesSchemaBuilder> schemaBuilderProvider) {
@@ -93,6 +94,21 @@ public class SqlGenerator {
 
 	public String generateCreateTable(TypeDescriber<?> typeDescriber) {
 		ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
+
+		schemaBuilder.addTable(dialect.getTableName(Clazz.of(typeDescriber.clazz())), table -> {
+			typeDescriber.fields().forEach(table::addColumn);
+			table.addPrimaryKey(typeDescriber.primaryKeys());
+			typeDescriber.indexes().forEach(table::addIndex);
+		});
+		schemaBuilder.build();
+		return schemaBuilder.getGeneratedSql();
+	}
+
+	public String generateCreateTable(TypeDescriber<?> typeDescriber, Database targetDatabase) {
+		// TODO: Check if we can do this via an injector instead of instantiating an schema executor each time.
+		//  Alternatively, write an SchemaBuilder.build(database) method that tells the executor to run the queries with another db. We can not do it easily because SchemaBuilder is part of Ran.
+		ValqueriesSchemaExecutor valqueriesSchemaExecutor = ValqueriesSchemaExecutor.forDatabase(targetDatabase);
+		ValqueriesSchemaBuilder schemaBuilder = new ValqueriesSchemaBuilder(valqueriesSchemaExecutor, new SqlNameFormatter());
 		schemaBuilder.addTable(dialect.getTableName(Clazz.of(typeDescriber.clazz())), table -> {
 			typeDescriber.fields().forEach(table::addColumn);
 			table.addPrimaryKey(typeDescriber.primaryKeys());

@@ -5,6 +5,7 @@ import com.valqueries.IOrm;
 import com.valqueries.UpdateResult;
 import com.valqueries.automapper.DialectFactory;
 import com.valqueries.automapper.SqlDialect;
+import com.valqueries.automapper.SqlNameFormatter;
 import io.ran.schema.SchemaExecutor;
 import io.ran.schema.TableAction;
 
@@ -12,8 +13,8 @@ import javax.inject.Inject;
 import java.util.Collection;
 
 public class ValqueriesSchemaExecutor implements SchemaExecutor {
-	private DialectFactory dialectFactory;
-	private Database database;
+	private final DialectFactory dialectFactory;
+	private final Database database;
 	private String sql = "";
 
 	@Inject
@@ -21,6 +22,11 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 		this.dialectFactory = dialectFactory;
 		this.database = database;
 	}
+
+	public static ValqueriesSchemaExecutor forDatabase(Database database) {
+		return new ValqueriesSchemaExecutor(new DialectFactory(new SqlNameFormatter()), database);
+	}
+
 
 	@Override
 	public void execute(Collection<TableAction> collection) {
