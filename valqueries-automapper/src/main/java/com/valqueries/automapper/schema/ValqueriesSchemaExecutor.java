@@ -36,7 +36,7 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 				for (String a: actions) {
 					if (a.length() > 0) {
 						sql += a+";\n";
-						UpdateResult res = orm.update(a, s -> {	});
+						orm.update(a, s -> {	});
 					}
 				}
 
