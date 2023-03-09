@@ -104,8 +104,8 @@ public abstract class SqlGeneratorITBase {
 
 		assertEquals(3, tableThatShouldBeCreated.columns.size());
 		assertNotNull(tableThatShouldBeCreated.columns.get("id"));
-		assertNotNull(tableThatShouldBeCreated.columns.get("title").getType());
-		assertNotNull(tableThatShouldBeCreated.columns.get("created_at").getType());
+		assertNotNull(tableThatShouldBeCreated.columns.get("title"));
+		assertNotNull(tableThatShouldBeCreated.columns.get("created_at"));
 		assertNull(tableThatShouldNotBeCreated);
 	}
 
