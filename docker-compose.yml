@@ -15,9 +15,7 @@ services:
       - -c
       - | 
         /opt/mssql/bin/sqlservr & 
-        for foo in ./scripts/*.sql
-          do /opt/mssql-tools/bin/sqlcmd -U sa -P 7h3_s3cr3t!1s?0u7  -l 30 -e -i /scripts/init.sql
-        done
+        /opt/mssql-tools/bin/sqlcmd -U sa -P 7h3_s3cr3t!1s?0u7  -l 30 -e -i /scripts/init.sql
         sleep infinity
   sql:
     image: mariadb:10.2.27
