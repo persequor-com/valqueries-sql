@@ -27,7 +27,7 @@ public class SqlGeneratorMariaDbIT extends SqlGeneratorITBase {
 	protected DataSource secondaryDatasource() {
 		HikariConfig config = new HikariConfig();
 
-		config.setJdbcUrl(System.getProperty("db.url", "jdbc:mariadb://localhost:3307/valqueriesSecondary"));
+		config.setJdbcUrl(System.getProperty("db.url", "jdbc:mariadb://localhost:3307/mariadbSecondary"));
 		config.setDriverClassName("org.mariadb.jdbc.Driver");
 		config.setUsername(System.getProperty("db.user", "root"));
 		config.setPassword(System.getProperty("db.password", "s3cr3t"));
