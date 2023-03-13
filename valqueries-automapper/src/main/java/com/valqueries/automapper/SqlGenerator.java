@@ -7,20 +7,18 @@ import io.ran.KeySet;
 import io.ran.TypeDescriber;
 import io.ran.token.ColumnToken;
 import io.ran.token.TableToken;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.Optional;
 
 public class SqlGenerator {
-	private static Logger logger = LoggerFactory.getLogger(SqlGenerator.class);
-	private SqlNameFormatter sqlNameFormatter;
-	private SqlDialect dialect;
-	private SqlDescriber sqlDescriber;
-	private Provider<ValqueriesSchemaBuilder> schemaBuilderProvider;
+	private final SqlNameFormatter sqlNameFormatter;
+	private final SqlDialect dialect;
+	private final SqlDescriber sqlDescriber;
+	private final Provider<ValqueriesSchemaBuilder> schemaBuilderProvider;
 
 	@Inject
 	public SqlGenerator(SqlNameFormatter sqlNameFormatter, DialectFactory dialectFactory, Database database, SqlDescriber sqlDescriber, Provider<ValqueriesSchemaBuilder> schemaBuilderProvider) {
@@ -40,7 +38,7 @@ public class SqlGenerator {
 		SqlDescriber.DbTable table = sqlDescriber.describe(tablename, database);
 
 		if (table == null) {
-			return generateCreateTable(typeDescriber);
+			return generateCreateTable(typeDescriber, database.datasource());
 		} else {
 			ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
 			schemaBuilder.modifyTable(tablename, t -> {
@@ -92,13 +90,24 @@ public class SqlGenerator {
 	}
 
 	public String generateCreateTable(TypeDescriber<?> typeDescriber) {
+		ValqueriesSchemaBuilder schemaBuilder = prepareSchemaBuilder(typeDescriber);
+		schemaBuilder.build();
+		return schemaBuilder.getGeneratedSql();
+	}
+
+	private ValqueriesSchemaBuilder prepareSchemaBuilder(TypeDescriber<?> typeDescriber) {
 		ValqueriesSchemaBuilder schemaBuilder = schemaBuilderProvider.get();
-		schemaBuilder.addTable(dialect.getTableName(Clazz.of(typeDescriber.clazz())), table -> {
+		schemaBuilder.addTable(getTableName(typeDescriber), table -> {
 			typeDescriber.fields().forEach(table::addColumn);
 			table.addPrimaryKey(typeDescriber.primaryKeys());
 			typeDescriber.indexes().forEach(table::addIndex);
 		});
-		schemaBuilder.build();
+		return schemaBuilder;
+	}
+
+	public String generateCreateTable(TypeDescriber<?> typeDescriber, DataSource targetDataSource) {
+		ValqueriesSchemaBuilder schemaBuilder = prepareSchemaBuilder(typeDescriber);
+		schemaBuilder.build(targetDataSource);
 		return schemaBuilder.getGeneratedSql();
 	}
 }

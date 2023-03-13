@@ -9,11 +9,12 @@ import io.ran.schema.SchemaExecutor;
 import io.ran.schema.TableAction;
 
 import javax.inject.Inject;
+import javax.sql.DataSource;
 import java.util.Collection;
 
 public class ValqueriesSchemaExecutor implements SchemaExecutor {
-	private DialectFactory dialectFactory;
-	private Database database;
+	private final DialectFactory dialectFactory;
+	private final Database database;
 	private String sql = "";
 
 	@Inject
@@ -24,19 +25,28 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 
 	@Override
 	public void execute(Collection<TableAction> collection) {
-		try(IOrm orm = database.getOrm()) {
+		execute(collection, database);
+	}
+
+	private void execute(Collection<TableAction> collection, Database databaseToExecuteOn) {
+		try(IOrm orm = databaseToExecuteOn.getOrm()) {
 			for (TableAction ta : collection) {
 				String action = ta.getAction().apply(ta);
 				String[] actions = action.split(";");
 				for (String a: actions) {
 					if (a.length() > 0) {
 						sql += a+";\n";
-						UpdateResult res = orm.update(a, s -> {	});
+						orm.update(a, s -> {	});
 					}
 				}
 
 			}
 		}
+	}
+
+	@Override
+	public void execute(Collection<TableAction> collection, DataSource datasourceToExecuteOn) {
+		execute(collection, new Database(datasourceToExecuteOn));
 	}
 
 	public SqlDialect getDialect() {
