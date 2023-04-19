@@ -51,6 +51,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	private void setKey(IStatement b, K id, int position) {
 		if (keyType == CompoundKey.class) {
 			CompoundKey key = (CompoundKey) id;
+			// FIXME: OPEN-91 This should either be supported or throw a meaningful exception
 
 		} else if (keyType == String.class) {
 			b.set(getKeyName(position), (String) id);
