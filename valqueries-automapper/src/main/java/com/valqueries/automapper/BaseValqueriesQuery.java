@@ -42,7 +42,7 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 		Property property = this.typeDescriber.fields().get(queryWrapper.getCurrentProperty().getToken());
 		final Class<?> fieldType = property.getType().clazz;
 
-		if (value != null && value.length > 0 && !fieldType.isAssignableFrom(value[0].getClass())) {
+		if (value != null && value.length > 0 && !fieldType.isAssignableFrom(value[0].getClass())) { // todo why test just the first
 			//it can happen for instance if we provide Collection of the type mismatching the field type then JVM would infer X as an object and make it the first element of the vararg array
 			throw new IllegalArgumentException("The type of the values is incorrectly inferred,"
 					+ " please make sure field type matches the type of the values array. "

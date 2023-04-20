@@ -9,6 +9,7 @@ import io.ran.schema.SchemaExecutor;
 import io.ran.schema.TableAction;
 
 import javax.inject.Inject;
+import javax.sql.DataSource;
 import java.util.Collection;
 
 public class ValqueriesSchemaExecutor implements SchemaExecutor {
@@ -37,6 +38,11 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 
 			}
 		}
+	}
+
+	@Override
+	public void execute(Collection<TableAction> collection, DataSource dataSource) {
+		throw new UnsupportedOperationException("aaaaaaaaaa");
 	}
 
 	public SqlDialect getDialect() {

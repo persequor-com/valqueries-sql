@@ -328,9 +328,8 @@ public abstract class AutoMapperBaseTests {
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 		carRepository.save(model);
 
-		List<String> brands = Arrays.asList("Hyundai", "Porsche");
 		//Car::getBrand is an enum and brands Collection are strings
-		carRepository.query().in(Car::getBrand, brands).execute();
+		carRepository.query().in(Car::getBrand, "Hyundai", "Porsche").execute();
 	}
 
 	@Test
@@ -1071,7 +1070,7 @@ public abstract class AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({AllFieldTypes.class})
-	public void allFieldTypes_updateIncrement() {
+	public void allFieldTypes_increment() {
 		AllFieldTypes obj = factory.get(AllFieldTypes.class);
 		obj.setId(UUID.randomUUID());
 		obj.setBigDecimal(BigDecimal.valueOf(3.1415));
@@ -1127,6 +1126,29 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1332L, actual.getPrimitiveLong());
 		assertEquals(155.54, actual.getPrimitiveDouble(),0.001);
 		assertEquals(133.32f, actual.getPrimitiveFloat(), 0.001);
+	}
+
+	@Test
+	@TestClasses({AllFieldTypes.class})
+	public void allFieldTypes_updateAndIncrement() {
+		AllFieldTypes obj = factory.get(AllFieldTypes.class);
+		obj.setId(UUID.randomUUID());
+		obj.setBigDecimal(BigDecimal.valueOf(3.1415));
+		obj.setInteger(24);
+
+		allFieldTypesRepository.save(obj);
+
+		allFieldTypesRepository.query()
+				.eq(AllFieldTypes::getId, obj.getId())
+				.update(u -> {
+					u.increment(AllFieldTypes::getBigDecimal, BigDecimal.valueOf(4.4135));
+					u.set(AllFieldTypes::getInteger, 42);
+				});
+
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getId()).get();
+
+		assertEquals(new BigDecimal("7.555"), actual.getBigDecimal().stripTrailingZeros());
+		assertEquals(Integer.valueOf(42), actual.getInteger());
 	}
 
 	@Test
