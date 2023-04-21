@@ -190,7 +190,7 @@ public abstract class AutoMapperBaseTests {
 
 
 		Collection<Car> cars = carRepository.query()
-				.eq(Car::getTitle,"Muh 2")
+				.eq(Car::getTitle, "Muh 2")
 				.execute()
 				.collect(Collectors.toList());
 
@@ -330,25 +330,60 @@ public abstract class AutoMapperBaseTests {
 		carRepository.query().in(Car::getBrand).execute();
 		carRepository.query().in(Car::getBrand, Brand.Porsche).execute();
 		carRepository.query().in(Car::getBrand, (Object) Brand.Porsche).execute();
-		carRepository.query().in(Car::getBrand, new Brand[] {Brand.Porsche, Brand.Hyundai}).execute();
-		carRepository.query().in(Car::getBrand, new Object[] {Brand.Porsche, Brand.Hyundai}).execute();
+		carRepository.query().in(Car::getBrand, new Brand[]{Brand.Porsche, Brand.Hyundai}).execute();
+		carRepository.query().in(Car::getBrand, new Object[]{Brand.Porsche, Brand.Hyundai}).execute();
 		carRepository.query().in(Car::getBrand, Arrays.asList(Brand.Porsche, Brand.Hyundai)).execute();
 
 		carRepository.query().in(Car::getBrand, (Brand) null).execute();
 		carRepository.query().in(Car::getBrand, Collections.singletonList(null)).execute();
 		carRepository.query().in(Car::getBrand, Brand.Porsche, null).execute();
-		carRepository.query().in(Car::getBrand, new Brand[] {Brand.Porsche, null}).execute();
+		carRepository.query().in(Car::getBrand, new Brand[]{Brand.Porsche, null}).execute();
 		carRepository.query().in(Car::getBrand, Arrays.asList(Brand.Porsche, null)).execute();
 
 		assertThrows(NullPointerException.class, () -> carRepository.query().in(Car::getBrand, (Brand[]) null).execute());
 		assertThrows(NullPointerException.class, () -> carRepository.query().in(Car::getBrand, (Collection<Brand>) null).execute());
 
 		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, "Porsche").execute());
-		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new String[] {"Porsche", "Hyundai"}).execute());
-		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new Object[] {"Porsche", "Hyundai"}).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new String[]{"Porsche", "Hyundai"}).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new Object[]{"Porsche", "Hyundai"}).execute());
 		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, Arrays.asList("Porsche", "Hyundai")).execute());
-		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new Object[] {Brand.Porsche, "Hyundai"}).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new Object[]{Brand.Porsche, "Hyundai"}).execute());
 		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, Arrays.asList(Brand.Porsche, "Hyundai")).execute());
+	}
+
+	@SuppressWarnings("ResultOfMethodCallIgnored")
+	@Test
+	@TestClasses({Car.class})
+	public void queryBuilder_inCondition_biConsumer_typeMismatch() {
+		Car model = factory.get(Car.class);
+		model.setId(UUID.randomUUID());
+		model.setTitle("Muh");
+		model.setBrand(Brand.Hyundai);
+		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+		carRepository.save(model);
+
+		carRepository.query().in((car, ignored) -> car.getBrand()).execute();
+		carRepository.query().in((car, ignored) -> car.getBrand(), Brand.Porsche).execute();
+		carRepository.query().in((car, ignored) -> car.getBrand(), (Object) Brand.Porsche).execute();
+		carRepository.query().in((car, ignored) -> car.getBrand(), new Brand[]{Brand.Porsche, Brand.Hyundai}).execute();
+		carRepository.query().in((car, ignored) -> car.getBrand(), new Object[]{Brand.Porsche, Brand.Hyundai}).execute();
+		carRepository.query().in((car, ignored) -> car.getBrand(), Arrays.asList(Brand.Porsche, Brand.Hyundai)).execute();
+
+		carRepository.query().in((car, ignored) -> car.getBrand(), (Brand) null).execute();
+		carRepository.query().in((car, ignored) -> car.getBrand(), Collections.singletonList(null)).execute();
+		carRepository.query().in((car, ignored) -> car.getBrand(), Brand.Porsche, null).execute();
+		carRepository.query().in((car, ignored) -> car.getBrand(), new Brand[]{Brand.Porsche, null}).execute();
+		carRepository.query().in((car, ignored) -> car.getBrand(), Arrays.asList(Brand.Porsche, null)).execute();
+
+		assertThrows(NullPointerException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), (Brand[]) null).execute());
+		assertThrows(NullPointerException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), (Collection<Brand>) null).execute());
+
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), "Porsche").execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), new String[]{"Porsche", "Hyundai"}).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), new Object[]{"Porsche", "Hyundai"}).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), Arrays.asList("Porsche", "Hyundai")).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), new Object[]{Brand.Porsche, "Hyundai"}).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), Arrays.asList(Brand.Porsche, "Hyundai")).execute());
 	}
 
 	@Test
@@ -469,7 +504,7 @@ public abstract class AutoMapperBaseTests {
 				.in(Car::getTitle, "Muh 2", "Muh")
 				.execute().collect(Collectors.toList());
 		assertEquals(2, cars.size());
-		verify(resolver, never()).getTypedCollection(any(), any(),any(), any());
+		verify(resolver, never()).getTypedCollection(any(), any(), any(), any());
 		verify(resolver, never()).getCollection(any(), any(), any());
 		verify(resolver, never()).get(any(), any(), any());
 	}
@@ -503,10 +538,10 @@ public abstract class AutoMapperBaseTests {
 
 		Collection<Car> cars = carRepository.query()
 				.sortDescending(Car::getTitle)
-				.limit(1,2)
+				.limit(1, 2)
 				.execute().collect(Collectors.toList());
 		assertEquals(2, cars.size());
-		assertEquals("Muhs: "+cars.stream().map(c -> c.getTitle()).collect(Collectors.joining(", ")),"Muh 3", cars.stream().findFirst().get().getTitle());
+		assertEquals("Muhs: " + cars.stream().map(c -> c.getTitle()).collect(Collectors.joining(", ")), "Muh 3", cars.stream().findFirst().get().getTitle());
 		assertEquals("Muh 2", cars.stream().skip(1).findFirst().get().getTitle());
 	}
 
@@ -515,8 +550,8 @@ public abstract class AutoMapperBaseTests {
 	public void withCollections() {
 		WithCollections w = factory.get(WithCollections.class);
 		w.setId("id");
-		w.setField1(Arrays.asList("id1","id2"));
-		w.setField2(new HashSet<>(Arrays.asList("field1","field2")));
+		w.setField1(Arrays.asList("id1", "id2"));
+		w.setField2(new HashSet<>(Arrays.asList("field1", "field2")));
 		withCollectionsRepository.save(w);
 
 		Optional<WithCollections> actualOptional = withCollectionsRepository.query().eq(WithCollections::getId, "id").execute().findFirst();
@@ -949,7 +984,7 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(obj.getPrimitiveInteger(), actual.getPrimitiveInteger());
 		assertEquals(obj.getPrimitiveShort(), actual.getPrimitiveShort());
 		assertEquals(obj.getPrimitiveLong(), actual.getPrimitiveLong());
-		assertEquals(obj.getPrimitiveDouble(), actual.getPrimitiveDouble(),0.001);
+		assertEquals(obj.getPrimitiveDouble(), actual.getPrimitiveDouble(), 0.001);
 		assertEquals(obj.getPrimitiveFloat(), actual.getPrimitiveFloat(), 0.001);
 		assertEquals(obj.isPrimitiveBoolean(), actual.isPrimitiveBoolean());
 		assertEquals(obj.getPrimitiveByte(), actual.getPrimitiveByte());
@@ -987,7 +1022,7 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(0, actual.getPrimitiveInteger());
 		assertEquals(0, actual.getPrimitiveShort());
 		assertEquals(0, actual.getPrimitiveLong());
-		assertEquals(0, actual.getPrimitiveDouble(),0.001);
+		assertEquals(0, actual.getPrimitiveDouble(), 0.001);
 		assertEquals(0, actual.getPrimitiveFloat(), 0.001);
 		assertFalse(actual.isPrimitiveBoolean());
 		assertEquals(0, actual.getPrimitiveByte());
@@ -1081,10 +1116,10 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(777, actual.getPrimitiveInteger());
 		assertEquals(15, actual.getPrimitiveShort());
 		assertEquals(888L, actual.getPrimitiveLong());
-		assertEquals(55.55, actual.getPrimitiveDouble(),0.001);
+		assertEquals(55.55, actual.getPrimitiveDouble(), 0.001);
 		assertEquals(44.44f, actual.getPrimitiveFloat(), 0.001);
 		assertEquals(false, actual.isPrimitiveBoolean());
-		assertEquals((byte)10, actual.getPrimitiveByte());
+		assertEquals((byte) 10, actual.getPrimitiveByte());
 	}
 
 	@Test
@@ -1143,7 +1178,7 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1443, actual.getPrimitiveInteger());
 		assertEquals(130, actual.getPrimitiveShort());
 		assertEquals(1332L, actual.getPrimitiveLong());
-		assertEquals(155.54, actual.getPrimitiveDouble(),0.001);
+		assertEquals(155.54, actual.getPrimitiveDouble(), 0.001);
 		assertEquals(133.32f, actual.getPrimitiveFloat(), 0.001);
 	}
 
@@ -1435,7 +1470,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses({Car.class,  Engine.class})
+	@TestClasses({Car.class, Engine.class})
 	public void insert_withPreviousRecord() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
@@ -1451,13 +1486,13 @@ public abstract class AutoMapperBaseTests {
 		secondModel.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 		try {
 			carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, secondModel));
-		} catch (Exception e){
+		} catch (Exception e) {
 			assertTrue(e.getCause() instanceof ValqueriesInsertFailedException);
 		}
 	}
 
 	@Test
-	@TestClasses({Car.class,  Engine.class})
+	@TestClasses({Car.class, Engine.class})
 	public void insert_collection_happy() {
 		Car model1 = factory.get(Car.class);
 		model1.setId(UUID.randomUUID());
@@ -1488,7 +1523,7 @@ public abstract class AutoMapperBaseTests {
 	}
 
 	@Test
-	@TestClasses({Car.class,  Door.class})
+	@TestClasses({Car.class, Door.class})
 	public void insert_collection_oneIsAlreadyPresent_throwsDuplicateKeyExceptionAndRollbackTransaction() {
 		Car model1 = factory.get(Car.class);
 		model1.setId(UUID.randomUUID());
@@ -1507,7 +1542,7 @@ public abstract class AutoMapperBaseTests {
 		try {
 			carRepository.doRetryableInTransaction(tx -> carRepository.insert(tx, Arrays.asList(model1, model2)));
 			fail("An exception of type ValqueriesDuplicateKeyException should have been thrown here");
-		} catch (Exception e){
+		} catch (Exception e) {
 			assertTrue(e.getCause() instanceof ValqueriesInsertFailedException);
 		}
 
@@ -1523,7 +1558,7 @@ public abstract class AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Car.class, Exhaust.class})
-	public void insert_withRelation_ignoreRelation(){
+	public void insert_withRelation_ignoreRelation() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle("Muh");
@@ -1547,7 +1582,7 @@ public abstract class AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Car.class, Exhaust.class})
-	public void insert_onOneToOne_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery(){
+	public void insert_onOneToOne_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery() {
 
 		Exhaust exhaust = factory.get(Exhaust.class);
 		exhaust.setId(UUID.randomUUID());
@@ -1578,7 +1613,7 @@ public abstract class AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Car.class, Door.class})
-	public void insert_onOneToMany_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery(){
+	public void insert_onOneToMany_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery() {
 
 		Door door1 = factory.get(Door.class);
 		door1.setTitle("front-left");
@@ -1612,7 +1647,7 @@ public abstract class AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Car.class, Engine.class, EngineCar.class})
-	public void insert_onManyToMany_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery(){
+	public void insert_onManyToMany_whenSettingObjectsButNotKeys_thenRelationIsNotRetrievedOnQuery() {
 
 		Engine engine = factory.get(Engine.class);
 		engine.setId(UUID.randomUUID());
@@ -1641,7 +1676,7 @@ public abstract class AutoMapperBaseTests {
 
 	@Test
 	@TestClasses({Car.class, Engine.class, EngineCar.class})
-	public void insert_onManyToMany_whenSettingKeysCorrectly_thenRelationIsRetrievedOnQuery(){
+	public void insert_onManyToMany_whenSettingKeysCorrectly_thenRelationIsRetrievedOnQuery() {
 
 		Engine engine = factory.get(Engine.class);
 		engine.setId(UUID.randomUUID());
@@ -1679,8 +1714,8 @@ public abstract class AutoMapperBaseTests {
 	@Test
 	@TestClasses({Car.class, Door.class})
 	public void sorting_happy() throws Throwable {
-		Arrays.asList("C","B","A")
-				.forEach(title->{carWithDoors(title, Brand.Porsche);});
+		Arrays.asList("C", "B", "A")
+				.forEach(title -> {carWithDoors(title, Brand.Porsche);});
 
 		List<String> ascendingTitles = carRepository.query()
 				.subQueryList(Car::getDoors, sq -> {
@@ -1717,9 +1752,9 @@ public abstract class AutoMapperBaseTests {
 				.execute().map(car -> Arrays.asList(car.getTitle(), car.getBrand())).collect(Collectors.toList());
 
 		assertEquals(Arrays.asList(
-				Arrays.asList("Sedan", Brand.Porsche)
-				, Arrays.asList("Sedan", Brand.Hyundai)
-				, Arrays.asList("SUV", Brand.Porsche))
+						Arrays.asList("Sedan", Brand.Porsche)
+						, Arrays.asList("Sedan", Brand.Hyundai)
+						, Arrays.asList("SUV", Brand.Porsche))
 				, actual
 		);
 
@@ -1732,7 +1767,7 @@ public abstract class AutoMapperBaseTests {
 
 		assertEquals(Arrays.asList(Arrays.asList("SUV", Brand.Porsche)
 						, Arrays.asList("Sedan", Brand.Hyundai)
-				        , Arrays.asList("Sedan", Brand.Porsche)
+						, Arrays.asList("Sedan", Brand.Porsche)
 
 				)
 				, actualReverse
@@ -1801,14 +1836,14 @@ public abstract class AutoMapperBaseTests {
 		Optional<Person> dadLoaded = personRepository.get("dad");
 		assertTrue(dadLoaded.isPresent());
 		List<Marriage> marriages = dadLoaded.get().getMarriages();
-		assertEquals(1,marriages.size());
-		assertEquals(2,marriages.get(0).getPersons().size());
-		assertEquals(1,marriages.get(0).getPersons().stream().filter(p -> p.getId().equals("dad")).count());
-		assertEquals(1,marriages.get(0).getPersons().stream().filter(p -> p.getId().equals("mom")).count());
+		assertEquals(1, marriages.size());
+		assertEquals(2, marriages.get(0).getPersons().size());
+		assertEquals(1, marriages.get(0).getPersons().stream().filter(p -> p.getId().equals("dad")).count());
+		assertEquals(1, marriages.get(0).getPersons().stream().filter(p -> p.getId().equals("mom")).count());
 
-		assertEquals(2,marriages.get(0).getChildren().size());
-		assertEquals(1,marriages.get(0).getChildren().stream().filter(p -> p.getId().equals("child1")).count());
-		assertEquals(1,marriages.get(0).getChildren().stream().filter(p -> p.getId().equals("child2")).count());
+		assertEquals(2, marriages.get(0).getChildren().size());
+		assertEquals(1, marriages.get(0).getChildren().stream().filter(p -> p.getId().equals("child1")).count());
+		assertEquals(1, marriages.get(0).getChildren().stream().filter(p -> p.getId().equals("child2")).count());
 	}
 
 	@Test
@@ -1852,7 +1887,7 @@ public abstract class AutoMapperBaseTests {
 		viaAltNameSourceRepository.save(source);
 		SqlNameFormatter nameFormatter = injector.getInstance(SqlNameFormatter.class);
 
-		if (database !=  null) {
+		if (database != null) {
 			String actual = database.obtainInTransaction(tx -> {
 				return tx.query("select * from via_this_alternative_name", r -> {
 					return r.getString(nameFormatter.column(Token.get("target_id")));
