@@ -328,9 +328,8 @@ public abstract class AutoMapperBaseTests {
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 		carRepository.save(model);
 
-		List<String> brands = Arrays.asList("Hyundai", "Porsche");
 		//Car::getBrand is an enum and brands Collection are strings
-		carRepository.query().in(Car::getBrand, brands).execute();
+		carRepository.query().in(Car::getBrand, "Hyundai", "Porsche").execute();
 	}
 
 	@Test
@@ -1067,6 +1066,89 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(44.44f, actual.getPrimitiveFloat(), 0.001);
 		assertEquals(false, actual.isPrimitiveBoolean());
 		assertEquals((byte)10, actual.getPrimitiveByte());
+	}
+
+	@Test
+	@TestClasses({AllFieldTypes.class})
+	public void allFieldTypes_increment() {
+		AllFieldTypes obj = factory.get(AllFieldTypes.class);
+		obj.setId(UUID.randomUUID());
+		obj.setBigDecimal(BigDecimal.valueOf(3.1415));
+
+		obj.setInteger(24);
+		obj.setaShort((short) 44);
+		obj.setaLong(42L);
+		obj.setaDouble(3.14);
+		obj.setaFloat(3.15f);
+		obj.setaBoolean(false);
+		obj.setaByte((byte) 3);
+
+		obj.setPrimitiveInteger(666);
+		obj.setPrimitiveShort((short) 115);
+		obj.setPrimitiveLong(444L);
+		obj.setPrimitiveDouble(99.99);
+		obj.setPrimitiveFloat(88.88f);
+		obj.setPrimitiveBoolean(true);
+		obj.setPrimitiveByte((byte) 9);
+
+		allFieldTypesRepository.save(obj);
+
+		allFieldTypesRepository.query()
+				.eq(AllFieldTypes::getId, obj.getId())
+				.update(u -> {
+					u.increment(AllFieldTypes::getBigDecimal, BigDecimal.valueOf(4.4135));
+
+					u.increment(AllFieldTypes::getInteger, 42);
+					u.increment(AllFieldTypes::getaShort, (short) 88);
+					u.increment(AllFieldTypes::getaLong, 84L);
+					u.increment(AllFieldTypes::getaDouble, 7.11);
+					u.increment(AllFieldTypes::getaFloat, 6.3f);
+
+					u.increment(AllFieldTypes::getPrimitiveInteger, 777);
+					u.increment(AllFieldTypes::getPrimitiveShort, (short) 15);
+					u.increment(AllFieldTypes::getPrimitiveLong, 888L);
+					u.increment(AllFieldTypes::getPrimitiveDouble, 55.55);
+					u.increment(AllFieldTypes::getPrimitiveFloat, 44.44f);
+
+				});
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getId()).get();
+
+		assertEquals(new BigDecimal("7.555"), actual.getBigDecimal().stripTrailingZeros());
+
+		assertEquals(Integer.valueOf(66), actual.getInteger());
+		assertEquals(Short.valueOf((short) 132), actual.getaShort());
+		assertEquals(Long.valueOf(126), actual.getaLong());
+		assertEquals(Double.valueOf(10.25), actual.getaDouble());
+		assertEquals(Float.valueOf(9.45f), actual.getaFloat(), 0.001);
+
+		assertEquals(1443, actual.getPrimitiveInteger());
+		assertEquals(130, actual.getPrimitiveShort());
+		assertEquals(1332L, actual.getPrimitiveLong());
+		assertEquals(155.54, actual.getPrimitiveDouble(),0.001);
+		assertEquals(133.32f, actual.getPrimitiveFloat(), 0.001);
+	}
+
+	@Test
+	@TestClasses({AllFieldTypes.class})
+	public void allFieldTypes_updateAndIncrement() {
+		AllFieldTypes obj = factory.get(AllFieldTypes.class);
+		obj.setId(UUID.randomUUID());
+		obj.setBigDecimal(BigDecimal.valueOf(3.1415));
+		obj.setInteger(24);
+
+		allFieldTypesRepository.save(obj);
+
+		allFieldTypesRepository.query()
+				.eq(AllFieldTypes::getId, obj.getId())
+				.update(u -> {
+					u.increment(AllFieldTypes::getBigDecimal, BigDecimal.valueOf(4.4135));
+					u.set(AllFieldTypes::getInteger, 42);
+				});
+
+		AllFieldTypes actual = allFieldTypesRepository.get(obj.getId()).get();
+
+		assertEquals(new BigDecimal("7.555"), actual.getBigDecimal().stripTrailingZeros());
+		assertEquals(Integer.valueOf(42), actual.getInteger());
 	}
 
 	@Test

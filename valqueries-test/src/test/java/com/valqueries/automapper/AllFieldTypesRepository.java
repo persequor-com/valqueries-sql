@@ -8,4 +8,8 @@ public class AllFieldTypesRepository extends ValqueriesCrudRepositoryImpl<AllFie
 	public AllFieldTypesRepository(ValqueriesRepositoryFactory factory) {
 		super(factory, AllFieldTypes.class, UUID.class);
 	}
+
+	public int incrementInteger(UUID id, int incrementingInteger) {
+		return query().eq(AllFieldTypes::getId, id).update(u -> u.increment(AllFieldTypes::getInteger, incrementingInteger)).affectedRows();
+	}
 }

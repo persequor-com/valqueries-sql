@@ -17,6 +17,7 @@ import io.ran.token.Token;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MssqlSqlDialect implements SqlDialect {
 	private SqlNameFormatter sqlNameFormatter;
@@ -78,20 +79,21 @@ public class MssqlSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues, List<Property.PropertyValue> incrementPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
 		updateStatement.append("UPDATE main SET ");
 
-		String columnsToUpdate = newPropertyValues.stream()
-				.map(pv -> "main." + column(pv.getProperty()) + " = :" + pv.getProperty().getToken().snake_case())
-				.collect(Collectors.joining(", "));
-		updateStatement.append(columnsToUpdate);
+		Stream<String> newValues = newPropertyValues.stream().map(Property.PropertyValue::getProperty).map(
+				p -> "main." + column(p) + " = :" + p.getToken().snake_case());
+		Stream<String> incrementValues = incrementPropertyValues.stream().map(Property.PropertyValue::getProperty).map(
+				p -> "main." + column(p) + " = main." + column(p) + " + :" + p.getToken().snake_case());
+		updateStatement.append(Stream.concat(newValues, incrementValues).collect(Collectors.joining(", ")));
 
-		updateStatement.append(" FROM "+getTableName(Clazz.of(typeDescriber.clazz()))+" main");
+		updateStatement.append(" FROM ").append(getTableName(Clazz.of(typeDescriber.clazz()))).append(" main");
 
 		if (!elements.isEmpty()) {
-			updateStatement.append(" WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
+			updateStatement.append(" WHERE ").append(elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
 		}
 
 		return updateStatement.toString();

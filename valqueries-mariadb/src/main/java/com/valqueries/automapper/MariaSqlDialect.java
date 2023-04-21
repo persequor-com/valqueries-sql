@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MariaSqlDialect implements SqlDialect {
 	private SqlNameFormatter sqlNameFormatter;
@@ -64,18 +65,19 @@ public class MariaSqlDialect implements SqlDialect {
 	}
 
 	@Override
-	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues) {
+	public String generateUpdateStatement(TypeDescriber<?> typeDescriber, List<Element> elements, List<Property.PropertyValue> newPropertyValues, List<Property.PropertyValue> incrementPropertyValues) {
 		StringBuilder updateStatement = new StringBuilder();
 
-		updateStatement.append("UPDATE " + getTableName(Clazz.of(typeDescriber.clazz())) + " as main SET ");
+		updateStatement.append("UPDATE ").append(getTableName(Clazz.of(typeDescriber.clazz()))).append(" as main SET ");
 
-		String columnsToUpdate = newPropertyValues.stream()
-				.map(pv -> "main." + column(pv.getProperty()) + " = :" + pv.getProperty().getToken().snake_case())
-				.collect(Collectors.joining(", "));
-		updateStatement.append(columnsToUpdate);
+		Stream<String> newValues = newPropertyValues.stream().map(Property.PropertyValue::getProperty).map(
+				p -> "main." + column(p) + " = :" + p.getToken().snake_case());
+		Stream<String> incrementValues = incrementPropertyValues.stream().map(Property.PropertyValue::getProperty).map(
+				p -> "main." + column(p) + " = main." + column(p) + " + :" + p.getToken().snake_case());
+		updateStatement.append(Stream.concat(newValues, incrementValues).collect(Collectors.joining(", ")));
 
 		if (!elements.isEmpty()) {
-			updateStatement.append(" WHERE " + elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
+			updateStatement.append(" WHERE ").append(elements.stream().map(Element::queryString).collect(Collectors.joining(" AND ")));
 		}
 
 		return updateStatement.toString();
