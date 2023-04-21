@@ -39,50 +39,50 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> eq(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "=", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.EQUALS, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public ValqueriesQuery<T> in(Property.PropertyValueList propertyValues) {
-		elements.add(new ListElement(this, propertyValues, "IN", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new ListElement(this, propertyValues, ListOperator.IN, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public ValqueriesQuery<T> like(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "like", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.LIKE, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	ValqueriesQuery<T> freetext(Property.PropertyValue<?> propertyValue) {
-		elements.add(new FreeTextElement(this, propertyValue, ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new FreeTextElement(this, propertyValue, ++fieldNum, dialect));
 		return this;
 	}
 
 
 	@Override
 	public ValqueriesQuery<T> gt(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, ">", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.GREATER_THAN, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public ValqueriesQuery<T> gte(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, ">=", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.GREATER_THAN_OR_EQUALS, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public ValqueriesQuery<T> lt(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "<", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.LESS_THAN, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
 	@Override
 	public ValqueriesQuery<T> lte(Property.PropertyValue<?> propertyValue) {
-		elements.add(new SimpleElement(this, propertyValue, "<=", ++fieldNum, sqlNameFormatter, dialect));
+		elements.add(new SimpleElement(this, propertyValue, BinaryOperator.LESS_THAN_OR_EQUALS, ++fieldNum, sqlNameFormatter, dialect));
 		return this;
 	}
 
@@ -118,12 +118,12 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public ValqueriesQuery<T> isNull(Property<?> property) {
-		elements.add(new UnaryOperatorElement(this, property, "IS NULL", dialect));
+		elements.add(new UnaryOperatorElement(this, property, UnaryOperator.IS_NULL, dialect));
 		return this;
 	}
 
 	public ValqueriesQuery<T> isNotNull(Property<?> property) {
-		elements.add(new UnaryOperatorElement(this, property, "IS NOT NULL", dialect));
+		elements.add(new UnaryOperatorElement(this, property, UnaryOperator.IS_NOT_NULL, dialect));
 		return this;
 	}
 
@@ -222,13 +222,13 @@ public class ValqueriesQueryImpl<T> extends BaseValqueriesQuery<T> implements Va
 
 	@Override
 	public <X extends Comparable<X>> ValqueriesQuery<T> sortAscending(Property<X> property) {
-		sortElements.add(new SortElement<T>(this, property, true, sqlNameFormatter, dialect));
+		sortElements.add(new SortElement<T>(this, property, true, dialect));
 		return this;
 	}
 
 	@Override
 	public <X extends Comparable<X>> ValqueriesQuery<T> sortDescending(Property<X> property) {
-		sortElements.add(new SortElement<T>(this, property, false, sqlNameFormatter, dialect));
+		sortElements.add(new SortElement<T>(this, property, false, dialect));
 		return null;
 	}
 

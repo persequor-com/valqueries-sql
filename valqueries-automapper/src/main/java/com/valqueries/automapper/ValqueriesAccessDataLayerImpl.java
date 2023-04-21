@@ -51,6 +51,7 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 	private void setKey(IStatement b, K id, int position) {
 		if (keyType == CompoundKey.class) {
 			CompoundKey key = (CompoundKey) id;
+			// FIXME: OPEN-91 This should either be supported or throw a meaningful exception
 
 		} else if (keyType == String.class) {
 			b.set(getKeyName(position), (String) id);
@@ -107,6 +108,9 @@ public class ValqueriesAccessDataLayerImpl<T, K> implements ValqueriesAccessData
 
 	@Override
 	public CrudUpdateResult deleteByIds(Collection<K> ids) {
+		if (ids.isEmpty()) {
+			return () -> 0;
+		}
 		String inIdsSql = IntStream.range(0, ids.size()).mapToObj(id -> ":" + getKeyName(id)).collect(Collectors.joining(", "));
 		return getUpdateResult(database.obtainInTransaction(tx ->
 			tx.update("DELETE from " + getTableName() +
