@@ -317,10 +317,9 @@ public abstract class AutoMapperBaseTests {
 		assertEquals(1, doors.size());
 	}
 
-
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	@TestClasses({Car.class})
-	public void queryBuilder_inCondition_typeMismatch() {
+	public void queryBuilder_inCondition_function_typeMismatch() {
 		Car model = factory.get(Car.class);
 		model.setId(UUID.randomUUID());
 		model.setTitle("Muh");
@@ -328,8 +327,28 @@ public abstract class AutoMapperBaseTests {
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 		carRepository.save(model);
 
-		//Car::getBrand is an enum and brands Collection are strings
-		carRepository.query().in(Car::getBrand, "Hyundai", "Porsche").execute();
+		carRepository.query().in(Car::getBrand).execute();
+		carRepository.query().in(Car::getBrand, Brand.Porsche).execute();
+		carRepository.query().in(Car::getBrand, (Object) Brand.Porsche).execute();
+		carRepository.query().in(Car::getBrand, new Brand[] {Brand.Porsche, Brand.Hyundai}).execute();
+		carRepository.query().in(Car::getBrand, new Object[] {Brand.Porsche, Brand.Hyundai}).execute();
+		carRepository.query().in(Car::getBrand, Arrays.asList(Brand.Porsche, Brand.Hyundai)).execute();
+
+		carRepository.query().in(Car::getBrand, (Brand) null).execute();
+		carRepository.query().in(Car::getBrand, Collections.singletonList(null)).execute();
+		carRepository.query().in(Car::getBrand, Brand.Porsche, null).execute();
+		carRepository.query().in(Car::getBrand, new Brand[] {Brand.Porsche, null}).execute();
+		carRepository.query().in(Car::getBrand, Arrays.asList(Brand.Porsche, null)).execute();
+
+		assertThrows(NullPointerException.class, () -> carRepository.query().in(Car::getBrand, (Brand[]) null).execute());
+		assertThrows(NullPointerException.class, () -> carRepository.query().in(Car::getBrand, (Collection<Brand>) null).execute());
+
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, "Porsche").execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new String[] {"Porsche", "Hyundai"}).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new Object[] {"Porsche", "Hyundai"}).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, Arrays.asList("Porsche", "Hyundai")).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new Object[] {Brand.Porsche, "Hyundai"}).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, Arrays.asList(Brand.Porsche, "Hyundai")).execute());
 	}
 
 	@Test
