@@ -2,7 +2,6 @@ package com.valqueries.automapper.schema;
 
 import com.valqueries.Database;
 import com.valqueries.IOrm;
-import com.valqueries.UpdateResult;
 import com.valqueries.automapper.DialectFactory;
 import com.valqueries.automapper.SqlDialect;
 import io.ran.schema.SchemaExecutor;
@@ -15,7 +14,7 @@ import java.util.Collection;
 public class ValqueriesSchemaExecutor implements SchemaExecutor {
 	private final DialectFactory dialectFactory;
 	private final Database database;
-	private String sql = "";
+	private final StringBuilder sql = new StringBuilder();
 
 	@Inject
 	public ValqueriesSchemaExecutor(DialectFactory dialectFactory, Database database) {
@@ -35,11 +34,11 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 				String[] actions = action.split(";");
 				for (String a: actions) {
 					if (a.length() > 0) {
-						sql += a+";\n";
-						orm.update(a, s -> {	});
+						sql.append(a);
+						sql.append(";\n");
+						orm.update(a, s -> {});
 					}
 				}
-
 			}
 		}
 	}
@@ -54,6 +53,6 @@ public class ValqueriesSchemaExecutor implements SchemaExecutor {
 	}
 
 	public String getSql() {
-		return sql;
+		return sql.toString();
 	}
 }
