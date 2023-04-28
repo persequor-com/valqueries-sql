@@ -51,7 +51,7 @@ subprojects {
     }
 
     dependencies {
-        testImplementation 'junit:junit:4.12'
+        testImplementation 'junit:junit:4.13'
         testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.6.28'
         testImplementation group: 'com.google.inject', name: 'guice', version: '4.2.3'
         implementation 'com.zaxxer:HikariCP:3.3.1'

@@ -3,12 +3,12 @@ package com.valqueries.automapper;
 import io.ran.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, ValqueriesQuery<T>> implements ValqueriesQuery<T>, ValqueriesGroupQuery<T> {
 	protected List<Property> groupByProperties = null;
@@ -25,38 +25,40 @@ public abstract class BaseValqueriesQuery<T> extends CrudRepoBaseQuery<T, Valque
 	@Override
 	public <X> ValqueriesQuery<T> in(Function<T, X> field, Collection<X> value) {
 		field.apply(instance);
-		in(queryWrapper.getCurrentProperty().values(value));
-		return this;
+		return inPrivate(value);
 	}
 
 	@Override
 	public <X> ValqueriesQuery<T> in(BiConsumer<T, X> field, Collection<X> value) {
 		field.accept(instance, null);
-		in(queryWrapper.getCurrentProperty().values(value));
-		return this;
+		return inPrivate(value);
 	}
 
 	@Override
 	public <X> ValqueriesQuery<T> in(Function<T, X> field, X... value) {
 		field.apply(instance);
-		Property property = this.typeDescriber.fields().get(queryWrapper.getCurrentProperty().getToken());
-		final Class<?> fieldType = property.getType().clazz;
-
-		if (value != null && value.length > 0 && !fieldType.isAssignableFrom(value[0].getClass())) { // todo why test just the first
-			//it can happen for instance if we provide Collection of the type mismatching the field type then JVM would infer X as an object and make it the first element of the vararg array
-			throw new IllegalArgumentException("The type of the values is incorrectly inferred,"
-					+ " please make sure field type matches the type of the values array. "
-					+ String.format("Field type is '%s', value type is '%s'.", fieldType, value[0].getClass()));
-		}
-
-		in(property.values(value));
-		return this;
+		return inPrivate(Arrays.asList(value));
 	}
 
 	@Override
 	public <X> ValqueriesQuery<T> in(BiConsumer<T, X> field, X... value) {
 		field.accept(instance, null);
-		in(queryWrapper.getCurrentProperty().values(value));
+		return inPrivate(Arrays.asList(value));
+	}
+
+	private <X> ValqueriesQuery<T> inPrivate(Collection<X> values) {
+		@SuppressWarnings("unchecked") Property<X> property = queryWrapper.getCurrentProperty();
+		final Class<?> fieldType = property.getType().clazz;
+
+		if (values != null) {
+			values.stream().filter(val -> val != null && !fieldType.isAssignableFrom(val.getClass())).forEach(val -> {
+				throw new IllegalArgumentException("Incompatible value in IN condition,"
+						+ " please make sure field type matches the type of the values. "
+						+ String.format("Field type is '%s', value type is '%s'.", fieldType, val.getClass()));
+			});
+		}
+
+		in(property.values(values));
 		return this;
 	}
 
