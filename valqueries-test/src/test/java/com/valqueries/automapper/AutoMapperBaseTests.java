@@ -349,9 +349,15 @@ public abstract class AutoMapperBaseTests {
 		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, Arrays.asList("Porsche", "Hyundai")).execute());
 		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, new Object[]{Brand.Porsche, "Hyundai"}).execute());
 		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::getBrand, Arrays.asList(Brand.Porsche, "Hyundai")).execute());
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(
+				car -> {
+					//noinspection ResultOfMethodCallIgnored
+					car.getBrand();
+					return "sneaky";
+				},
+				"Porsche"));
 	}
 
-	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
 	@TestClasses({Car.class})
 	public void queryBuilder_inCondition_biConsumer_typeMismatch() {
@@ -362,28 +368,29 @@ public abstract class AutoMapperBaseTests {
 		model.setCreatedAt(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
 		carRepository.save(model);
 
-		carRepository.query().in((car, ignored) -> car.getBrand()).execute();
-		carRepository.query().in((car, ignored) -> car.getBrand(), Brand.Porsche).execute();
-		carRepository.query().in((car, ignored) -> car.getBrand(), (Object) Brand.Porsche).execute();
-		carRepository.query().in((car, ignored) -> car.getBrand(), new Brand[]{Brand.Porsche, Brand.Hyundai}).execute();
-		carRepository.query().in((car, ignored) -> car.getBrand(), new Object[]{Brand.Porsche, Brand.Hyundai}).execute();
-		carRepository.query().in((car, ignored) -> car.getBrand(), Arrays.asList(Brand.Porsche, Brand.Hyundai)).execute();
+		carRepository.query().in(Car::setBrand).execute();
+		carRepository.query().in(Car::setBrand, Brand.Porsche).execute();
+//		carRepository.query().in(Car::setBrand, (Object) Brand.Porsche).execute(); // does not compile, which is fair enough
+		carRepository.query().in(Car::setBrand, new Brand[]{Brand.Porsche, Brand.Hyundai}).execute();
+//		carRepository.query().in(Car::setBrand, new Object[]{Brand.Porsche, Brand.Hyundai}).execute(); // does not compile, which is fair enough
+		carRepository.query().in(Car::setBrand, Arrays.asList(Brand.Porsche, Brand.Hyundai)).execute();
 
-		carRepository.query().in((car, ignored) -> car.getBrand(), (Brand) null).execute();
-		carRepository.query().in((car, ignored) -> car.getBrand(), Collections.singletonList(null)).execute();
-		carRepository.query().in((car, ignored) -> car.getBrand(), Brand.Porsche, null).execute();
-		carRepository.query().in((car, ignored) -> car.getBrand(), new Brand[]{Brand.Porsche, null}).execute();
-		carRepository.query().in((car, ignored) -> car.getBrand(), Arrays.asList(Brand.Porsche, null)).execute();
+		carRepository.query().in(Car::setBrand, (Brand) null).execute();
+		carRepository.query().in(Car::setBrand, Collections.singletonList(null)).execute();
+		carRepository.query().in(Car::setBrand, Brand.Porsche, null).execute();
+		carRepository.query().in(Car::setBrand, new Brand[]{Brand.Porsche, null}).execute();
+		carRepository.query().in(Car::setBrand, Arrays.asList(Brand.Porsche, null)).execute();
 
-		assertThrows(NullPointerException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), (Brand[]) null).execute());
-		assertThrows(NullPointerException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), (Collection<Brand>) null).execute());
+		assertThrows(NullPointerException.class, () -> carRepository.query().in(Car::setBrand, (Brand[]) null).execute());
+		assertThrows(NullPointerException.class, () -> carRepository.query().in(Car::setBrand, (Collection<Brand>) null).execute());
 
-		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), "Porsche").execute());
-		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), new String[]{"Porsche", "Hyundai"}).execute());
-		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), new Object[]{"Porsche", "Hyundai"}).execute());
-		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), Arrays.asList("Porsche", "Hyundai")).execute());
-		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), new Object[]{Brand.Porsche, "Hyundai"}).execute());
-		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, ignored) -> car.getBrand(), Arrays.asList(Brand.Porsche, "Hyundai")).execute());
+//		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::setBrand, "Porsche").execute()); // does not compile, which is fair enough
+//		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::setBrand, new String[]{"Porsche", "Hyundai"}).execute()); // does not compile, which is fair enough
+//		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::setBrand, new Object[]{"Porsche", "Hyundai"}).execute()); // does not compile, which is fair enough
+//		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::setBrand, Arrays.asList("Porsche", "Hyundai")).execute()); // does not compile, which is fair enough
+//		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::setBrand, new Object[]{Brand.Porsche, "Hyundai"}).execute()); // does not compile, which is fair enough
+//		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in(Car::setBrand, Arrays.asList(Brand.Porsche, "Hyundai")).execute()); // does not compile, which is fair enough
+		assertThrows(IllegalArgumentException.class, () -> carRepository.query().in((car, brand) -> car.setBrand(Brand.Porsche),"Porsche"));
 	}
 
 	@Test
